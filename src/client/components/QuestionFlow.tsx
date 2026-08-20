@@ -14,6 +14,11 @@ export interface QuestionFlowProps {
 type Question = QuestionWait['payload']['questions'][number]
 type Answer = { id: string; selected: string[]; custom?: string }
 type Draft = { selected: string[]; custom: string; skipped: boolean }
+type FocusItem =
+  | { readonly kind: 'option'; readonly label: string }
+  | { readonly kind: 'custom' }
+  | { readonly kind: 'skip' }
+  | { readonly kind: 'advance' }
 
 const composing = (event: React.KeyboardEvent<HTMLElement>): boolean => event.nativeEvent.isComposing || (event.nativeEvent as KeyboardEvent).isComposing
 function initialDraft(): Draft { return { selected: [], custom: '', skipped: false } }
@@ -30,9 +35,14 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask }: Question
   const draft = drafts[index]
   const options = question?.options ?? []
   const multi = question?.multiSelect === true
-  const showAdvance = multi || questions.length > 1
-  const itemCount = options.length + 2 + (showAdvance ? 1 : 0)
-  const moveFocus = (delta: number) => setFocusIndex(current => itemCount === 0 ? 0 : (current + delta + itemCount) % itemCount)
+  const showAdvance = multi || questions.length > 1 || options.length === 0
+  const focusList: FocusItem[] = [
+    ...options.map(option => ({ kind: 'option' as const, label: option.label })),
+    { kind: 'custom' },
+    { kind: 'skip' },
+    ...(showAdvance ? [{ kind: 'advance' as const }] : []),
+  ]
+  const moveFocus = (delta: number) => setFocusIndex(current => focusList.length === 0 ? 0 : (current + delta + focusList.length) % focusList.length)
 
   useEffect(() => { focusItems.current[focusIndex]?.focus() }, [focusIndex, index, matched.key])
   const updateDraft = (patch: Partial<Draft>) => setDrafts(current => current.map((item, i) => i === index ? { ...item, ...patch } : item))
@@ -68,6 +78,7 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask }: Question
   const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
     const input: KeyInput = { key: event.key, alt: event.altKey, ctrl: event.ctrlKey, meta: event.metaKey, shift: event.shiftKey, composing: composing(event), keyCode: event.keyCode, repeat: event.repeat, disabled: submitting }
     const decision = resolveKey(activeProfile, 'question', input)
+    if (event.target !== event.currentTarget && event.key === 'Enter') return
     if (decision.kind === 'pass') {
       if (event.key === 'Enter' && event.currentTarget === event.target && !composing(event) && event.keyCode !== 229 && !event.repeat && !submitting && multi) { event.preventDefault(); advance() }
       return
@@ -76,10 +87,10 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask }: Question
     if (decision.command === 'cancelTask') { void cancelTask().catch(cause => { setError(cause instanceof Error ? cause.message : String(cause)); setSubmitting(false) }); return }
     if (decision.command === 'focusPrevious' || decision.command === 'focusNext') moveFocus(decision.command === 'focusPrevious' ? -1 : 1)
     if (decision.command === 'activate') {
-      if (focusIndex < options.length) choose(options[focusIndex].label)
-      else if (focusIndex === options.length) advance()
-      else if (focusIndex === options.length + 1) updateDraft({ skipped: !draft.skipped, selected: [], custom: '' })
-      else advance()
+      const item = focusList[focusIndex]
+      if (item?.kind === 'option') choose(item.label)
+      else if (item?.kind === 'custom' || item?.kind === 'advance') advance()
+      else if (item?.kind === 'skip') updateDraft({ skipped: !draft.skipped, selected: [], custom: '' })
     }
   }
   if (!question || !draft) return React.createElement('div')
@@ -89,7 +100,7 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask }: Question
     <div role="group" aria-label={question.question}>
       {options.map((option, optionIndex) => <button key={option.label} ref={node => { focusItems.current[optionIndex] = node; if (focusIndex === optionIndex) node?.focus() }} type="button" role={multi ? 'checkbox' : 'radio'} aria-checked={draft.selected.includes(option.label)} disabled={submitting} onClick={() => { setFocusIndex(optionIndex); choose(option.label) }}>{option.label}</button>)}
     </div>
-    <textarea ref={node => { focusItems.current[options.length] = node }} aria-label={t('question.custom')} value={draft.custom} disabled={submitting} onChange={event => updateDraft({ custom: event.target.value })} onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey && !composing(event) && event.keyCode !== 229 && !event.repeat && !submitting) { event.preventDefault(); advance() } }} />
+    <textarea ref={node => { focusItems.current[options.length] = node }} aria-label={t('question.custom')} value={draft.custom} disabled={submitting} onChange={event => updateDraft({ custom: event.target.value })} onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey && !composing(event) && event.keyCode !== 229 && !event.repeat && !submitting) { event.preventDefault(); event.stopPropagation(); advance() } }} />
     <button ref={node => { focusItems.current[options.length + 1] = node }} type="button" disabled={submitting} onClick={() => updateDraft({ skipped: !draft.skipped })}>{draft.skipped ? t('question.unskip') : t('question.skip')}</button>
     {showAdvance ? <button ref={node => { focusItems.current[options.length + 2] = node }} type="button" disabled={submitting} onClick={advance}>{index === questions.length - 1 ? t('question.submit') : t('question.next')}</button> : null}
     {error ? <p role="alert">{error}</p> : null}

@@ -64,6 +64,52 @@ describe('shortcut composer flows', () => {
     })
   })
 
+  it('submits a single non-multi custom textarea Enter only once', async () => {
+    const respond = vi.fn<Response>(() => receipt())
+    render(<QuestionFlow matched={question(respond, [], false)} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} />)
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'custom answer' } })
+    fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' })
+    await waitFor(() => expect(respond).toHaveBeenCalledTimes(1))
+  })
+
+  it('handles zero options with custom, skip, and submit controls', async () => {
+    const respond = vi.fn<Response>(() => receipt())
+    render(<QuestionFlow matched={question(respond, [], false)} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} />)
+    expect(screen.queryAllByRole('radio')).toHaveLength(0)
+    expect(screen.getByRole('textbox')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'question.skip' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'question.skip' }))
+    fireEvent.click(screen.getByRole('button', { name: 'question.submit' }))
+    await waitFor(() => expect(respond).toHaveBeenCalledTimes(1))
+    expect(respond.mock.calls[0]?.[0]).toMatchObject({ value: { answer: { answers: [{ id: 'q', selected: [] }] } } })
+  })
+
+  it('uses Arrow focus and activate for option, custom, skip, and advance kinds', async () => {
+    const respond = vi.fn<Response>(() => receipt())
+    render(<QuestionFlow matched={question(respond, [{ label: 'A' }], true)} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} />)
+    const surface = questionSurface()
+    fireEvent.keyDown(surface, { key: 'ArrowDown' })
+    expect(document.activeElement).toBe(screen.getByRole('textbox'))
+    fireEvent.keyDown(surface, { key: 'ArrowDown' })
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'question.skip' }))
+    fireEvent.keyDown(surface, { key: 'Enter' })
+    expect(screen.getByRole('button', { name: 'question.unskip' })).toBeTruthy()
+    fireEvent.keyDown(surface, { key: 'ArrowDown' })
+    fireEvent.keyDown(surface, { key: 'Enter' })
+    await waitFor(() => expect(respond).toHaveBeenCalledTimes(1))
+  })
+
+  it('round-trips skip through keyboard activation', () => {
+    const respond = vi.fn<Response>(() => receipt())
+    render(<QuestionFlow matched={question(respond, [], true)} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} />)
+    const surface = questionSurface()
+    fireEvent.keyDown(surface, { key: 'ArrowDown' })
+    fireEvent.keyDown(surface, { key: 'Enter' })
+    expect(screen.getByRole('button', { name: 'question.unskip' })).toBeTruthy()
+    fireEvent.keyDown(surface, { key: 'Enter' })
+    expect(screen.getByRole('button', { name: 'question.skip' })).toBeTruthy()
+    expect(respond).not.toHaveBeenCalled()
+  })
   it('supports multi-select, custom text, and profile navigation', async () => {
     const respond = vi.fn<Response>(() => receipt())
     render(<QuestionFlow matched={question(respond, [{ label: 'A' }, { label: 'B' }], true)} activeProfile={vimProfile} t={t} cancelTask={vi.fn(async () => {})} />)
@@ -83,6 +129,7 @@ describe('shortcut composer flows', () => {
       },
     })
   })
+
 
   it('passes IME/repeat Enter and cancels without answering', async () => {
     const respond = vi.fn<Response>(() => receipt())

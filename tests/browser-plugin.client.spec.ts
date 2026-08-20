@@ -144,6 +144,21 @@ describe('shortcut client slot wiring', () => {
     await b.feature.dispose()
   })
 
+  it('isolates injected cancelTask by session and does not respond', async () => {
+    const b = await bench()
+    const cancelOne = vi.fn(async () => {})
+    const cancelTwo = vi.fn(async () => {})
+    const sessions = b.ctx.get('sessions') as { scope: (id: string) => unknown }
+    vi.mocked(sessions.scope).mockImplementation((id: string) => ({
+      get: (name: string) => name === 'conversation' ? { cancel: id === 's1' ? cancelOne : cancelTwo } : undefined,
+    }) as never)
+    const entry = b.slots.entries('conversation.composer')[0]!
+    const inject = entry.options.inject as (sessionId: string) => { cancelTask: () => Promise<void> }
+    await inject('s1').cancelTask()
+    expect(cancelOne).toHaveBeenCalledOnce()
+    expect(cancelTwo).not.toHaveBeenCalled()
+    await b.feature.dispose()
+  })
   it('persists settings, reports errors, and cleans subscriptions', async () => {
     const b = await bench()
     const listener = vi.fn()

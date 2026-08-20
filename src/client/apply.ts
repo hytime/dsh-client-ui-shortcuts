@@ -34,7 +34,13 @@ export function apply(ctx: ClientContext): void {
       return {
         activeProfile: registry.active(),
         t: (key: string) => t(key as never),
-        cancelTask: () => conversation.cancel(),
+         cancelTask: async () => {
+           const currentSession = ctx.sessions.scope(sessionId)
+           if (currentSession === undefined) throw new Error(`dsh-shortcuts: unknown session "${sessionId}"`)
+           const currentConversation = currentSession.get('conversation')
+           if (currentConversation === undefined) throw new Error(`dsh-shortcuts: conversation unavailable for session "${sessionId}"`)
+           await currentConversation.cancel()
+         },
       }
     },
   }, ShortcutComposer)), 'dsh-shortcuts: composer slot')
