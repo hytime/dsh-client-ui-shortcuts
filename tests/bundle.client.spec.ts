@@ -51,6 +51,9 @@ describe('client bundle and package artifact', () => {
       expect(entries).toContain('package/lib/invariant.js')
       expect(entries).toContain('package/lib/client.js')
       expect(entries).toContain('package/cordis.patch.yml')
+      expect(entries).toContain('package/README.zh.md')
+      expect(entries).toContain('package/CHANGELOG.md')
+      expect(entries).toContain('package/CHANGELOG.zh.md')
       expect(entries.some(entry => /^package\/lib\/types\/.*\.d\.ts$/.test(entry))).toBe(true)
       for (const forbidden of ['package/tests/', 'package/src/', 'package/.superpowers/', 'package/docs/superpowers/', 'package/node_modules/']) {
         expect(entries.some(entry => entry.startsWith(forbidden))).toBe(false)

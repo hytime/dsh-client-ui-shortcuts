@@ -44,6 +44,9 @@ describe('package manifest', () => {
       'lib/client.js',
       'lib/types/**/*.d.ts',
       'cordis.patch.yml',
+      'README.zh.md',
+      'CHANGELOG.md',
+      'CHANGELOG.zh.md',
     ])
     expect(manifest.dependencies).toEqual({
       '@iconify-icons/lucide': '1.2.136',
