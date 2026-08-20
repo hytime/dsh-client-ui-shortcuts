@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process'
+import { createRequire } from 'node:module'
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
@@ -48,6 +49,7 @@ describe('client bundle and package artifact', () => {
         .split('\n').filter(Boolean)
       expect(entries).toContain('package/lib/index.js')
       expect(entries).toContain('package/lib/invariant.js')
+      expect(entries).toContain('package/lib/client.js')
       expect(entries).toContain('package/cordis.patch.yml')
       expect(entries.some(entry => /^package\/lib\/types\/.*\.d\.ts$/.test(entry))).toBe(true)
       for (const forbidden of ['package/tests/', 'package/src/', 'package/.superpowers/', 'package/docs/superpowers/', 'package/node_modules/']) {
@@ -106,6 +108,9 @@ describe('client bundle and package artifact', () => {
       const output = execFileSync(tsx, ['-e', script], { cwd: official, encoding: 'utf8' })
       expect(output).toContain('dsh-ui-shortcuts')
       expect(output).toContain(packageManifest.name)
+      const requireFromProfile = createRequire(join(profileDir, 'package.json'))
+      expect(readFileSync(requireFromProfile.resolve(packageManifest.name), 'utf8')).toBeTruthy()
+      expect(readFileSync(requireFromProfile.resolve(`${packageManifest.name}/client`), 'utf8')).toBeTruthy()
       expect(readFileSync(join(packageDir, 'lib/index.js'), 'utf8')).toBeTruthy()
       expect(readFileSync(join(packageDir, 'lib/client.js'), 'utf8')).toBeTruthy()
     } finally {
