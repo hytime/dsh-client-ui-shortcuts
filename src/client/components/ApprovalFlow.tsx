@@ -4,7 +4,7 @@ import type { ShortcutProfile } from '../contract/profile.js'
 import { resolveKey } from '../keyboard/resolve.js'
 import type { KeyInput } from '../contract/keyboard.js'
 
-const composing = (event: React.KeyboardEvent<HTMLElement>): boolean => event.nativeEvent.isComposing
+const composing = (event: React.KeyboardEvent<HTMLElement>): boolean => event.nativeEvent.isComposing || (event.nativeEvent as KeyboardEvent).isComposing
 
 interface ApprovalFlowProps {
   readonly matched: ApprovalWait
@@ -19,7 +19,7 @@ export function ApprovalFlow({ matched, activeProfile, t, cancelTask }: Approval
   const [error, setError] = useState<string>()
   const [focusIndex, setFocusIndex] = useState(0)
   const actionRefs = useRef<Array<HTMLButtonElement | null>>([])
-  useEffect(() => { actionRefs.current[focusIndex]?.focus() }, [focusIndex])
+  useEffect(() => { actionRefs.current[focusIndex]?.focus() }, [focusIndex, matched.key])
   const moveFocus = (delta: number) => setFocusIndex(current => (current + delta + 2) % 2)
   const answer = async (outcome: 'allowed-once' | 'rejected'): Promise<void> => {
     if (busy) return

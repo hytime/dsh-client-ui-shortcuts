@@ -30,10 +30,11 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask }: Question
   const draft = drafts[index]
   const options = question?.options ?? []
   const multi = question?.multiSelect === true
-  const focusCount = options.length + 3
-  const moveFocus = (delta: number) => setFocusIndex(current => (current + delta + focusCount) % focusCount)
+  const showAdvance = multi || questions.length > 1
+  const itemCount = options.length + 2 + (showAdvance ? 1 : 0)
+  const moveFocus = (delta: number) => setFocusIndex(current => itemCount === 0 ? 0 : (current + delta + itemCount) % itemCount)
 
-  useEffect(() => { focusItems.current[focusIndex]?.focus() }, [focusIndex, index])
+  useEffect(() => { focusItems.current[focusIndex]?.focus() }, [focusIndex, index, matched.key])
   const updateDraft = (patch: Partial<Draft>) => setDrafts(current => current.map((item, i) => i === index ? { ...item, ...patch } : item))
   const answerFor = (items: Draft[]): Answer[] => questions.map((item, i) => {
     const value = items[i]
@@ -57,7 +58,7 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask }: Question
   }
   const choose = (label: string) => {
     if (submitting) return
-    if (multi) updateDraft({ selected: draft.selected.includes(label) ? draft.selected.filter(x => x !== label) : [...draft.selected, label] })
+    if (multi) updateDraft({ selected: draft.selected.includes(label) ? draft.selected.filter(x => x !== label) : [...draft.selected, label], skipped: false })
     else {
       const next = drafts.map((item, i) => i === index ? { ...item, selected: [label], skipped: false } : item)
       setDrafts(next)
@@ -77,7 +78,7 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask }: Question
     if (decision.command === 'activate') {
       if (focusIndex < options.length) choose(options[focusIndex].label)
       else if (focusIndex === options.length) advance()
-      else if (focusIndex === options.length + 1) updateDraft({ skipped: !draft.skipped })
+      else if (focusIndex === options.length + 1) updateDraft({ skipped: !draft.skipped, selected: [], custom: '' })
       else advance()
     }
   }
@@ -90,7 +91,7 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask }: Question
     </div>
     <textarea ref={node => { focusItems.current[options.length] = node }} aria-label={t('question.custom')} value={draft.custom} disabled={submitting} onChange={event => updateDraft({ custom: event.target.value })} onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey && !composing(event) && event.keyCode !== 229 && !event.repeat && !submitting) { event.preventDefault(); advance() } }} />
     <button ref={node => { focusItems.current[options.length + 1] = node }} type="button" disabled={submitting} onClick={() => updateDraft({ skipped: !draft.skipped })}>{draft.skipped ? t('question.unskip') : t('question.skip')}</button>
-    {multi || questions.length > 1 ? <button ref={node => { focusItems.current[options.length + 2] = node }} type="button" disabled={submitting} onClick={advance}>{index === questions.length - 1 ? t('question.submit') : t('question.next')}</button> : null}
+    {showAdvance ? <button ref={node => { focusItems.current[options.length + 2] = node }} type="button" disabled={submitting} onClick={advance}>{index === questions.length - 1 ? t('question.submit') : t('question.next')}</button> : null}
     {error ? <p role="alert">{error}</p> : null}
   </section>
 }
