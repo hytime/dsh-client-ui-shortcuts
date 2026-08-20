@@ -1,7 +1,9 @@
 import type {
   KeyStroke, ShortcutBinding, ShortcutCommand, ShortcutProfile, ShortcutScope,
 } from '../contract/profile.js'
+import { DEFAULT_SHORTCUT_PROFILE_ID } from '../../profile-catalog.js'
 import type { ShortcutProfileRegistry } from './types.js'
+import { standardProfile, vimProfile } from './builtins.js'
 
 const COMMANDS: readonly ShortcutCommand[] = [
   'focusPrevious',
@@ -34,9 +36,16 @@ export function canonicalBindingKey(binding: ShortcutBinding): string {
  * @param defaultId - optional profile id used for active fallback.
  * @returns an isolated profile registry.
  */
+export function createBuiltinProfileRegistry(
+  persistedId?: string,
+): ShortcutProfileRegistry {
+  return createProfileRegistry([standardProfile, vimProfile], DEFAULT_SHORTCUT_PROFILE_ID, persistedId)
+}
+
 export function createProfileRegistry(
   initialProfiles: readonly ShortcutProfile[],
   defaultId?: string,
+  persistedId?: string,
 ): ShortcutProfileRegistry {
   if (initialProfiles.length === 0) {
     throw new Error('shortcut profile registry requires at least one profile')
@@ -54,7 +63,7 @@ export function createProfileRegistry(
   }
 
   let snapshot: readonly ShortcutProfile[] = Object.freeze(profiles)
-  let activeId = defaultProfileId
+  let activeId = persistedId !== undefined && initialIds.has(persistedId) ? persistedId : defaultProfileId
   const listeners = new Set<() => void>()
 
   const notify = (): void => {
