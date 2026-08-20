@@ -1,0 +1,87 @@
+{
+  "name": "@hytime/dsh-client-ui-shortcuts",
+  "version": "0.1.0",
+  "description": "Profile-aware keyboard shortcuts for the DeepSeek Harness Web Client",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./invariant": {
+      "types": "./lib/types/invariant.d.ts",
+      "default": "./lib/invariant.js"
+    },
+    "./client": {
+      "types": "./lib/types/client/index.d.ts",
+      "default": "./lib/client.js"
+    },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-primitives",
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-ui-settings-plugins",
+        "@deepseek-ai/dsh-client-ui-slots"
+      ]
+    },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "scripts": {
+    "build:types": "tsc",
+    "bundle": "pnpm run build:types && tsdown",
+    "watch": "tsdown --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/invariant.js",
+    "lib/client.js",
+    "lib/types/**/*.d.ts"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@iconify-icons/lucide": "1.2.136",
+    "@iconify/react": "6.0.2",
+    "clsx": "2.1.1"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": ">=4.0.1 <5.0.0",
+    "@deepseek-ai/dsh-client-connection": ">=0.0.1-rc.1 <1.0.0",
+    "@deepseek-ai/dsh-client-locale": ">=0.0.1-rc.1 <1.0.0",
+    "@deepseek-ai/dsh-client-runtime": ">=0.0.1-rc.1 <1.0.0",
+    "@deepseek-ai/dsh-client-ui-conversation": ">=0.0.1-rc.1 <1.0.0",
+    "@deepseek-ai/dsh-client-ui-primitives": ">=0.0.1-rc.1 <1.0.0",
+    "@deepseek-ai/dsh-client-ui-settings": ">=0.0.1-rc.1 <1.0.0",
+    "@deepseek-ai/dsh-client-ui-settings-plugins": ">=0.0.1-rc.1 <1.0.0",
+    "@deepseek-ai/dsh-client-ui-slots": ">=0.0.1-rc.1 <1.0.0",
+    "@deepseek-ai/dsh-client-web-react": ">=0.0.1-rc.1 <1.0.0",
+    "@deepseek-ai/dsh-invariants": ">=0.0.1-rc.1 <1.0.0",
+    "@deepseek-ai/dsh-settings": ">=0.0.1-rc.1 <1.0.0",
+    "@deepseek-ai/schemastery": ">=3.18.1 <4.0.0",
+    "react": ">=18.2.0 <19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.0",
+    "@types/react": "18.3.1",
+    "lightningcss": "1.32.0",
+    "react": "18.3.1",
+    "tsdown": "0.22.2",
+    "typescript": "6.0.3",
+    "vitest": "4.1.8",
+    "yaml": "2.9.0"
+  },
+  "packageManager": "pnpm@11.21.0+sha512.521705bce689924eac72f5a3587122f362689ef6571e55ba80076fd637c11132ecffada26fad4ea79c485bfddbfd3d5a2a5b05805a77e893de71ec8a6cca3bb1"
+}
