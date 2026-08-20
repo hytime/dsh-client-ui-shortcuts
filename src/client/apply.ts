@@ -10,7 +10,7 @@ import { ShortcutComposer } from './components/ShortcutComposer.js'
 import { createShortcutSettingsController, type ShortcutSettingsFace } from './settings/controller.js'
 import { NS, en, zh } from './locales.js'
 import type { ShortcutSettings } from '../settings.js'
-import { SHORTCUTS_SETTINGS_NAMESPACE } from '../settings.js'
+import { SHORTCUTS_SETTINGS_NAMESPACE } from '../settings-namespace.js'
 import type { ShortcutProfile } from './contract/profile.js'
 import { ShortcutProfileCard } from './components/ShortcutProfileCard.js'
 

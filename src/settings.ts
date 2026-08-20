@@ -3,8 +3,9 @@ import z from '@deepseek-ai/schemastery'
 import {
   DEFAULT_SHORTCUT_PROFILE_ID,
 } from './profile-catalog.js'
+import { SHORTCUTS_SETTINGS_NAMESPACE } from './settings-namespace.js'
 
-export const SHORTCUTS_SETTINGS_NAMESPACE = settingsNamespace('dsh-ui-shortcuts')
+export { SHORTCUTS_SETTINGS_NAMESPACE } from './settings-namespace.js'
 
 /** Persisted shortcut settings for the active profile selection. */
 export interface ShortcutSettings {
@@ -15,3 +16,7 @@ export interface ShortcutSettings {
 export const ShortcutSettingsSchema: z<ShortcutSettings> = z.object({
   activeProfile: z.string().default(DEFAULT_SHORTCUT_PROFILE_ID),
 })
+
+export function registerSettingsNamespace(): string {
+  return settingsNamespace(SHORTCUTS_SETTINGS_NAMESPACE)
+}

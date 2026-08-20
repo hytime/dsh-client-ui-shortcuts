@@ -1,5 +1,5 @@
 import React from 'react'
-import { Icon } from '@iconify/react'
+import { Icon } from '@iconify/react/offline'
 import keyboard from '@iconify-icons/lucide/keyboard.js'
 import arrowUp from '@iconify-icons/lucide/arrow-up.js'
 import arrowDown from '@iconify-icons/lucide/arrow-down.js'
