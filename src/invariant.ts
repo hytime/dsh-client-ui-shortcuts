@@ -14,10 +14,14 @@ export const name = 'client-ui-shortcuts-invariant'
 export const inject = ['invariants']
 
 /**
- * No runtime invariant: task 1 only contributes package metadata; profile and
- * slot relations are checked after their registries are implemented.
+ * No runtime invariant: shortcuts is UI-only. Its profile registry, slot
+ * entries, settings namespace, and locale registrations are owned by their
+ * Client fibers; their disposers are observed in Client lifecycle tests, while
+ * this companion has no cross-boundary state to inspect.
  */
-const install: InvariantInstaller = () => {}
+export const install: InvariantInstaller = () => {
+  // The UI-only boundary has no package-owned runtime relation to validate.
+}
 
 /**
  * Register this package's invariant companion.
