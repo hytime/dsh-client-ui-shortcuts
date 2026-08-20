@@ -109,8 +109,8 @@ describe('client bundle and package artifact', () => {
       expect(output).toContain('dsh-ui-shortcuts')
       expect(output).toContain(packageManifest.name)
       const requireFromProfile = createRequire(join(profileDir, 'package.json'))
-      expect(readFileSync(requireFromProfile.resolve(packageManifest.name), 'utf8')).toBeTruthy()
-      expect(readFileSync(requireFromProfile.resolve(`${packageManifest.name}/client`), 'utf8')).toBeTruthy()
+      expect(requireFromProfile.resolve(packageManifest.name).endsWith('/lib/index.js')).toBe(true)
+      expect(requireFromProfile.resolve(`${packageManifest.name}/client`).endsWith('/lib/client.js')).toBe(true)
       expect(readFileSync(join(packageDir, 'lib/index.js'), 'utf8')).toBeTruthy()
       expect(readFileSync(join(packageDir, 'lib/client.js'), 'utf8')).toBeTruthy()
     } finally {
