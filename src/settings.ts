@@ -1,4 +1,3 @@
-import { settingsNamespace } from '@deepseek-ai/dsh-settings'
 import z from '@deepseek-ai/schemastery'
 import {
   DEFAULT_SHORTCUT_PROFILE_ID,
@@ -16,7 +15,3 @@ export interface ShortcutSettings {
 export const ShortcutSettingsSchema: z<ShortcutSettings> = z.object({
   activeProfile: z.string().default(DEFAULT_SHORTCUT_PROFILE_ID),
 })
-
-export function registerSettingsNamespace(): string {
-  return settingsNamespace(SHORTCUTS_SETTINGS_NAMESPACE)
-}

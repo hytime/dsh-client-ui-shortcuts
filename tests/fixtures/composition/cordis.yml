@@ -1,17 +1,6 @@
+# Minimal patch overlay applied after the DSH Web profile bundle layers.
+# Web runtime rows come from @deepseek-ai/dsh-web-app; this overlay only adds
+# the installed shortcuts bundle row.
 - insert:
-    - id: settings
-      name: '@deepseek-ai/dsh-settings'
-    - id: client-locale
-      name: '@deepseek-ai/dsh-client-locale'
-    - id: client-runtime
-      name: '@deepseek-ai/dsh-client-runtime'
-    - id: ui-slots
-      name: '@deepseek-ai/dsh-client-ui-slots'
-    - id: ui-conversation
-      name: '@deepseek-ai/dsh-client-ui-conversation'
-    - id: ui-settings
-      name: '@deepseek-ai/dsh-client-ui-settings'
-    - id: ui-settings-plugins
-      name: '@deepseek-ai/dsh-client-ui-settings-plugins'
-    - id: shortcuts
+    - id: dsh-ui-shortcuts
       name: '@hytime/dsh-client-ui-shortcuts'

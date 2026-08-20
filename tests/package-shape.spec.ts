@@ -43,6 +43,7 @@ describe('package manifest', () => {
       'lib/invariant.js',
       'lib/client.js',
       'lib/types/**/*.d.ts',
+      'cordis.patch.yml',
     ])
     expect(manifest.dependencies).toEqual({
       '@iconify-icons/lucide': '1.2.136',
