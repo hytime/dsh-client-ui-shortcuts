@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process'
 import { createRequire } from 'node:module'
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -109,8 +109,8 @@ describe('client bundle and package artifact', () => {
       expect(output).toContain('dsh-ui-shortcuts')
       expect(output).toContain(packageManifest.name)
       const requireFromProfile = createRequire(join(profileDir, 'package.json'))
-      expect(requireFromProfile.resolve(packageManifest.name).endsWith('/lib/index.js')).toBe(true)
-      expect(requireFromProfile.resolve(`${packageManifest.name}/client`).endsWith('/lib/client.js')).toBe(true)
+      expect(realpathSync(requireFromProfile.resolve(packageManifest.name))).toBe(realpathSync(join(packageDir, 'lib/index.js')))
+      expect(realpathSync(requireFromProfile.resolve(`${packageManifest.name}/client`))).toBe(realpathSync(join(packageDir, 'lib/client.js')))
       expect(readFileSync(join(packageDir, 'lib/index.js'), 'utf8')).toBeTruthy()
       expect(readFileSync(join(packageDir, 'lib/client.js'), 'utf8')).toBeTruthy()
     } finally {
