@@ -64,8 +64,18 @@ describe('package manifest', () => {
     }
   })
 
-  it('inserts the stable Web roster row', () => {
+  it('keeps package, roster, settings, locale and profile identifiers layered', async () => {
+    const { PACKAGE_NAME } = await import('../src/invariant.ts')
+    const { SHORTCUTS_SETTINGS_NAMESPACE } = await import('../src/settings.ts')
+    const { NS } = await import('../src/client/locales.ts')
+    const { SHORTCUT_PROFILE_IDS } = await import('../src/profile-catalog.ts')
+
+    expect(manifest.name).toBe(PACKAGE_NAME)
     const row = patch.flatMap(layer => layer.insert ?? []).find(item => item.id === 'ui-shortcuts')
-    expect(row?.name).toBe('@hytime/dsh-client-ui-shortcuts')
+    expect(row).toEqual({ id: 'ui-shortcuts', name: PACKAGE_NAME })
+    expect(SHORTCUTS_SETTINGS_NAMESPACE).toBe('ui-shortcuts')
+    expect(NS).toBe('shortcuts')
+    expect(SHORTCUT_PROFILE_IDS).toEqual(['standard', 'vim'])
   })
+
 })

@@ -128,7 +128,7 @@ describe('shortcut client slot wiring', () => {
     expect(b.locale.bind('shortcuts')('profile.standard.label')).toBe('标准')
     expect(b.slots.entries('conversation.composer')).toHaveLength(1)
     expect(b.slots.entries('conversation.composer')[0]!.options).toMatchObject({ locale: 'shortcuts' })
-    expect(b.slots.entries('settings.plugin.item')[0]!.options).toMatchObject({ key: 'shortcuts', locale: 'shortcuts' })
+    expect(b.slots.entries('settings.plugin.item')[0]!.options).toMatchObject({ key: 'ui-shortcuts', locale: 'shortcuts' })
     await b.feature.dispose()
   })
 

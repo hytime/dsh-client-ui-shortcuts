@@ -30,6 +30,7 @@ describe('shortcut Host settings', () => {
     const fiber = ctx.plugin({ apply })
     await fiber.await()
 
+    expect(SHORTCUTS_SETTINGS_NAMESPACE).toBe('ui-shortcuts')
     expect(ctx.settings.describe().map(row => row.ns)).toContain(SHORTCUTS_SETTINGS_NAMESPACE)
     expect(ctx.settings.get(SHORTCUTS_SETTINGS_NAMESPACE)).toEqual({ activeProfile: 'standard' })
 
