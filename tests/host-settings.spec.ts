@@ -36,6 +36,10 @@ describe('shortcut Host settings', () => {
     await ctx.settings.update(SHORTCUTS_SETTINGS_NAMESPACE, { activeProfile: 'vim' })
     expect(ctx.settings.get(SHORTCUTS_SETTINGS_NAMESPACE)).toEqual({ activeProfile: 'vim' })
 
+    await expect(ctx.settings.update(SHORTCUTS_SETTINGS_NAMESPACE, { activeProfile: 'unknown' }))
+      .rejects.toThrow('unknown')
+    expect(ctx.settings.get(SHORTCUTS_SETTINGS_NAMESPACE)).toEqual({ activeProfile: 'vim' })
+
     await expect(ctx.settings.update(SHORTCUTS_SETTINGS_NAMESPACE, { activeProfile: 'missing' }))
       .rejects.toThrow('missing')
     expect(ctx.settings.get(SHORTCUTS_SETTINGS_NAMESPACE)).toEqual({ activeProfile: 'vim' })
