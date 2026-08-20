@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -71,35 +71,45 @@ describe('client bundle and package artifact', () => {
     expect(readFileSync(resolve(root, 'lib/client.js'), 'utf8')).toBeTruthy()
   })
 
-  it('loads the generated bundle patch with the official DSH parser when available', async () => {
-    const official = '/Volumes/hydisk/deepseek-harness'
-    const profile = mkdtempSync(join(tmpdir(), 'dsh-shortcuts-profile-'))
+  it('loads and composes the generated bundle through official DSH tsx when available', () => {
+    const official = process.env.DSH_CHECKOUT ?? '/Volumes/hydisk/deepseek-harness'
+    const tsx = resolve(official, 'node_modules/.bin/tsx')
+    if (!existsSync(tsx)) {
+      console.warn(`official DSH loader unavailable: missing ${tsx}`)
+      return
+    }
+    const packed = packTarball()
+    const profile = mkdtempSync(join(tmpdir(), 'dsh-shortcuts-home-'))
     try {
-      const packageDir = join(profile, 'node_modules', '@hytime', 'dsh-client-ui-shortcuts')
-      execFileSync('tar', ['-xzf', packTarball().tarball, '-C', profile])
-      const extracted = join(profile, 'package')
-      execFileSync('mkdir', ['-p', join(profile, 'node_modules', '@hytime')])
-      execFileSync('mv', [extracted, packageDir])
-      const manifest = {
+      const profileDir = join(profile, 'profiles', 'shortcuts')
+      execFileSync('mkdir', ['-p', profileDir])
+      const packageDir = join(profileDir, 'node_modules', '@hytime', 'dsh-client-ui-shortcuts')
+      execFileSync('tar', ['-xzf', packed.tarball, '-C', profileDir])
+      execFileSync('mkdir', ['-p', join(profileDir, 'node_modules', '@hytime')])
+      execFileSync('mv', [join(profileDir, 'package'), packageDir])
+      writeFileSync(join(profileDir, 'package.json'), JSON.stringify({
         name: 'dsh-profile-shortcuts',
         private: true,
         dependencies: { [packageManifest.name]: packageManifest.version },
         dsh: { profile: { bundles: [packageManifest.name] } },
-      }
-      writeFileSync(join(profile, 'package.json'), JSON.stringify(manifest))
-      writeFileSync(join(profile, 'cordis.patch.yml'), readFileSync(fixturePath))
-      const loaderPath = resolve(official, 'packages/boot/app-boot/src/profile.ts')
-      try {
-        const { loadOverlayPatches } = await import(`${resolve(official, 'packages/boot/app-boot/src/index.ts')}`)
-        const patchPath = resolve(packageDir, packageManifest.dsh.bundle.patch)
-        const patches = loadOverlayPatches('test', patchPath) as Patch[]
-        expect(patches.flatMap(layer => layer.insert ?? [])).toContainEqual({ id: 'dsh-ui-shortcuts', name: packageManifest.name })
-        expect(loaderPath).toContain('/profile.ts')
-      } catch (error) {
-        expect(String(error)).toMatch(/ERR_MODULE_NOT_FOUND|Cannot find module|pnpm|tsx|module/i)
-        console.warn(`official DSH parser unavailable: ${String(error)}`)
-      }
+      }))
+      writeFileSync(join(profileDir, 'cordis.patch.yml'), readFileSync(fixturePath))
+      const script = `
+        import { loadProfile, composeEntries } from ${JSON.stringify(resolve(official, 'packages/boot/app-boot/src/profile.ts'))};
+        const loaded = loadProfile('test', 'shortcuts', ${JSON.stringify(join(official, 'package.json'))}, ${JSON.stringify(profile)});
+        const entries = composeEntries([...loaded.layers.map(layer => layer.patches), loaded.patches]);
+        const row = entries.find(entry => entry.id === 'dsh-ui-shortcuts');
+        if (!row || row.name !== ${JSON.stringify(packageManifest.name)}) throw new Error('canonical shortcuts row did not compose');
+        if (loaded.layers[0]?.packageName !== ${JSON.stringify(packageManifest.name)}) throw new Error('shortcuts bundle was not resolved');
+        console.log(JSON.stringify({ row, packageName: loaded.layers[0].packageName }));
+      `
+      const output = execFileSync(tsx, ['-e', script], { cwd: official, encoding: 'utf8' })
+      expect(output).toContain('dsh-ui-shortcuts')
+      expect(output).toContain(packageManifest.name)
+      expect(readFileSync(join(packageDir, 'lib/index.js'), 'utf8')).toBeTruthy()
+      expect(readFileSync(join(packageDir, 'lib/client.js'), 'utf8')).toBeTruthy()
     } finally {
+      rmSync(packed.directory, { recursive: true, force: true })
       rmSync(profile, { recursive: true, force: true })
     }
   })
