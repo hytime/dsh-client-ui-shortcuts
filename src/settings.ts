@@ -4,7 +4,7 @@ import {
   DEFAULT_SHORTCUT_PROFILE_ID,
 } from './profile-catalog.js'
 
-export const SHORTCUTS_SETTINGS_NAMESPACE = settingsNamespace('ui-shortcuts')
+export const SHORTCUTS_SETTINGS_NAMESPACE = settingsNamespace('dsh-ui-shortcuts')
 
 /** Persisted shortcut settings for the active profile selection. */
 export interface ShortcutSettings {

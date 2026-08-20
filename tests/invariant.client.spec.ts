@@ -21,7 +21,7 @@ const profile = {
 describe('shortcuts package invariant', () => {
   it('uses the manifest name for the invariant registration', () => {
     expect(PACKAGE_NAME).toBe(manifest.name)
-    expect(name).toBe('client-ui-shortcuts-invariant')
+    expect(name).toBe('dsh-client-ui-shortcuts-invariant')
   })
 
   it('documents the UI-only runtime observation boundary', () => {

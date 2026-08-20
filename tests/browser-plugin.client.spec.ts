@@ -125,10 +125,10 @@ describe('shortcut client slot wiring', () => {
 
   it('registers locale, composer selector and keyed settings card', async () => {
     const b = await bench()
-    expect(b.locale.bind('shortcuts')('profile.standard.label')).toBe('标准')
+    expect(b.locale.bind('dsh-shortcuts')('profile.standard.label')).toBe('标准')
     expect(b.slots.entries('conversation.composer')).toHaveLength(1)
-    expect(b.slots.entries('conversation.composer')[0]!.options).toMatchObject({ locale: 'shortcuts' })
-    expect(b.slots.entries('settings.plugin.item')[0]!.options).toMatchObject({ key: 'ui-shortcuts', locale: 'shortcuts' })
+    expect(b.slots.entries('conversation.composer')[0]!.options).toMatchObject({ locale: 'dsh-shortcuts' })
+    expect(b.slots.entries('settings.plugin.item')[0]!.options).toMatchObject({ key: 'dsh-ui-shortcuts', locale: 'dsh-shortcuts' })
     await b.feature.dispose()
   })
 
@@ -170,7 +170,7 @@ describe('shortcut client slot wiring', () => {
     off()
     expect(b.slots.entries('conversation.composer')).toHaveLength(0)
     expect(b.slots.entries('settings.plugin.item')).toHaveLength(0)
-    expect(b.locale.bind('shortcuts')('profile.standard.label')).toBe('profile.standard.label')
+    expect(b.locale.bind('dsh-shortcuts')('profile.standard.label')).toBe('profile.standard.label')
     expect(b.settings.scope.set).toHaveBeenCalledTimes(1)
   })
 })

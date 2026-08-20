@@ -16,9 +16,12 @@
 - ignore 正向/反向检查：superpowers 资料被忽略，`AGENTS.md`、`src/`、`tests/`、`README.md` 未被忽略。
 
 
-本轮追加：
-- 将 Host settings namespace、Client `settingsScope.bind` 与 settings slot key 对齐为 `ui-shortcuts`；package/invariant/loader/tsdown/patch row.name 继续统一为 `@hytime/dsh-client-ui-shortcuts`，patch row id 继续为 `ui-shortcuts`。
-- locale namespace 保持 `shortcuts`，profile ids 保持 `standard`/`vim`；新增分层标识符测试，不以报告文字作为产品契约。
+本轮追加（ID 分层迁移）：
+- patch row id 从 `ui-shortcuts` 迁移为 `dsh-ui-shortcuts`；package/loader/tsdown/patch row.name 继续保持 `@hytime/dsh-client-ui-shortcuts`。
+- Host settings namespace、Client `settingsScope.bind` 与 settings slot key 从 `ui-shortcuts` 迁移为 `dsh-ui-shortcuts`。
+- locale namespace、`LocaleNamespaceMap`、locale/slot options 与浏览器测试从 `shortcuts` 迁移为 `dsh-shortcuts`；profile ids `standard`/`vim` 与 `profile.*` locale keys 保持不变。
+- invariant companion name 从 `client-ui-shortcuts-invariant` 迁移为 `dsh-client-ui-shortcuts-invariant`。
+- 未机械修改 CSS class/hash、command names 或业务 key；未修改 `/Volumes/hydisk/deepseek-harness`、task6 report 或计划资料。
 
 备注：
 - 工作树中已有 task-6 report 修改未纳入本次提交；未修改 `/Volumes/hydisk/deepseek-harness`，未提交 `pnpm-workspace.yaml`、`node_modules` 或 `lib`。

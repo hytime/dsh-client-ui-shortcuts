@@ -5,8 +5,8 @@
 ## 当前契约
 
 - 内置 profile：`standard` 与 `vim`。
-- settings namespace：`ui-shortcuts`，持久化字段为 `activeProfile`。
-- locale namespace：`shortcuts`，与 settings namespace 独立。
+- settings namespace：`dsh-ui-shortcuts`，持久化字段为 `activeProfile`。
+- locale namespace：`dsh-shortcuts`，与 settings namespace 独立。
 - 任意时刻只有一个 active profile；未知或已卸载 profile 不会成为 active。
 - profile registry、slot entry、locale registration 都由所属 Client fiber 管理，卸载时必须不可观察。
 - Model Experience：本包没有直接模型影响。快捷键和设置只改变浏览器交互；它们不会向模型注入上下文、工具或事件。

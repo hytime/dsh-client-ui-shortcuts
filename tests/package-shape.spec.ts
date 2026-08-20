@@ -71,10 +71,10 @@ describe('package manifest', () => {
     const { SHORTCUT_PROFILE_IDS } = await import('../src/profile-catalog.ts')
 
     expect(manifest.name).toBe(PACKAGE_NAME)
-    const row = patch.flatMap(layer => layer.insert ?? []).find(item => item.id === 'ui-shortcuts')
-    expect(row).toEqual({ id: 'ui-shortcuts', name: PACKAGE_NAME })
-    expect(SHORTCUTS_SETTINGS_NAMESPACE).toBe('ui-shortcuts')
-    expect(NS).toBe('shortcuts')
+    const row = patch.flatMap(layer => layer.insert ?? []).find(item => item.id === 'dsh-ui-shortcuts')
+    expect(row).toEqual({ id: 'dsh-ui-shortcuts', name: PACKAGE_NAME })
+    expect(SHORTCUTS_SETTINGS_NAMESPACE).toBe('dsh-ui-shortcuts')
+    expect(NS).toBe('dsh-shortcuts')
     expect(SHORTCUT_PROFILE_IDS).toEqual(['standard', 'vim'])
   })
 

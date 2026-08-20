@@ -9,7 +9,7 @@ import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
 export const PACKAGE_NAME = '@hytime/dsh-client-ui-shortcuts'
 
 /** Cordis companion plugin name. */
-export const name = 'client-ui-shortcuts-invariant'
+export const name = 'dsh-client-ui-shortcuts-invariant'
 /** Service required before the companion can reserve package ownership. */
 export const inject = ['invariants']
 

@@ -1,6 +1,6 @@
 /** Shortcut client locale dictionaries. */
 
-export const NS = 'shortcuts'
+export const NS = 'dsh-shortcuts'
 
 export const zh = {
   'profile.standard.label': '标准',
@@ -50,6 +50,6 @@ export type ShortcutLocaleKey = keyof typeof zh
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
-    shortcuts: ShortcutLocaleKey
+    'dsh-shortcuts': ShortcutLocaleKey
   }
 }
