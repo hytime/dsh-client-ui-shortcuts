@@ -1,15 +1,97 @@
-// Browser runtime artifact reads the platform object during module initialization.
-if (typeof globalThis.window === 'undefined') (globalThis as typeof globalThis & { window: unknown }).window = {}
-if (typeof globalThis.document === 'undefined') (globalThis as typeof globalThis & { document: unknown }).document = {}
+// @vitest-environment jsdom
+import { Context } from '@deepseek-ai/cordis'
 import { describe, expect, it, vi } from 'vitest'
-import { SlotRegistry } from '@deepseek-ai/dsh-client-runtime/client'
-import { LocaleRuntime } from '@deepseek-ai/dsh-client-locale/client'
 import { apply, inject } from '../src/client/index.ts'
 import type { SettingsScope } from '@deepseek-ai/dsh-client-runtime/client'
 import type { ShortcutSettings } from '../src/settings.ts'
 
+type SlotEntry = {
+  readonly options: Record<string, unknown>
+  readonly component: unknown
+}
+type SlotCallback = () => () => void
+
+type SlotChildren = Record<string, unknown>
+
+class FakeSlotRegistry {
+  private readonly declarations = new Set<string>()
+  private readonly pending = new Map<string, Set<SlotCallback>>()
+  private readonly registered = new Map<string, SlotEntry[]>()
+
+  constructor(private readonly ctx: Context) {}
+
+  entries(name: string): readonly SlotEntry[] {
+    return this.registered.get(name) ?? []
+  }
+
+  clear(): void {
+    this.registered.clear()
+  }
+
+  register(options: Record<string, unknown>, component: unknown): () => void {
+    const name = String(options.name)
+    const children = options.children as SlotChildren | undefined
+    if (children !== undefined) {
+      for (const child of Object.keys(children)) this.declare(child)
+    }
+    const entry: SlotEntry = { options, component }
+    const entries = this.registered.get(name) ?? []
+    entries.push(entry)
+    this.registered.set(name, entries)
+    return () => {
+      const current = this.registered.get(name)
+      if (current === undefined) return
+      const index = current.indexOf(entry)
+      if (index >= 0) current.splice(index, 1)
+      if (current.length === 0) this.registered.delete(name)
+    }
+  }
+
+  inject(name: string, callback: SlotCallback): () => void {
+    return this.ctx.effect(() => {
+      if (this.declarations.has(name)) return callback()
+      const callbacks = this.pending.get(name) ?? new Set<SlotCallback>()
+      callbacks.add(callback)
+      this.pending.set(name, callbacks)
+      return () => {
+        callbacks.delete(callback)
+        if (callbacks.size === 0) this.pending.delete(name)
+      }
+    }, `fake slots inject ${name}`)
+  }
+
+  private declare(name: string): void {
+    this.declarations.add(name)
+    const callbacks = this.pending.get(name)
+    if (callbacks === undefined) return
+    this.pending.delete(name)
+    for (const callback of callbacks) callback()
+  }
+}
+
+class FakeLocale {
+  private readonly dictionaries = new Map<string, Record<string, string>>()
+
+  register(namespace: string, dictionaries: { zh: Record<string, string>; en: Record<string, string> }): () => void {
+    this.dictionaries.set(namespace, dictionaries.zh)
+    return () => { this.dictionaries.delete(namespace) }
+  }
+
+  bind(namespace: string): (key: string) => string {
+    return (key: string) => this.dictionaries.get(namespace)?.[key] ?? key
+  }
+}
+
 function makeScope(value: ShortcutSettings = { activeProfile: 'standard' }) {
-  let snapshot = { status: 'ready' as const, value, base: undefined, user: undefined, revision: 0, writable: true, mode: 'host' as const }
+  let snapshot = {
+    status: 'ready' as const,
+    value,
+    base: undefined,
+    user: undefined,
+    revision: 0,
+    writable: true,
+    mode: 'host' as const,
+  }
   const listeners = new Set<() => void>()
   const scope: SettingsScope<ShortcutSettings> = {
     getSnapshot: () => snapshot,
@@ -20,19 +102,33 @@ function makeScope(value: ShortcutSettings = { activeProfile: 'standard' }) {
     }),
     unset: vi.fn(async () => {}),
   }
-  return scope
+  return { scope, setSnapshot: (next: ShortcutSettings) => { snapshot = { ...snapshot, value: next } } }
 }
 
 async function bench() {
   const ctx = new Context()
-  await ctx.plugin(SlotRegistry).await()
-  const locale = new LocaleRuntime(ctx)
+  const slots = new FakeSlotRegistry(ctx)
+  slots.register({
+    name: 'root',
+    children: {
+      'conversation.composer': { kind: 'chain', scope: 'session' },
+      'settings.plugin.item': { kind: 'keyed', scope: 'root' },
+    },
+  }, () => null)
+  const locale = new FakeLocale()
+  ctx.provide('slots', slots)
   ctx.provide('locale', locale)
-  const scope = makeScope()
-  ctx.provide('settingsScope', { bind: vi.fn(() => scope) })
-  const feature = ctx.plugin({ inject: [...inject], apply })
+  const settings = makeScope()
+  ctx.provide('settingsScope', { bind: vi.fn(() => settings.scope) })
+  const feature = ctx.plugin({
+    inject: [...inject],
+    apply: (pluginCtx) => {
+      apply(pluginCtx)
+      pluginCtx.effect(() => () => slots.clear(), 'test slot cleanup')
+    },
+  })
   await feature.await()
-  return { ctx, feature, slots: ctx.get('slots') as SlotRegistry, locale, scope }
+  return { ctx, feature, slots, locale, settings }
 }
 
 describe('shortcut client slot wiring', () => {
@@ -42,7 +138,7 @@ describe('shortcut client slot wiring', () => {
 
   it('registers locale, composer selector and keyed settings card', async () => {
     const b = await bench()
-    expect(b.locale.get('shortcuts', 'profile.standard.label')).toBe('标准')
+    expect(b.locale.bind('shortcuts')('profile.standard.label')).toBe('标准')
     expect(b.slots.entries('conversation.composer')).toHaveLength(1)
     expect(b.slots.entries('conversation.composer')[0]!.options).toMatchObject({ locale: 'shortcuts' })
     expect(b.slots.entries('settings.plugin.item')[0]!.options).toMatchObject({ key: 'shortcuts', locale: 'shortcuts' })
@@ -61,17 +157,33 @@ describe('shortcut client slot wiring', () => {
     await b.feature.dispose()
   })
 
-  it('removes entries, locale and settings subscription on dispose', async () => {
+  it('persists settings, reports errors, and cleans subscriptions', async () => {
     const b = await bench()
     const listener = vi.fn()
     const card = b.slots.entries('settings.plugin.item')[0]!
-    const face = (card.options.inject as () => { subscribe: (listener: () => void) => () => void })()
+    const injected = (card.options.inject as () => {
+      settings: {
+        activeProfileId: () => string
+        subscribe: (listener: () => void) => () => void
+        setActiveProfile: (id: string) => Promise<void>
+        error: () => string | undefined
+      }
+      profiles: readonly unknown[]
+    })()
+    const face = injected.settings
+    expect(injected.profiles.map(profile => (profile as { id: string }).id)).toEqual(['standard', 'vim'])
     const off = face.subscribe(listener)
+    await face.setActiveProfile('vim')
+    expect(face.activeProfileId()).toBe('vim')
+    expect(b.settings.scope.set).toHaveBeenCalledWith('activeProfile', 'vim')
+    expect(listener).toHaveBeenCalled()
+    await expect(face.setActiveProfile('missing')).rejects.toThrow('unknown shortcut profile: missing')
+    expect(face.error()).toContain('unknown shortcut profile')
     await b.feature.dispose()
     off()
     expect(b.slots.entries('conversation.composer')).toHaveLength(0)
     expect(b.slots.entries('settings.plugin.item')).toHaveLength(0)
-    expect(b.locale.get('shortcuts', 'profile.standard.label')).toBeUndefined()
-    expect(b.scope.set).not.toHaveBeenCalled()
+    expect(b.locale.bind('shortcuts')('profile.standard.label')).toBe('profile.standard.label')
+    expect(b.settings.scope.set).toHaveBeenCalledTimes(1)
   })
 })

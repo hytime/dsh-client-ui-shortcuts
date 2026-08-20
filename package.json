@@ -79,6 +79,7 @@
     "@deepseek-ai/schemastery": "3.18.1",
     "@types/node": "22.20.0",
     "@types/react": "18.3.1",
+    "jsdom": "29.1.1",
     "lightningcss": "1.32.0",
     "react": "18.3.1",
     "tsdown": "0.22.2",
