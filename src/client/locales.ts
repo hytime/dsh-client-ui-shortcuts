@@ -16,11 +16,11 @@ export const zh = {
   'settings.empty': '暂无可用的快捷键方案。',
   'legend.scope.question': '问题操作',
   'legend.scope.approval': '审批操作',
+  'aria.profileOption': '快捷键方案 {name}',
   'keyboard.focusPrevious': '聚焦上一项',
   'keyboard.focusNext': '聚焦下一项',
   'keyboard.activate': '确认当前项',
   'keyboard.cancelTask': '取消当前任务',
-  'error.unknownProfile': '未知的快捷键方案',
   'error.saveFailed': '快捷键方案保存失败',
 } as const
 
@@ -38,11 +38,11 @@ export const en = {
   'settings.empty': 'No shortcut profiles are available.',
   'legend.scope.question': 'Question actions',
   'legend.scope.approval': 'Approval actions',
+  'aria.profileOption': 'Shortcut profile {name}',
   'keyboard.focusPrevious': 'Focus previous item',
   'keyboard.focusNext': 'Focus next item',
   'keyboard.activate': 'Activate current item',
   'keyboard.cancelTask': 'Cancel current task',
-  'error.unknownProfile': 'Unknown shortcut profile',
   'error.saveFailed': 'Could not save shortcut profile',
 } satisfies Record<keyof typeof zh, string>
 

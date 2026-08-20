@@ -14,6 +14,14 @@
 - `CI=true pnpm run typecheck`：通过。
 - `git diff --check`：通过。
 
-限制：
-- 用户要求的新 `tests/settings-card.client.spec.tsx` 尚未创建；本轮只执行了仓库已有测试文件。
-- 计划原文第 599-665 行在该 worktree 中不存在，按 task6 report 与实际源代码契约实现。
+## Repair round 1
+- 创建 `tests/settings-card.client.spec.tsx`，覆盖真实 registry、可访问 radio、legend scope、pending/disabled、失败恢复、冲突/空状态、locale、Iconify 本地图标属性。
+- 对齐 settings slot public props，修复 CSS 全局 `:root` 与裸 `kbd` selector，清理无用 locale key。
+- 验证：离线安装通过；settings/composer/browser 共 18 tests 通过；typecheck 与 diff check 通过。
+
+## Repair round 2
+- 以 runtime 的最新 `activeProfileId()` snapshot 作为保存完成后的权威状态；subscription 不再在 pending 时丢弃外部更新。
+- 保留 request id guard，旧请求 completion 不会覆盖新请求的 pending 状态；保存成功或失败后都会重新读取最新 active，外部 pending 更新不会被初始 previous 覆盖。
+- 新增保存期间外部切换到不同 profile 的 failure/success 测试，锁定最终 selection 跟随最新 good snapshot。
+- 补回实际使用的 `aria.profileOption` 中英文 locale，删除未使用 `error.unknownProfile`，保留 `error.saveFailed` 以兼容既有 namespace contract。
+- 验证：离线安装通过；`settings-card`、`composer`、`browser-plugin` 共 3 files / 18 tests 通过；typecheck 与 `git diff --check` 通过。

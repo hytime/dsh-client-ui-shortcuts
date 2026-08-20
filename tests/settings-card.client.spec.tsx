@@ -78,18 +78,23 @@ describe('shortcut settings card', () => {
     await waitFor(() => expect((screen.getByRole('radio', { name: /Vim/ }) as HTMLInputElement).checked).toBe(true))
   })
 
-  it('ignores stale external notification during a failed save and accepts later external updates', async () => {
+  it('uses the latest external snapshot after pending failure and success', async () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     const settings = settingsFace()
-    let reject!: (error: Error) => void
-    settings.setActiveProfile = vi.fn(() => new Promise<void>((_, r) => { reject = r }))
+    let settle!: (error?: Error) => void
+    settings.setActiveProfile = vi.fn(() => new Promise<void>((resolve, reject) => { settle = error => error ? reject(error) : resolve() }))
     render(<ShortcutProfileCard settings={settings} profiles={registry.list()} t={t} />)
     fireEvent.click(screen.getByRole('radio', { name: /Vim/ }))
     settings.setExternal('standard')
-    reject(new Error('failed'))
+    settle(new Error('failed'))
     await waitFor(() => expect((screen.getByRole('radio', { name: /Standard/ }) as HTMLInputElement).checked).toBe(true))
-    settings.setExternal('vim')
-    await waitFor(() => expect((screen.getByRole('radio', { name: /Vim/ }) as HTMLInputElement).checked).toBe(true))
+
+    let resolve!: () => void
+    settings.setActiveProfile = vi.fn(() => new Promise<void>(r => { resolve = r }))
+    fireEvent.click(screen.getByRole('radio', { name: /Vim/ }))
+    settings.setExternal('standard')
+    resolve()
+    await waitFor(() => expect((screen.getByRole('radio', { name: /Standard/ }) as HTMLInputElement).checked).toBe(true))
   })
 
   it('renders conflict and empty states', () => {

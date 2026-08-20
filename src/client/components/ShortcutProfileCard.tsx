@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
-import type { ShortcutProfile } from '../contract/profile.js'
-import type { ShortcutSettingsFace } from '../settings/controller.js'
 import type { ShortcutLocaleKey } from '../locales.js'
+import type { ShortcutProfile } from '../contract/profile.js'
 import type { ShortcutProfileCardProps as SlotShortcutProfileCardProps } from '../contract/slots.js'
 import { ShortcutIcon } from './ShortcutIcon.js'
 import { ShortcutLegend } from './ShortcutLegend.js'
@@ -13,6 +12,7 @@ export type ShortcutProfileCardProps = Omit<SlotShortcutProfileCardProps, keyof 
 
 const fallbackT = (key: string): string => key
 
+/** Settings UI uses the latest runtime snapshot as authoritative after every save attempt. */
 export function ShortcutProfileCard({ settings, profiles, t = fallbackT }: ShortcutProfileCardProps): React.ReactElement {
   const [, refresh] = useState(0)
   const [pending, setPending] = useState<string>()
@@ -22,7 +22,6 @@ export function ShortcutProfileCard({ settings, profiles, t = fallbackT }: Short
   const pendingRef = useRef<string>()
 
   useEffect(() => settings.subscribe(() => {
-    if (pendingRef.current !== undefined) return
     setSelection(settings.activeProfileId())
     refresh(value => value + 1)
   }), [settings])
@@ -30,7 +29,6 @@ export function ShortcutProfileCard({ settings, profiles, t = fallbackT }: Short
   const active = profiles.find(profile => profile.id === selection) ?? profiles.find(profile => profile.id === settings.activeProfileId())
   const choose = async (id: string): Promise<void> => {
     if (pendingRef.current !== undefined || id === settings.activeProfileId()) return
-    const previous = settings.activeProfileId()
     const currentRequest = ++requestId.current
     pendingRef.current = id
     setSelection(id)
@@ -39,15 +37,14 @@ export function ShortcutProfileCard({ settings, profiles, t = fallbackT }: Short
     try {
       await settings.setActiveProfile(id)
     } catch (reason) {
-      if (currentRequest === requestId.current) {
-        setSelection(previous)
-        setError(reason instanceof Error ? reason.message : String(reason))
-      }
+      if (currentRequest !== requestId.current) return
+      setError(reason instanceof Error ? reason.message : String(reason))
     } finally {
-      if (currentRequest === requestId.current) {
-        pendingRef.current = undefined
-        setPending(undefined)
-      }
+      if (currentRequest !== requestId.current) return
+      const latest = settings.activeProfileId()
+      pendingRef.current = undefined
+      setPending(undefined)
+      setSelection(latest)
     }
   }
 
