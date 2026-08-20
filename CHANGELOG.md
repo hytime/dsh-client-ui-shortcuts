@@ -2,7 +2,15 @@
 
 All notable changes to `@hytime/dsh-client-ui-shortcuts` are documented here.
 
-## 0.1.0 - Initial release
+## 0.1.1 - UI interaction fixes
+
+### Fixed
+
+- Fixed question option controls rendering with DSH token-based card styling instead of unstyled native controls.
+- Fixed initial question focus and roving `tabIndex` navigation for Arrow/Enter keyboard selection.
+- Added a collapsible settings card matching the DSH plugin-card disclosure pattern.
+- Preserved session-scoped cancellation while refreshing the active conversation lookup at cancel time.
+
 
 ### Added
 

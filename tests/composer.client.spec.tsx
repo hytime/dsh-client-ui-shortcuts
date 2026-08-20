@@ -52,6 +52,21 @@ function approvalSurface(): HTMLElement {
 afterEach(cleanup)
 
 describe('shortcut composer flows', () => {
+  it('focuses the first option and keeps keyboard focus roving after open', async () => {
+    const respond = vi.fn<Response>(() => receipt())
+    render(<QuestionFlow matched={question(respond)} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} />)
+    const first = screen.getByRole('radio', { name: 'A' })
+    const second = screen.getByRole('radio', { name: 'B' })
+    await waitFor(() => expect(document.activeElement).toBe(first))
+    expect(first.getAttribute('tabindex')).toBe('0')
+    expect(second.getAttribute('tabindex')).toBe('-1')
+    expect(first.className).toContain('option')
+    fireEvent.keyDown(questionSurface(), { key: 'ArrowDown' })
+    expect(document.activeElement).toBe(second)
+    expect(first.getAttribute('tabindex')).toBe('-1')
+    expect(second.getAttribute('tabindex')).toBe('0')
+  })
+
   it('submits the DSH question selected/custom envelope', async () => {
     const respond = vi.fn<Response>(() => receipt())
     render(<QuestionFlow matched={question(respond)} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} />)

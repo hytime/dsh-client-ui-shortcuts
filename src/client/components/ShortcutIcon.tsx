@@ -6,10 +6,11 @@ import arrowDown from '@iconify-icons/lucide/arrow-down.js'
 import check from '@iconify-icons/lucide/check.js'
 import x from '@iconify-icons/lucide/x.js'
 import settings2 from '@iconify-icons/lucide/settings-2.js'
+import chevronDown from '@iconify-icons/lucide/chevron-down.js'
 
-export type ShortcutIconName = 'keyboard' | 'arrow-up' | 'arrow-down' | 'check' | 'x' | 'settings-2'
+export type ShortcutIconName = 'keyboard' | 'arrow-up' | 'arrow-down' | 'check' | 'x' | 'settings-2' | 'chevron-down'
 
-const icons = { keyboard, 'arrow-up': arrowUp, 'arrow-down': arrowDown, check, x, 'settings-2': settings2 } as const
+const icons = { keyboard, 'arrow-up': arrowUp, 'arrow-down': arrowDown, check, x, 'settings-2': settings2, 'chevron-down': chevronDown } as const
 
 export interface ShortcutIconProps {
   readonly name: ShortcutIconName

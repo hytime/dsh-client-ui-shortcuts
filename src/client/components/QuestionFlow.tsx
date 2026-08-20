@@ -3,6 +3,8 @@ import type { QuestionWait } from '../contract/slots.js'
 import type { ShortcutProfile } from '../contract/profile.js'
 import { resolveKey } from '../keyboard/resolve.js'
 import type { KeyInput } from '../contract/keyboard.js'
+import styles from '../styles/Shortcuts.module.css'
+import clsx from 'clsx'
 
 export interface QuestionFlowProps {
   readonly matched: QuestionWait
@@ -94,15 +96,50 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask }: Question
     }
   }
   if (!question || !draft) return React.createElement('div')
-  return <section data-question-key={matched.key} onKeyDown={onKeyDown} aria-busy={submitting}>
-    <h2>{question.question}</h2>
-    {question.detail ? <p>{question.detail}</p> : null}
-    <div role="group" aria-label={question.question}>
-      {options.map((option, optionIndex) => <button key={option.label} ref={node => { focusItems.current[optionIndex] = node; if (focusIndex === optionIndex) node?.focus() }} type="button" role={multi ? 'checkbox' : 'radio'} aria-checked={draft.selected.includes(option.label)} disabled={submitting} onClick={() => { setFocusIndex(optionIndex); choose(option.label) }}>{option.label}</button>)}
+  return <section className={styles.questionSurface} data-question-key={matched.key} onKeyDown={onKeyDown} aria-busy={submitting} tabIndex={-1}>
+    <h2 className={styles.questionTitle}>{question.question}</h2>
+    {question.detail ? <p className={styles.questionDetail}>{question.detail}</p> : null}
+    <div className={styles.optionGroup} role="group" aria-label={question.question}>
+      {options.map((option, optionIndex) => <button
+        key={option.label}
+        ref={node => { focusItems.current[optionIndex] = node; if (focusIndex === optionIndex) node?.focus() }}
+        className={clsx(styles.option, draft.selected.includes(option.label) && styles.optionSelected)}
+        tabIndex={focusIndex === optionIndex ? 0 : -1}
+        type="button"
+        role={multi ? 'checkbox' : 'radio'}
+        aria-checked={draft.selected.includes(option.label)}
+        disabled={submitting}
+        onClick={() => { setFocusIndex(optionIndex); choose(option.label) }}
+      >{option.label}</button>)}
     </div>
-    <textarea ref={node => { focusItems.current[options.length] = node }} aria-label={t('question.custom')} value={draft.custom} disabled={submitting} onChange={event => updateDraft({ custom: event.target.value })} onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey && !composing(event) && event.keyCode !== 229 && !event.repeat && !submitting) { event.preventDefault(); event.stopPropagation(); advance() } }} />
-    <button ref={node => { focusItems.current[options.length + 1] = node }} type="button" disabled={submitting} onClick={() => updateDraft({ skipped: !draft.skipped })}>{draft.skipped ? t('question.unskip') : t('question.skip')}</button>
-    {showAdvance ? <button ref={node => { focusItems.current[options.length + 2] = node }} type="button" disabled={submitting} onClick={advance}>{index === questions.length - 1 ? t('question.submit') : t('question.next')}</button> : null}
-    {error ? <p role="alert">{error}</p> : null}
+    <textarea
+      ref={node => { focusItems.current[options.length] = node }}
+      className={styles.customInput}
+      tabIndex={focusIndex === options.length ? 0 : -1}
+      aria-label={t('question.custom')}
+      value={draft.custom}
+      disabled={submitting}
+      onChange={event => updateDraft({ custom: event.target.value })}
+      onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey && !composing(event) && event.keyCode !== 229 && !event.repeat && !submitting) { event.preventDefault(); event.stopPropagation(); advance() } }}
+    />
+    <div className={styles.questionActions}>
+      <button
+        ref={node => { focusItems.current[options.length + 1] = node }}
+        className={clsx(styles.questionAction, draft.skipped && styles.questionActionSelected)}
+        tabIndex={focusIndex === options.length + 1 ? 0 : -1}
+        type="button"
+        disabled={submitting}
+        onClick={() => { setFocusIndex(options.length + 1); updateDraft({ skipped: !draft.skipped }) }}
+      >{draft.skipped ? t('question.unskip') : t('question.skip')}</button>
+      {showAdvance ? <button
+        ref={node => { focusItems.current[options.length + 2] = node }}
+        className={clsx(styles.questionAction, styles.questionActionPrimary)}
+        tabIndex={focusIndex === options.length + 2 ? 0 : -1}
+        type="button"
+        disabled={submitting}
+        onClick={advance}
+      >{index === questions.length - 1 ? t('question.submit') : t('question.next')}</button> : null}
+    </div>
+    {error ? <p role="alert" className={styles.questionError}>{error}</p> : null}
   </section>
 }

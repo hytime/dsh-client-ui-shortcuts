@@ -2,7 +2,15 @@
 
 `@hytime/dsh-client-ui-shortcuts` 的重要变更记录如下。
 
-## 0.1.0 - 首次发布
+## 0.1.1 - 交互修复
+
+### 修复
+
+- 修复 question 选项控件无 DSH 样式的问题，改为使用 DSH token 风格的选项卡和操作按钮。
+- 修复 question 初始 focus 和 roving `tabIndex`，支持方向键/Enter 键盘选择。
+- 新增与 DSH plugin card disclosure 模式一致的可折叠 settings card。
+- 保留 session-scoped cancel，并在取消时重新获取当前 conversation。
+
 
 ### 新增
 
