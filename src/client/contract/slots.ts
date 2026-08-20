@@ -2,6 +2,8 @@
 import type { PendingInteraction, PendingWait } from '@deepseek-ai/dsh-client-runtime/client'
 import type { ComposerChainProps } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { SettingsPluginItemOwnerProps } from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
+import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
+import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import type { ShortcutProfile } from './profile.js'
 
 /** DSH question carrier narrowed for shortcut consumers. */
@@ -30,5 +32,14 @@ export type ShortcutProfileCardProps = SettingsPluginItemOwnerProps & {
   readonly onSelectProfile: (id: string) => Promise<void>
 }
 
-/** Existing DSH interaction union retained without a runtime import. */
-export type ShortcutInteraction = PendingInteraction
+/** Select the highest-priority shortcut interaction from the owner currency. */
+export function selectShortcut(owner: ComposerChainProps): ShortcutWait | null {
+  const question = owner.interactions.find(
+    (item): item is QuestionWait => item.kind === 'question',
+  )
+  if (question !== undefined) return question
+  const approval = owner.interactions.find(
+    (item): item is ApprovalWait => item.kind === 'approval',
+  )
+  return approval ?? null
+}
