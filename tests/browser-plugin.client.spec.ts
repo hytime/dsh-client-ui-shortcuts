@@ -112,6 +112,7 @@ async function bench() {
   ctx.provide('locale', locale)
   const settings = makeScope()
   ctx.provide('settingsScope', { bind: vi.fn(() => settings.scope) })
+  ctx.provide('sessions', { scope: vi.fn(() => undefined) })
   const feature = ctx.plugin({ inject: [...inject], apply })
   await feature.await()
   return { ctx, feature, slots, locale, settings }
@@ -119,7 +120,7 @@ async function bench() {
 
 describe('shortcut client slot wiring', () => {
   it('declares its client services', () => {
-    expect(inject).toEqual(['slots', 'locale', 'settingsScope'])
+    expect(inject).toEqual(['slots', 'locale', 'settingsScope', 'sessions'])
   })
 
   it('registers locale, composer selector and keyed settings card', async () => {

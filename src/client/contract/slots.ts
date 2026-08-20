@@ -22,6 +22,7 @@ export type ShortcutComposerOwnerProps = ComposerChainProps
 export type ShortcutComposerProps = ShortcutComposerOwnerProps & {
   readonly matched: ShortcutWait
   readonly activeProfile: ShortcutProfile
+  readonly t: (key: string) => string
   readonly cancelTask: () => Promise<void>
 }
 

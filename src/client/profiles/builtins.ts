@@ -15,7 +15,10 @@ export const standardProfile: ShortcutProfile = {
   bindings: [
     { command: 'focusPrevious', scope: 'question', key: stroke('ArrowUp') },
     { command: 'focusNext', scope: 'question', key: stroke('ArrowDown') },
+    { command: 'activate', scope: 'question', key: stroke('Enter') },
     { command: 'activate', scope: 'approval', key: stroke('Enter') },
+    { command: 'focusPrevious', scope: 'approval', key: stroke('ArrowUp') },
+    { command: 'focusNext', scope: 'approval', key: stroke('ArrowDown') },
     { command: 'cancelTask', scope: 'question', key: stroke('Escape') },
     { command: 'cancelTask', scope: 'approval', key: stroke('Escape') },
   ],
@@ -28,7 +31,10 @@ export const vimProfile: ShortcutProfile = {
   bindings: [
     { command: 'focusPrevious', scope: 'question', key: stroke('k') },
     { command: 'focusNext', scope: 'question', key: stroke('j') },
+    { command: 'activate', scope: 'question', key: stroke('Enter') },
     { command: 'activate', scope: 'approval', key: stroke('Enter') },
+    { command: 'focusPrevious', scope: 'approval', key: stroke('k') },
+    { command: 'focusNext', scope: 'approval', key: stroke('j') },
     { command: 'cancelTask', scope: 'question', key: stroke('Escape') },
     { command: 'cancelTask', scope: 'approval', key: stroke('Escape') },
   ],
