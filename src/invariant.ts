@@ -1,18 +1,16 @@
-interface InvariantInstaller {
-  (ctx: unknown, fail: (message: string) => never): void | Promise<void>
-}
+/**
+ * Package-owned invariant companion for `@hytime/dsh-client-ui-shortcuts`.
+ * @module @hytime/dsh-client-ui-shortcuts/invariant
+ */
 
-interface InvariantContext {
-  readonly invariants: {
-    register(packageName: string, installer: InvariantInstaller): () => void
-  }
-}
+import type { Context } from '@deepseek-ai/cordis'
+import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
 
 export const PACKAGE_NAME = '@hytime/dsh-client-ui-shortcuts'
 
 /** Cordis companion plugin name. */
 export const name = 'client-ui-shortcuts-invariant'
-/** Service required before the companion can register its package check. */
+/** Service required before the companion can reserve package ownership. */
 export const inject = ['invariants']
 
 /**
@@ -26,5 +24,5 @@ const install: InvariantInstaller = () => {}
  * @param ctx - Cordis context carrying the invariant service.
  * @returns The installed registration disposer.
  */
-export const apply = (ctx: InvariantContext): Promise<() => void> =>
+export const apply = (ctx: Context): Promise<() => void> =>
   Promise.resolve(ctx.invariants.register(PACKAGE_NAME, install))
