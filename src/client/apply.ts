@@ -29,20 +29,26 @@ export function apply(ctx: ClientContext): void {
   }, 'shortcuts: registry lifetime')
   ctx.effect(() => () => controller.dispose(), 'shortcuts: settings controller')
 
-  ctx.slots.inject('conversation.composer', () => ctx.slots.register({
-    name: 'conversation.composer',
-    select: selectShortcut,
-    locale: NS,
-    inject: (): { settings: ShortcutSettingsFace } => ({ settings: controller }),
-  }, NullComposer))
+  ctx.effect(
+    () => ctx.slots.inject('conversation.composer', () => ctx.slots.register({
+      name: 'conversation.composer',
+      select: selectShortcut,
+      locale: NS,
+      inject: (): { settings: ShortcutSettingsFace } => ({ settings: controller }),
+    }, NullComposer)),
+    'shortcuts: composer slot',
+  )
 
-  ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
-    name: 'settings.plugin.item',
-    key: 'shortcuts',
-    locale: NS,
-    inject: (): { settings: ShortcutSettingsFace; profiles: ReturnType<typeof registry.list> } => ({
-      settings: controller,
-      profiles: registry.list(),
-    }),
-  }, NullProfileCard))
+  ctx.effect(
+    () => ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
+      name: 'settings.plugin.item',
+      key: 'shortcuts',
+      locale: NS,
+      inject: (): { settings: ShortcutSettingsFace; profiles: ReturnType<typeof registry.list> } => ({
+        settings: controller,
+        profiles: registry.list(),
+      }),
+    }, NullProfileCard)),
+    'shortcuts: settings card slot',
+  )
 }

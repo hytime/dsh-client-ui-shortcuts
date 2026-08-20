@@ -18,14 +18,8 @@ class FakeSlotRegistry {
   private readonly pending = new Map<string, Set<SlotCallback>>()
   private readonly registered = new Map<string, SlotEntry[]>()
 
-  constructor(private readonly ctx: Context) {}
-
   entries(name: string): readonly SlotEntry[] {
     return this.registered.get(name) ?? []
-  }
-
-  clear(): void {
-    this.registered.clear()
   }
 
   register(options: Record<string, unknown>, component: unknown): () => void {
@@ -48,16 +42,14 @@ class FakeSlotRegistry {
   }
 
   inject(name: string, callback: SlotCallback): () => void {
-    return this.ctx.effect(() => {
-      if (this.declarations.has(name)) return callback()
-      const callbacks = this.pending.get(name) ?? new Set<SlotCallback>()
-      callbacks.add(callback)
-      this.pending.set(name, callbacks)
-      return () => {
-        callbacks.delete(callback)
-        if (callbacks.size === 0) this.pending.delete(name)
-      }
-    }, `fake slots inject ${name}`)
+    if (this.declarations.has(name)) return callback()
+    const callbacks = this.pending.get(name) ?? new Set<SlotCallback>()
+    callbacks.add(callback)
+    this.pending.set(name, callbacks)
+    return () => {
+      callbacks.delete(callback)
+      if (callbacks.size === 0) this.pending.delete(name)
+    }
   }
 
   private declare(name: string): void {
@@ -107,7 +99,7 @@ function makeScope(value: ShortcutSettings = { activeProfile: 'standard' }) {
 
 async function bench() {
   const ctx = new Context()
-  const slots = new FakeSlotRegistry(ctx)
+  const slots = new FakeSlotRegistry()
   slots.register({
     name: 'root',
     children: {
@@ -120,13 +112,7 @@ async function bench() {
   ctx.provide('locale', locale)
   const settings = makeScope()
   ctx.provide('settingsScope', { bind: vi.fn(() => settings.scope) })
-  const feature = ctx.plugin({
-    inject: [...inject],
-    apply: (pluginCtx) => {
-      apply(pluginCtx)
-      pluginCtx.effect(() => () => slots.clear(), 'test slot cleanup')
-    },
-  })
+  const feature = ctx.plugin({ inject: [...inject], apply })
   await feature.await()
   return { ctx, feature, slots, locale, settings }
 }
