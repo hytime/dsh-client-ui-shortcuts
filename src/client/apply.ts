@@ -11,7 +11,7 @@ import { createShortcutSettingsController, type ShortcutSettingsFace } from './s
 import { NS, en, zh } from './locales.js'
 import type { ShortcutSettings } from '../settings.js'
 import type { ShortcutProfile } from './contract/profile.js'
-import { ProfileCard } from './components/ProfileCard.js'
+import { ShortcutProfileCard } from './components/ShortcutProfileCard.js'
 
 /** Required browser services. */
 export const inject = ['slots', 'locale', 'settingsScope', 'sessions'] as const
@@ -39,6 +39,6 @@ export function apply(ctx: ClientContext): void {
   }, ShortcutComposer)), 'shortcuts: composer slot')
   ctx.effect(() => ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
     name: 'settings.plugin.item', key: 'shortcuts', locale: NS,
-    inject: (): { settings: ShortcutSettingsFace; profiles: readonly ShortcutProfile[] } => ({ settings: controller, profiles: registry.list() }),
-  }, ProfileCard)), 'shortcuts: settings card slot')
+    inject: (): { settings: ShortcutSettingsFace; profiles: readonly ShortcutProfile[]; t: (key: string) => string } => ({ settings: controller, profiles: registry.list(), t: (key: string) => t(key as never) }),
+  }, ShortcutProfileCard)), 'shortcuts: settings card slot')
 }
