@@ -1,14 +1,13 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import type { ShortcutProfile } from '../contract/profile.js'
 import type { ShortcutSettingsFace } from '../settings/controller.js'
 import type { ShortcutLocaleKey } from '../locales.js'
+import type { ShortcutProfileCardProps as SlotShortcutProfileCardProps } from '../contract/slots.js'
 import { ShortcutIcon } from './ShortcutIcon.js'
 import { ShortcutLegend } from './ShortcutLegend.js'
 import styles from '../styles/Shortcuts.module.css'
 
-export interface ShortcutProfileCardProps {
-  readonly settings: ShortcutSettingsFace
-  readonly profiles: readonly ShortcutProfile[]
+export type ShortcutProfileCardProps = Omit<SlotShortcutProfileCardProps, keyof import('@deepseek-ai/dsh-client-ui-settings-plugins/client').SettingsPluginItemOwnerProps> & {
   readonly t?: (key: ShortcutLocaleKey | string) => string
 }
 
@@ -19,26 +18,36 @@ export function ShortcutProfileCard({ settings, profiles, t = fallbackT }: Short
   const [pending, setPending] = useState<string>()
   const [selection, setSelection] = useState(() => settings.activeProfileId())
   const [error, setError] = useState<string>()
+  const requestId = useRef(0)
+  const pendingRef = useRef<string>()
 
   useEffect(() => settings.subscribe(() => {
+    if (pendingRef.current !== undefined) return
     setSelection(settings.activeProfileId())
     refresh(value => value + 1)
   }), [settings])
 
   const active = profiles.find(profile => profile.id === selection) ?? profiles.find(profile => profile.id === settings.activeProfileId())
   const choose = async (id: string): Promise<void> => {
-    if (pending !== undefined || id === settings.activeProfileId()) return
+    if (pendingRef.current !== undefined || id === settings.activeProfileId()) return
     const previous = settings.activeProfileId()
+    const currentRequest = ++requestId.current
+    pendingRef.current = id
     setSelection(id)
     setPending(id)
     setError(undefined)
     try {
       await settings.setActiveProfile(id)
     } catch (reason) {
-      setSelection(previous)
-      setError(reason instanceof Error ? reason.message : String(reason))
+      if (currentRequest === requestId.current) {
+        setSelection(previous)
+        setError(reason instanceof Error ? reason.message : String(reason))
+      }
     } finally {
-      setPending(undefined)
+      if (currentRequest === requestId.current) {
+        pendingRef.current = undefined
+        setPending(undefined)
+      }
     }
   }
 
@@ -52,7 +61,7 @@ export function ShortcutProfileCard({ settings, profiles, t = fallbackT }: Short
     <fieldset className={styles.profiles} disabled={pending !== undefined}>
       <legend>{t('settings.profile')}</legend>
       {profiles.map(profile => <label className={`${styles.profile} ${selection === profile.id ? styles.selected : ''}`} key={profile.id}>
-        <input type="radio" name="shortcut-profile" value={profile.id} checked={selection === profile.id} onChange={() => void choose(profile.id)} />
+        <input type="radio" name="shortcut-profile" value={profile.id} aria-label={t('aria.profileOption').replace('{name}', t(profile.label))} checked={selection === profile.id} onChange={() => void choose(profile.id)} />
         <span><strong>{t(profile.label)}</strong><small>{t(profile.description)}</small></span>
         {selection === profile.id ? <ShortcutIcon name="check" size={16} /> : null}
         {pending === profile.id ? <span role="status">{t('settings.saving')}</span> : null}

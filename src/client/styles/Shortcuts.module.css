@@ -1,7 +1,3 @@
-:root {
-  --shortcuts-icon-size: 16px;
-}
-
 .card {
   max-width: 720px;
   max-height: min(640px, 70vh);
@@ -29,7 +25,7 @@
 .legendRow { display: grid; grid-template-columns: minmax(120px, 1fr) 1fr; gap: 12px; align-items: center; }
 .legendRow dt { color: var(--dsw-alias-text-secondary); }
 .legendRow dd { margin: 0; }
-kbd { display: inline-block; min-width: 24px; padding: 2px 6px; border: 1px solid var(--dsw-alias-border-subtle); text-align: center; font-size: 0.875rem; }
+.keycap { display: inline-block; min-width: 24px; padding: 2px 6px; border: 1px solid var(--dsw-alias-border-subtle); text-align: center; font-size: 0.875rem; }
 .error { color: var(--dsw-alias-text-danger); }
 .empty { color: var(--dsw-alias-text-secondary); }
 .summary { margin: 0; color: var(--dsw-alias-text-secondary); }

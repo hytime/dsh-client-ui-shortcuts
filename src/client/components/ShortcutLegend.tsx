@@ -1,7 +1,6 @@
 import React from 'react'
 import type { ShortcutBinding } from '../contract/profile.js'
 import type { ShortcutLocaleKey } from '../locales.js'
-import { ShortcutIcon } from './ShortcutIcon.js'
 import styles from '../styles/Shortcuts.module.css'
 
 export interface ShortcutLegendProps {
@@ -27,7 +26,7 @@ export function ShortcutLegend({ bindings, t }: ShortcutLegendProps): React.Reac
         <dl>
           {entries.map((binding, index) => <div className={styles.legendRow} key={`${binding.command}-${binding.scope}-${index}`}>
             <dt>{t(`keyboard.${binding.command}`)}</dt>
-            <dd>{keyLabel(binding).map((key, keyIndex) => <React.Fragment key={`${key}-${keyIndex}`}><kbd>{key}</kbd>{keyIndex < keyLabel(binding).length - 1 ? ' + ' : null}</React.Fragment>)}</dd>
+            <dd>{keyLabel(binding).map((key, keyIndex) => <React.Fragment key={`${key}-${keyIndex}`}><kbd className={styles.keycap}>{key}</kbd>{keyIndex < keyLabel(binding).length - 1 ? ' + ' : null}</React.Fragment>)}</dd>
           </div>)}
         </dl>
       </section>

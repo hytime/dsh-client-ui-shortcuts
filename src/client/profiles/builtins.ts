@@ -10,8 +10,8 @@ const stroke = (key: string) => ({
 
 export const standardProfile: ShortcutProfile = {
   id: 'standard',
-  label: 'shortcut.profile.standard.label',
-  description: 'shortcut.profile.standard.description',
+  label: 'profile.standard.label',
+  description: 'profile.standard.description',
   bindings: [
     { command: 'focusPrevious', scope: 'question', key: stroke('ArrowUp') },
     { command: 'focusNext', scope: 'question', key: stroke('ArrowDown') },
@@ -26,8 +26,8 @@ export const standardProfile: ShortcutProfile = {
 
 export const vimProfile: ShortcutProfile = {
   id: 'vim',
-  label: 'shortcut.profile.vim.label',
-  description: 'shortcut.profile.vim.description',
+  label: 'profile.vim.label',
+  description: 'profile.vim.description',
   bindings: [
     { command: 'focusPrevious', scope: 'question', key: stroke('k') },
     { command: 'focusNext', scope: 'question', key: stroke('j') },
