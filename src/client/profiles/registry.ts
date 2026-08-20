@@ -16,12 +16,11 @@ const SCOPES: readonly ShortcutScope[] = ['question', 'approval']
 /**
  * Build one stable canonical key for conflict checks.
  * @param binding - binding to identify.
- * @returns scope-qualified modifier/key identity.
+ * @returns modifier/key identity without scope.
  */
 export function canonicalBindingKey(binding: ShortcutBinding): string {
   const { key } = binding
   return [
-    binding.scope,
     key.alt ? 'alt' : '',
     key.ctrl ? 'ctrl' : '',
     key.meta ? 'meta' : '',
@@ -143,7 +142,7 @@ function validateProfile(profile: ShortcutProfile, existingIds: ReadonlySet<stri
     if (!isCommand(binding.command)) throw new Error(`invalid shortcut command: ${String(binding.command)}`)
     if (!isScope(binding.scope)) throw new Error(`invalid shortcut scope: ${String(binding.scope)}`)
     if (!isKeyStroke(binding.key)) throw new Error(`invalid shortcut key in profile: ${profile.id}`)
-    const canonical = canonicalBindingKey(binding)
+    const canonical = `${binding.scope}|${canonicalBindingKey(binding)}`
     if (keys.has(canonical)) throw new Error(`shortcut binding conflict: ${canonical}`)
     keys.add(canonical)
   }

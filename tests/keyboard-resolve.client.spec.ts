@@ -1,0 +1,60 @@
+import { describe, expect, it } from 'vitest'
+import { standardProfile, vimProfile } from '../src/client/profiles/builtins.js'
+import { findShortcutConflicts } from '../src/client/keyboard/conflicts.js'
+import { normalizeKeyboardEvent } from '../src/client/keyboard/normalize.js'
+import { resolveKey } from '../src/client/keyboard/resolve.js'
+import { createBuiltinProfileRegistry, canonicalBindingKey } from '../src/client/profiles/registry.js'
+import type { KeyInput } from '../src/client/contract/keyboard.js'
+import type { ShortcutProfile } from '../src/client/contract/profile.js'
+
+const input = (key: string, options: Partial<KeyInput> = {}): KeyInput => ({
+  key, alt: false, ctrl: false, meta: false, shift: false, ...options,
+})
+
+describe('profile-aware keyboard resolver', () => {
+  it('resolves standard and vim navigation and actions', () => {
+    expect(resolveKey(standardProfile, 'question', input('ArrowDown'))).toEqual({ kind: 'command', command: 'focusNext' })
+    expect(resolveKey(standardProfile, 'approval', input('Enter'))).toEqual({ kind: 'command', command: 'activate' })
+    expect(resolveKey(vimProfile, 'question', input('j'))).toEqual({ kind: 'command', command: 'focusNext' })
+    expect(resolveKey(vimProfile, 'question', input('k'))).toEqual({ kind: 'command', command: 'focusPrevious' })
+  })
+
+  it('resolves Escape cancellation on both surfaces', () => {
+    expect(resolveKey(standardProfile, 'question', input('Escape'))).toEqual({ kind: 'command', command: 'cancelTask' })
+    expect(resolveKey(standardProfile, 'approval', input('Escape'))).toEqual({ kind: 'command', command: 'cancelTask' })
+  })
+
+  it.each([
+    ['composing', { composing: true }],
+    ['ime key code', { keyCode: 229 }],
+    ['repeat', { repeat: true }],
+    ['disabled', { disabled: true }],
+  ])('passes Enter when %s', (_name, options) => {
+    expect(resolveKey(standardProfile, 'approval', input('Enter', options))).toEqual({ kind: 'pass' })
+  })
+
+  it('normalizes Esc without reading DOM', () => {
+    const event = { key: 'Esc', altKey: false, ctrlKey: false, metaKey: false, shiftKey: false, isComposing: false, repeat: false, keyCode: 27 }
+    expect(normalizeKeyboardEvent(event).key).toBe('Escape')
+    expect(normalizeKeyboardEvent(event)).toEqual(expect.objectContaining({ alt: false, ctrl: false, meta: false, shift: false }))
+  })
+
+  it('uses stable modifier ordering without scope in canonical keys', () => {
+    expect(canonicalBindingKey({ command: 'activate', scope: 'approval', key: input('Enter', { alt: true, ctrl: true, meta: true, shift: true }) })).toBe('alt|ctrl|meta|shift|Enter')
+  })
+
+  it('reports same-scope conflicts while allowing cross-scope reuse', () => {
+    const first = { command: 'activate' as const, scope: 'question' as const, key: input('Enter') }
+    const second = { command: 'cancelTask' as const, scope: 'question' as const, key: input('Enter') }
+    const third = { command: 'activate' as const, scope: 'approval' as const, key: input('Enter') }
+    const profile: ShortcutProfile = { ...standardProfile, id: 'conflicts', bindings: [first, second, third] }
+    const conflicts = findShortcutConflicts(profile)
+    expect(conflicts).toHaveLength(1)
+    expect(conflicts[0]).toEqual({ scope: 'question', key: '||||Enter', first, second })
+  })
+
+  it('selects persisted built-in profiles and falls back when missing', () => {
+    expect(createBuiltinProfileRegistry('missing').active().id).toBe('standard')
+    expect(createBuiltinProfileRegistry('vim').active().id).toBe('vim')
+  })
+})
