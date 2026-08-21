@@ -224,6 +224,12 @@ describe('shortcut profile registry', () => {
       id: 'dual-platform',
       bindings: [{ command: 'openSettings', scope: 'global', key: stroke('p', { ctrl: true, meta: true }), modifier: 'Mod' }],
     }])).toThrow('modifier')
+
+    expect(() => createProfileRegistry([{
+      ...alphaProfile,
+      id: 'symbolic-dual-platform',
+      bindings: [{ command: 'openSettings', scope: 'global', key: { key: 'p', modifiers: ['Mod', 'Ctrl'] } }],
+    }])).toThrow('modifier')
   })
 
   it('stores normalized frozen bindings instead of caller-owned objects', () => {
@@ -235,6 +241,18 @@ describe('shortcut profile registry', () => {
     const stored = registry.get('owned-sequence')!.bindings[0]!
     expect(stored.sequences?.[0]?.[0]?.key).toBe('Escape')
     expect(Object.isFrozen(stored.sequences)).toBe(true)
+  })
+
+  it('owns declarative representations without internal modifier fields', () => {
+    const registry = createProfileRegistry([{
+      ...alphaProfile,
+      id: 'owned-declarative',
+      bindings: [{ command: 'openSettings', scope: 'global', key: { key: 'Esc', modifiers: ['Mod', 'Alt'] } }],
+    }])
+    const key = registry.get('owned-declarative')!.bindings[0]!.key
+    expect(key).toEqual({ key: 'Escape', modifiers: ['Mod', 'Alt'] })
+    expect(key).not.toHaveProperty('modifier')
+    expect(Object.isFrozen(key)).toBe(true)
   })
 
 })

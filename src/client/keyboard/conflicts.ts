@@ -37,7 +37,7 @@ function isPrefix(first: NormalizedSequence, second: NormalizedSequence): boolea
       && stroke.alt === other.alt
       && stroke.shift === other.shift
       && (stroke.modifier === other.modifier
-        || (stroke.modifier === 'Mod' && (other.ctrl || other.meta))
-        || (other.modifier === 'Mod' && (stroke.ctrl || stroke.meta)))
+        || (stroke.modifier === 'Mod' && other.ctrl !== other.meta)
+        || (other.modifier === 'Mod' && stroke.ctrl !== stroke.meta))
   })
 }

@@ -177,25 +177,26 @@ function normalizeProfileBindings(
   source: readonly ShortcutBinding[],
   normalized: readonly NormalizedSequence[][],
 ): ShortcutBinding[] {
-  const normalizedBindings = source.map((binding, index) => {
-    const bindingSequences = normalizeBinding(binding)
+  return source.map((binding, index) => {
+    const bindingSequences = normalized[index]!
     const first = bindingSequences[0]!.strokes[0]!
-    const normalizedKey = {
-      key: first.key,
-      alt: first.alt,
-      ctrl: first.ctrl,
-      meta: first.meta,
-      shift: first.shift,
-    }
+    const normalizeStrokeValue = (original: KeyStroke | ShortcutStroke, stroke: NormalizedStroke): KeyStroke | ShortcutStroke => (
+      isShortcutStroke(original)
+        ? { key: stroke.key, modifiers: symbolicModifiers(stroke) }
+        : { key: stroke.key, alt: stroke.alt, ctrl: stroke.ctrl, meta: stroke.meta, shift: stroke.shift }
+    )
     return {
       ...binding,
-      ...(binding.key && isShortcutStroke(binding.key) ? { key: { key: first.key, modifiers: symbolicModifiers(first) } } : {}),
-      ...(binding.key && !isShortcutStroke(binding.key) ? { key: normalizedKey } : {}),
-      ...(binding.sequence ? { sequence: bindingSequences[0]!.strokes } : {}),
-      ...(binding.sequences ? { sequences: bindingSequences.map(sequence => sequence.strokes) } : {}),
+      ...(binding.key ? { key: normalizeStrokeValue(binding.key, first) } : {}),
+      ...(binding.sequence ? { sequence: bindingSequences[0]!.strokes.map((stroke, strokeIndex) => normalizeStrokeValue(binding.sequence![strokeIndex]!, stroke)) } : {}),
+      ...(binding.sequences ? {
+        sequences: binding.sequences.map((sequence, sequenceIndex) => sequence.map((stroke, strokeIndex) => normalizeStrokeValue(
+          stroke,
+          normalized[index]![sequenceIndex]!.strokes[strokeIndex]!,
+        ))),
+      } : {}),
     }
   })
-  return normalizedBindings
 }
 
 function symbolicModifiers(stroke: NormalizedStroke): ShortcutModifier[] {
@@ -246,6 +247,9 @@ function normalizeModifiers(modifiers: readonly ShortcutModifier[]): ShortcutMod
   if (normalized.some(modifier => !MODIFIERS.includes(modifier))) throw new Error('invalid shortcut modifier')
   if (new Set(normalized).size !== normalized.length) throw new Error('invalid shortcut modifier')
   if (normalized.includes('Ctrl') && normalized.includes('Meta')) throw new Error('invalid shortcut modifier')
+  if (normalized.includes('Mod') && (normalized.includes('Ctrl') || normalized.includes('Meta'))) {
+    throw new Error('invalid shortcut modifier')
+  }
   return normalized
 }
 
@@ -287,10 +291,8 @@ function equivalentStroke(first: NormalizedStroke, second: NormalizedStroke): bo
 function equivalentModifier(first: NormalizedStroke, second: NormalizedStroke): boolean {
   if (first.modifier === 'Mod' || second.modifier === 'Mod') {
     return (first.modifier === 'Mod' && second.modifier === 'Mod')
-      || (first.modifier === 'Mod' && second.ctrl && !second.meta)
-      || (second.modifier === 'Mod' && first.ctrl && !first.meta)
-      || (first.modifier === 'Mod' && second.meta && !second.ctrl)
-      || (second.modifier === 'Mod' && first.meta && !first.ctrl)
+      || (first.modifier === 'Mod' && second.ctrl !== second.meta)
+      || (second.modifier === 'Mod' && first.ctrl !== first.meta)
   }
   return first.ctrl === second.ctrl && first.meta === second.meta
 }
