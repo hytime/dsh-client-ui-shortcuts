@@ -110,6 +110,17 @@ describe('shortcut composer flows', () => {
     expect(respond).not.toHaveBeenCalled()
   })
 
+  it('submits the selected single option when Enter is pressed again', async () => {
+    const respond = vi.fn<Response>(() => receipt())
+    render(<QuestionFlow matched={question(respond)} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} />)
+
+    const option = screen.getByRole('radio', { name: 'A' })
+    fireEvent.click(option)
+    fireEvent.keyDown(option, { key: 'Enter' })
+    await waitFor(() => expect(respond).toHaveBeenCalledTimes(1))
+    expect(respond.mock.calls[0]?.[0]).toMatchObject({ value: { answer: { answers: [{ id: 'q', selected: ['A'] }] } } })
+  })
+
   it('submits a skipped final question from click with an empty selection', async () => {
     const respond = vi.fn<Response>(() => receipt())
     render(<QuestionFlow matched={question(respond, [], false)} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} />)

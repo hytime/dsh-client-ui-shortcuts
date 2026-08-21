@@ -93,7 +93,14 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask }: Question
   const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
     const input: KeyInput = { key: event.key, alt: event.altKey, ctrl: event.ctrlKey, meta: event.metaKey, shift: event.shiftKey, composing: composing(event), keyCode: event.keyCode, repeat: event.repeat, disabled: submitting }
     const decision = resolveKey(activeProfile, 'question', input)
-    if (event.target !== event.currentTarget && event.key === 'Enter') return
+    if (event.target !== event.currentTarget && event.key === 'Enter') {
+      const target = event.target as HTMLElement
+      if (target.getAttribute('role') === 'radio' && !multi && draft.selected.length > 0) {
+        event.preventDefault()
+        advance()
+      }
+      return
+    }
     if (decision.kind === 'pass') {
       if (event.key === 'Enter' && event.currentTarget === event.target && !composing(event) && event.keyCode !== 229 && !event.repeat && !submitting && multi) { event.preventDefault(); advance() }
       return
@@ -106,7 +113,7 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask }: Question
       if (item?.kind === 'option') choose(item.label)
       else if (item?.kind === 'custom' || item?.kind === 'advance') advance()
       else if (item?.kind === 'previous') { setIndex(current => current - 1); setError(undefined); setFocusIndex(0) }
-       else if (item?.kind === 'skip') skipQuestion()
+      else if (item?.kind === 'skip') skipQuestion()
     }
   }
   if (!question || !draft) return React.createElement('div')

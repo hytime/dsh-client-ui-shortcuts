@@ -2,7 +2,12 @@
 
 All notable changes to `@hytime/dsh-client-ui-shortcuts` are documented here.
 
-## 0.1.9 - Keyboard navigation polish
+## 0.1.10 - Selection activation fix
+
+### Fixed
+
+- Pressing Enter on an already selected single-choice option now submits the current answer.
+
 
 ### Fixed
 
