@@ -22,7 +22,7 @@ export function createGlobalActions({ sessions, workspaces, theme }: GlobalActio
     const navigate = (delta: number) => { const target = adjacent(sessions.list.getSnapshot().ids, sessions.list.getSnapshot().current, delta); if (target !== undefined) sessions.open(target) }
     actions.previousSession = () => { navigate(-1) }; actions.nextSession = () => { navigate(1) }
   }
-  if (sessions !== undefined && workspaces !== undefined) {
+  if (sessions !== undefined && sessions.open !== undefined && workspaces?.list !== undefined && workspaces.connectWorkspace !== undefined) {
     const navigate = (delta: number) => {
       const state = sessions.list.getSnapshot(); const items = workspaces.list.getSnapshot().items
       const current = items.find(item => item.sessionIds.includes(state.current as SessionId)); const target = adjacent(items, current, delta)

@@ -80,6 +80,13 @@ describe('capability-aware global actions', () => {
     expect(d.theme.setTheme).toHaveBeenCalledWith('light')
   })
 
+  it('omits workspace actions when any required face is missing and invocation is safe', () => {
+    const d = services()
+    const actions = createGlobalActions({ sessions: d.sessions as never, workspaces: { list: d.workspaces.list, connectWorkspace: undefined } as never })
+    expect(actions.previousWorkspace).toBeUndefined()
+    expect(actions.nextWorkspace).toBeUndefined()
+  })
+
   it('does not expose settings or unavailable actions', () => {
     const actions = createGlobalActions({})
     expect(actions.openSettings).toBeUndefined()
