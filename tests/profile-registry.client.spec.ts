@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createProfileRegistry } from '../src/client/profiles/registry.js'
+import { createBuiltinProfileRegistry, createProfileRegistry } from '../src/client/profiles/registry.js'
 import type { ShortcutProfile } from '../src/client/contract/profile.js'
 
 const stroke = (key: string, modifiers: Partial<ShortcutProfile['bindings'][number]['key']> = {}) => ({
@@ -151,5 +151,40 @@ describe('shortcut profile registry', () => {
     unsubscribe()
     registry.setActive('alpha')
     expect(calls).toBe(3)
+  })
+
+  it('retains built-in question and approval bindings and adds recommended global bindings', () => {
+    const registry = createBuiltinProfileRegistry()
+    const standard = registry.get('standard')!
+
+    expect(standard.bindings).toEqual(expect.arrayContaining([
+      { command: 'activate', scope: 'question', key: stroke('Enter') },
+      { command: 'activate', scope: 'approval', key: stroke('Enter') },
+      { command: 'openCommandPalette', scope: 'global', key: stroke('p', { meta: true }) },
+    ]))
+  })
+
+  it('replaces a custom profile while keeping the registry snapshot isolated', () => {
+    const registry = createBuiltinProfileRegistry()
+    const dispose = registry.register({
+      ...alphaProfile,
+      id: 'custom',
+      bindings: [{ command: 'openCommandPalette', scope: 'global', key: stroke('p', { meta: true }) }],
+    })
+
+    expect(registry.get('custom')?.bindings).toHaveLength(1)
+    dispose()
+    expect(registry.get('custom')).toBeUndefined()
+  })
+
+  it('rejects duplicate and prefix-conflicting sequences in one scope', () => {
+    expect(() => createProfileRegistry([{
+      ...alphaProfile,
+      id: 'sequence-conflict',
+      bindings: [
+        { command: 'openCommandPalette', scope: 'global', sequence: [stroke('g')] },
+        { command: 'openSettings', scope: 'global', sequence: [stroke('g'), stroke('s')] },
+      ],
+    }])).toThrow('conflict')
   })
 })

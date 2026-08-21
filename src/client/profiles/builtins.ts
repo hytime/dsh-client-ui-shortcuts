@@ -1,18 +1,19 @@
 import type { ShortcutProfile } from '../contract/profile.js'
 
-const stroke = (key: string) => ({
-  key,
-  alt: false,
-  ctrl: false,
-  meta: false,
-  shift: false,
+const stroke = (key: string, modifiers: Partial<ReturnType<typeof makeStroke>> = {}) => makeStroke(key, modifiers)
+const makeStroke = (key: string, modifiers: Partial<{ alt: boolean; ctrl: boolean; meta: boolean; shift: boolean }> = {}) => ({
+  key, alt: false, ctrl: false, meta: false, shift: false, ...modifiers,
 })
 
+const globalBindings = [
+  { command: 'openCommandPalette' as const, scope: 'global' as const, key: stroke('p', { meta: true }) },
+  { command: 'openSettings' as const, scope: 'global' as const, key: stroke(',', { meta: true }) },
+]
+
 export const standardProfile: ShortcutProfile = {
-  id: 'standard',
-  label: 'profile.standard.label',
-  description: 'profile.standard.description',
+  id: 'standard', label: 'profile.standard.label', description: 'profile.standard.description',
   bindings: [
+    ...globalBindings,
     { command: 'focusPrevious', scope: 'question', key: stroke('ArrowUp') },
     { command: 'focusNext', scope: 'question', key: stroke('ArrowDown') },
     { command: 'activate', scope: 'question', key: stroke('Enter') },
@@ -25,10 +26,9 @@ export const standardProfile: ShortcutProfile = {
 }
 
 export const vimProfile: ShortcutProfile = {
-  id: 'vim',
-  label: 'profile.vim.label',
-  description: 'profile.vim.description',
+  id: 'vim', label: 'profile.vim.label', description: 'profile.vim.description',
   bindings: [
+    ...globalBindings,
     { command: 'focusPrevious', scope: 'question', key: stroke('k') },
     { command: 'focusNext', scope: 'question', key: stroke('j') },
     { command: 'activate', scope: 'question', key: stroke('Enter') },

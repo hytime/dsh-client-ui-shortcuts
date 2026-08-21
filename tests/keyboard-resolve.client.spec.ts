@@ -53,6 +53,32 @@ describe('profile-aware keyboard resolver', () => {
     expect(conflicts[0]).toEqual({ scope: 'question', key: '||||Enter', first, second })
   })
 
+  it('resolves global commands with Mod on the active platform modifier', () => {
+    const profile: ShortcutProfile = {
+      ...standardProfile,
+      id: 'global',
+      bindings: [{ command: 'openCommandPalette', scope: 'global', sequence: [input('p', { meta: true })] }],
+    }
+
+    expect(resolveKey(profile, 'global', input('p', { meta: true }))).toEqual({ kind: 'command', command: 'openCommandPalette' })
+    expect(resolveKey(profile, 'global', input('p', { ctrl: true }))).toEqual({ kind: 'command', command: 'openCommandPalette' })
+  })
+
+  it('resolves two-stroke sequences and alternative sequences', () => {
+    const profile: ShortcutProfile = {
+      ...standardProfile,
+      id: 'sequence',
+      bindings: [{
+        command: 'openSettings',
+        scope: 'global',
+        sequences: [[input('g'), input('s')], [input('s')]],
+      }],
+    }
+
+    expect(resolveKey(profile, 'global', input('g'))).toEqual({ kind: 'pass' })
+    expect(resolveKey(profile, 'global', input('s'))).toEqual({ kind: 'command', command: 'openSettings' })
+  })
+
   it('selects persisted built-in profiles and falls back when missing', () => {
     expect(createBuiltinProfileRegistry('missing').active().id).toBe('standard')
     expect(createBuiltinProfileRegistry('vim').active().id).toBe('vim')

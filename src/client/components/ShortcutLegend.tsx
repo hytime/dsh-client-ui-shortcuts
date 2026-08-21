@@ -21,6 +21,8 @@ const COMMAND_ICONS: Record<ShortcutCommand, ShortcutIconName> = {
   focusNext: 'arrow-down',
   activate: 'check',
   cancelTask: 'x',
+  openCommandPalette: 'keyboard',
+  openSettings: 'settings-2',
 }
 
 export function ShortcutLegend({ bindings, t }: ShortcutLegendProps): React.ReactElement {
