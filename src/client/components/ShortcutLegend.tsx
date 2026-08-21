@@ -1,6 +1,7 @@
 import React from 'react'
-import type { ShortcutBinding } from '../contract/profile.js'
+import type { ShortcutBinding, ShortcutCommand } from '../contract/profile.js'
 import type { ShortcutLocaleKey } from '../locales.js'
+import { ShortcutIcon, type ShortcutIconName } from './ShortcutIcon.js'
 import styles from '../styles/Shortcuts.module.css'
 
 export interface ShortcutLegendProps {
@@ -15,6 +16,13 @@ function keyLabel(binding: ShortcutBinding): string[] {
   return [...modifiers, value]
 }
 
+const COMMAND_ICONS: Record<ShortcutCommand, ShortcutIconName> = {
+  focusPrevious: 'arrow-up',
+  focusNext: 'arrow-down',
+  activate: 'check',
+  cancelTask: 'x',
+}
+
 export function ShortcutLegend({ bindings, t }: ShortcutLegendProps): React.ReactElement {
   const grouped = ['question', 'approval'] as const
   return <div className={styles.legend}>
@@ -27,7 +35,10 @@ export function ShortcutLegend({ bindings, t }: ShortcutLegendProps): React.Reac
           {entries.map((binding, index) => {
             const keys = keyLabel(binding)
             return <div className={styles.legendItem} role="listitem" key={`${binding.command}-${binding.scope}-${index}`}>
-              <span className={styles.legendCommand}>{t(`keyboard.${binding.command}`)}</span>
+              <span className={styles.legendCommand}>
+                <ShortcutIcon name={COMMAND_ICONS[binding.command]} size={16} />
+                <span>{t(`keyboard.${binding.command}`)}</span>
+              </span>
               <span className={styles.legendKeys}>
                 {keys.map((key, keyIndex) => <React.Fragment key={`${key}-${keyIndex}`}><kbd className={styles.keycap}>{key}</kbd>{keyIndex < keys.length - 1 ? ' + ' : null}</React.Fragment>)}
               </span>

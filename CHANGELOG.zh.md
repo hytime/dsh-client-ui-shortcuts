@@ -2,7 +2,19 @@
 
 `@hytime/dsh-client-ui-shortcuts` 的重要变更记录如下。
 
-## 0.1.5 - 包元数据与安装文档
+## 0.1.6 - 交互控件优化
+
+### 修复
+
+- 通过 Client dictionaries 本地化 approval 操作按钮和无障碍标签。
+- 为 question 跳过/下一题/提交按钮补齐 DSH 操作间距和 focus 样式。
+
+### 变更
+
+- 为 question/approval 快捷键列表增加对应操作图标。
+- 将 profile radio 控件改为紧凑的原生下拉框。
+- 清理 legacy profile card 中剩余的硬编码文案。
+
 
 ### 变更
 

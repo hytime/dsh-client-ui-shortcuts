@@ -56,12 +56,12 @@ export function ApprovalFlow({ matched, activeProfile, t, cancelTask }: Approval
       <header className={styles.header}>
         <strong>{matched.payload.reason ?? matched.payload.toolName}</strong>
       </header>
-      <div className={styles.body} data-testid="approval-scroll" data-approval-scroll tabIndex={0} role="group" aria-label="Approval details">
+      <div className={styles.body} data-testid="approval-scroll" data-approval-scroll tabIndex={0} role="group" aria-label={t('approval.details')}>
         <p className={styles.detail}>{matched.payload.reason ?? matched.payload.toolName}</p>
       </div>
-      <div className={styles.actions} data-testid="approval-actions" role="group" aria-label="Approval actions">
-        <button className={styles.approvalReject} ref={node => { actionRefs.current[1] = node }} type="button" disabled={busy} aria-pressed={choice === 'rejected'} onClick={() => { setFocusIndex(1); void answer('rejected') }}>Reject</button>
-        <button className={styles.approvalAllow} ref={node => { actionRefs.current[0] = node }} autoFocus type="button" disabled={busy} aria-pressed={choice === 'allowed-once'} onClick={() => { setFocusIndex(0); void answer('allowed-once') }}>Allow once</button>
+      <div className={styles.actions} data-testid="approval-actions" role="group" aria-label={t('approval.actions')}>
+        <button className={styles.approvalReject} ref={node => { actionRefs.current[1] = node }} type="button" disabled={busy} aria-pressed={choice === 'rejected'} onClick={() => { setFocusIndex(1); void answer('rejected') }}>{t('approval.reject')}</button>
+        <button className={styles.approvalAllow} ref={node => { actionRefs.current[0] = node }} autoFocus type="button" disabled={busy} aria-pressed={choice === 'allowed-once'} onClick={() => { setFocusIndex(0); void answer('allowed-once') }}>{t('approval.allowOnce')}</button>
       </div>
       {error ? <p className={styles.error} role="alert">{error}</p> : null}
     </div>

@@ -2,7 +2,19 @@
 
 All notable changes to `@hytime/dsh-client-ui-shortcuts` are documented here.
 
-## 0.1.5 - Package metadata and installation docs
+## 0.1.6 - Interaction controls polish
+
+### Fixed
+
+- Localized approval action labels and accessibility labels through the client dictionaries.
+- Styled question skip/next/submit buttons with DSH action spacing and focus states.
+
+### Changed
+
+- Added command icons to question and approval shortcut rows.
+- Replaced profile radio controls with a compact native select.
+- Removed remaining hardcoded labels from the legacy profile card.
+
 
 ### Changed
 

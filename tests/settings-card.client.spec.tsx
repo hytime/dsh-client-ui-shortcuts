@@ -47,13 +47,13 @@ describe('shortcut settings card', () => {
     render(<ShortcutProfileCard settings={settings} profiles={registry.list()} t={t} />)
     const trigger = screen.getByRole('button', { name: 'Expand: Shortcuts' })
     expect(trigger.getAttribute('aria-expanded')).toBe('false')
-    expect(screen.queryByRole('radio', { name: /Standard/ })).toBeNull()
+    expect(screen.queryByRole('combobox', { name: 'Profile' })).toBeNull()
     fireEvent.click(trigger)
     expect(screen.getByRole('button', { name: 'Collapse: Shortcuts' }).getAttribute('aria-expanded')).toBe('true')
-    expect(screen.getByRole('radio', { name: /Standard/ })).toBeTruthy()
+    expect((screen.getByRole('combobox', { name: 'Profile' }) as HTMLSelectElement).value).toBe('standard')
     fireEvent.click(screen.getByRole('button', { name: 'Collapse: Shortcuts' }))
     expect(screen.getByRole('button', { name: 'Expand: Shortcuts' }).getAttribute('aria-expanded')).toBe('false')
-    expect(screen.queryByRole('radio', { name: /Standard/ })).toBeNull()
+    expect(screen.queryByRole('combobox', { name: 'Profile' })).toBeNull()
   })
 
   it('renders accessible radios, selected state, and legends grouped by scope', () => {
@@ -61,8 +61,8 @@ describe('shortcut settings card', () => {
     const settings = settingsFace()
     render(<ShortcutProfileCard settings={settings} profiles={registry.list()} t={t} />)
     openCard()
-    expect((screen.getByRole('radio', { name: /Standard/ }) as HTMLInputElement).checked).toBe(true)
-    expect((screen.getByRole('radio', { name: /Vim/ }) as HTMLInputElement).checked).toBe(false)
+    expect((screen.getByRole('combobox', { name: 'Profile' }) as HTMLSelectElement).value).toBe('standard')
+    expect((screen.getByRole('combobox', { name: 'Profile' }) as HTMLSelectElement).value).toBe('standard')
     expect(screen.getByRole('heading', { name: 'Questions' })).toBeTruthy()
     expect(screen.getByRole('heading', { name: 'Approvals' })).toBeTruthy()
     expect(screen.getAllByText('Previous').length).toBeGreaterThan(0)
@@ -76,6 +76,7 @@ describe('shortcut settings card', () => {
       for (const item of items) {
         expect(item.textContent).toBeTruthy()
         expect(item.querySelectorAll('kbd').length).toBeGreaterThan(0)
+        expect(item.querySelector('svg')).toBeTruthy()
       }
     }
   })
@@ -87,7 +88,7 @@ describe('shortcut settings card', () => {
     settings.setActiveProfile = vi.fn(() => new Promise<void>(r => { resolve = r }))
     render(<ShortcutProfileCard settings={settings} profiles={registry.list()} t={t} />)
     openCard()
-    fireEvent.click(screen.getByRole('radio', { name: /Vim/ }))
+    fireEvent.change(screen.getByRole('combobox', { name: 'Profile' }), { target: { value: 'vim' } })
     expect(settings.setActiveProfile).toHaveBeenCalledWith('vim')
     expect((screen.getByRole('group') as HTMLFieldSetElement).disabled).toBe(true)
     expect(screen.getAllByText('Saving...')).toHaveLength(2)
@@ -101,11 +102,11 @@ describe('shortcut settings card', () => {
     settings.failNext('no permission')
     render(<ShortcutProfileCard settings={settings} profiles={registry.list()} t={t} />)
     openCard()
-    fireEvent.click(screen.getByRole('radio', { name: /Vim/ }))
+    fireEvent.change(screen.getByRole('combobox', { name: 'Profile' }), { target: { value: 'vim' } })
     await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('no permission'))
-    expect((screen.getByRole('radio', { name: /Standard/ }) as HTMLInputElement).checked).toBe(true)
-    fireEvent.click(screen.getByRole('radio', { name: /Vim/ }))
-    await waitFor(() => expect((screen.getByRole('radio', { name: /Vim/ }) as HTMLInputElement).checked).toBe(true))
+    expect((screen.getByRole('combobox', { name: 'Profile' }) as HTMLSelectElement).value).toBe('standard')
+    fireEvent.change(screen.getByRole('combobox', { name: 'Profile' }), { target: { value: 'vim' } })
+    await waitFor(() => expect((screen.getByRole('combobox', { name: 'Profile' }) as HTMLSelectElement).value).toBe('vim'))
   })
 
   it('uses the latest external snapshot after pending failure and success', async () => {
@@ -115,17 +116,17 @@ describe('shortcut settings card', () => {
     settings.setActiveProfile = vi.fn(() => new Promise<void>((resolve, reject) => { settle = error => error ? reject(error) : resolve() }))
     render(<ShortcutProfileCard settings={settings} profiles={registry.list()} t={t} />)
     openCard()
-    fireEvent.click(screen.getByRole('radio', { name: /Vim/ }))
+    fireEvent.change(screen.getByRole('combobox', { name: 'Profile' }), { target: { value: 'vim' } })
     settings.setExternal('standard')
     settle(new Error('failed'))
-    await waitFor(() => expect((screen.getByRole('radio', { name: /Standard/ }) as HTMLInputElement).checked).toBe(true))
+    await waitFor(() => expect((screen.getByRole('combobox', { name: 'Profile' }) as HTMLSelectElement).value).toBe('standard'))
 
     let resolve!: () => void
     settings.setActiveProfile = vi.fn(() => new Promise<void>(r => { resolve = r }))
-    fireEvent.click(screen.getByRole('radio', { name: /Vim/ }))
+    fireEvent.change(screen.getByRole('combobox', { name: 'Profile' }), { target: { value: 'vim' } })
     settings.setExternal('standard')
     resolve()
-    await waitFor(() => expect((screen.getByRole('radio', { name: /Standard/ }) as HTMLInputElement).checked).toBe(true))
+    await waitFor(() => expect((screen.getByRole('combobox', { name: 'Profile' }) as HTMLSelectElement).value).toBe('standard'))
   })
 
   it('renders conflict and empty states', () => {
@@ -146,10 +147,10 @@ describe('shortcut settings card', () => {
     const zh = (key: string) => key === 'profile.standard.label' ? '标准' : key === 'legend.scope.question' ? '问题' : t(key)
     const { rerender } = render(<ShortcutProfileCard settings={settings} profiles={registry.list()} t={zh} />)
     openCard()
-    expect((screen.getByRole('radio', { name: /标准/ }) as HTMLInputElement).value).toBe('standard')
+    expect((screen.getByRole('combobox', { name: 'Profile' }) as HTMLSelectElement).value).toBe('standard')
     expect(standardProfile.bindings).toHaveLength(8)
     rerender(<ShortcutProfileCard settings={settings} profiles={registry.list()} t={t} />)
-    expect((screen.getByRole('radio', { name: /Standard/ }) as HTMLInputElement).value).toBe('standard')
+    expect((screen.getByRole('combobox', { name: 'Profile' }) as HTMLSelectElement).value).toBe('standard')
   })
 })
 

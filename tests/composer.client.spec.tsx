@@ -12,6 +12,8 @@ const t = (key: string) => ({
   'question.skip': 'Skip',
   'question.next': 'Next',
   'question.submit': 'Submit',
+  'approval.reject': '拒绝',
+  'approval.allowOnce': '允许一次',
 }[key] ?? key)
 type Receipt = { accepted: true } | { accepted: false; reason: string }
 type Response = (result: unknown) => Promise<Receipt>
@@ -64,7 +66,9 @@ describe('shortcut composer flows', () => {
     const first = screen.getByRole('radio', { name: 'A' })
     expect(screen.getByTestId('interaction-surface').getAttribute('data-interaction-kind')).toBe('question')
     expect(screen.getByTestId('question-scroll').contains(first)).toBe(true)
-    expect(screen.getByTestId('question-actions').contains(screen.getByRole('button', { name: 'Skip' }))).toBe(true)
+    const skipButton = screen.getByRole('button', { name: 'Skip' })
+    expect(screen.getByTestId('question-actions').contains(skipButton)).toBe(true)
+    expect(skipButton.className).toContain('action')
     expect(screen.getByTestId('question-scroll').contains(screen.getByTestId('question-actions'))).toBe(false)
     const second = screen.getByRole('radio', { name: 'B' })
     await waitFor(() => expect(document.activeElement).toBe(first))
@@ -133,8 +137,10 @@ describe('shortcut composer flows', () => {
     expect(screen.queryAllByRole('radio')).toHaveLength(0)
     expect(screen.getByRole('textbox')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Skip' })).toBeTruthy()
+    const submitButton = screen.getByRole('button', { name: 'Submit' })
+    expect(submitButton.className).toContain('actionPrimary')
     fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Submit' }))
+    fireEvent.click(submitButton)
     await waitFor(() => expect(respond).toHaveBeenCalledTimes(1))
     expect(respond.mock.calls[0]?.[0]).toMatchObject({ value: { answer: { answers: [{ id: 'q', selected: [] }] } } })
   })
@@ -204,11 +210,11 @@ describe('shortcut composer flows', () => {
   it('focuses allow-once by default and recovers from rejected approval receipt', async () => {
     const respond = vi.fn<Response>(() => receipt(false))
     render(<ApprovalFlow matched={approval(respond)} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} />)
-    const allow = screen.getByRole('button', { name: 'Allow once' })
+    const allow = screen.getByRole('button', { name: '允许一次' })
     expect(document.activeElement).toBe(allow)
     expect(screen.getByTestId('interaction-surface').getAttribute('data-interaction-kind')).toBe('approval')
     expect(screen.getByTestId('approval-scroll').textContent).toContain('Run command')
-    expect(screen.getByTestId('approval-actions').contains(screen.getByRole('button', { name: 'Allow once' }))).toBe(true)
+    expect(screen.getByTestId('approval-actions').contains(screen.getByRole('button', { name: '允许一次' }))).toBe(true)
     expect(screen.getByTestId('approval-scroll').contains(screen.getByTestId('approval-actions'))).toBe(false)
     fireEvent.keyDown(approvalSurface(), { key: 'Enter' })
     await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('rejected'))
@@ -224,7 +230,7 @@ describe('shortcut composer flows', () => {
     const cancel = vi.fn(async () => {})
     render(<ApprovalFlow matched={approval(respond)} activeProfile={vimProfile} t={t} cancelTask={cancel} />)
     fireEvent.keyDown(approvalSurface(), { key: 'j' })
-    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Reject' }))
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: '拒绝' }))
     fireEvent.keyDown(approvalSurface(), { key: 'Escape' })
     expect(cancel).toHaveBeenCalledOnce()
     expect(respond).not.toHaveBeenCalled()
@@ -235,6 +241,6 @@ describe('shortcut composer flows', () => {
     render(<ApprovalFlow matched={approval()} activeProfile={standardProfile} t={t} cancelTask={cancel} />)
     fireEvent.keyDown(approvalSurface(), { key: 'Escape' })
     await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('cancel failed'))
-    expect((screen.getByRole('button', { name: 'Allow once' }) as HTMLButtonElement).disabled).toBe(false)
+    expect((screen.getByRole('button', { name: '允许一次' }) as HTMLButtonElement).disabled).toBe(false)
   })
 })

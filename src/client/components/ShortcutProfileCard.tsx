@@ -57,14 +57,15 @@ export function ShortcutProfileCard({ settings, profiles, t = fallbackT }: Short
     ? <p role="status" className={styles.empty}>{t('settings.empty')}</p>
     : (
       <>
-        <fieldset className={styles.profiles} disabled={pending !== undefined}>
+        <fieldset className={styles.profileSelectGroup} disabled={pending !== undefined}>
           <legend>{t('settings.profile')}</legend>
-          {profiles.map(profile => <label className={`${styles.profile} ${selection === profile.id ? styles.selected : ''}`} key={profile.id}>
-            <input type="radio" name="shortcut-profile" value={profile.id} aria-label={t('aria.profileOption').replace('{name}', t(profile.label))} checked={selection === profile.id} onChange={() => void choose(profile.id)} />
-            <span><strong>{t(profile.label)}</strong><small>{t(profile.description)}</small></span>
-            {selection === profile.id ? <ShortcutIcon name="check" size={16} /> : null}
-            {pending === profile.id ? <span role="status">{t('settings.saving')}</span> : null}
-          </label>)}
+          <label className={styles.profileSelect}>
+            <span>{t('settings.profile')}</span>
+            <select aria-label={t('settings.profile')} value={selection} onChange={event => void choose(event.target.value)}>
+              {profiles.map(profile => <option key={profile.id} value={profile.id}>{t(profile.label)}</option>)}
+            </select>
+            {pending !== undefined ? <span role="status">{t('settings.saving')}</span> : null}
+          </label>
         </fieldset>
         {error !== undefined || settings.error() !== undefined ? <p role="alert" className={styles.error}>{t('settings.error').replace('{message}', error ?? settings.error() ?? '')}</p> : null}
         {active === undefined ? <p role="status" className={styles.empty}>{t('settings.conflict')}</p> : <>

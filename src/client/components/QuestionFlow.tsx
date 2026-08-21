@@ -138,7 +138,7 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask }: Question
       <div className={surfaceStyles.actions} data-testid="question-actions">
         <button
           ref={node => { focusItems.current[options.length + 1] = node }}
-          className={clsx(draft.skipped && surfaceStyles.optionSelected)}
+          className={clsx(surfaceStyles.action, draft.skipped && surfaceStyles.actionSelected)}
           tabIndex={focusIndex === options.length + 1 ? 0 : -1}
           type="button"
           disabled={submitting}
@@ -146,7 +146,7 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask }: Question
         >{t('question.skip')}</button>
         {showAdvance ? <button
           ref={node => { focusItems.current[options.length + 2] = node }}
-          className={surfaceStyles.optionSelected}
+          className={clsx(surfaceStyles.action, surfaceStyles.actionPrimary)}
           tabIndex={focusIndex === options.length + 2 ? 0 : -1}
           type="button"
           disabled={submitting}
