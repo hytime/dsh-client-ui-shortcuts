@@ -4,6 +4,7 @@ import type {
 import { DEFAULT_SHORTCUT_PROFILE_ID } from '../../profile-catalog.js'
 import type { ShortcutProfileRegistry } from './types.js'
 import { standardProfile, vimProfile } from './builtins.js'
+import { normalizePersistedShortcutBindings } from '../../shortcut-binding-contract.js'
 
 const COMMANDS: readonly ShortcutCommand[] = [
   'focusPrevious',
@@ -38,6 +39,7 @@ export function canonicalSequenceKey(sequence: NormalizedSequence): string {
 }
 
 export function validateShortcutBindings(bindings: readonly ShortcutBinding[]): readonly ShortcutBinding[] {
+  normalizePersistedShortcutBindings(bindings as unknown as readonly Record<string, unknown>[])
   return validateAndNormalizeProfile({ id: 'custom', label: 'custom', description: 'custom', bindings }, new Set()).bindings
 }
 

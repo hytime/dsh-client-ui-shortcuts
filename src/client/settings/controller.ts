@@ -18,7 +18,7 @@ export interface ShortcutSettingsFace {
 export class ShortcutSettingsController implements ShortcutSettingsFace {
   private readonly listeners = new Set<() => void>()
   private readonly disposeScope: () => void
-  private readonly customWrites: Promise<void>[] = []
+  private customWriteTail: Promise<void> = Promise.resolve()
   private currentId: string
   private lastError: string | undefined
   private disposed = false
@@ -44,7 +44,7 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
     const normalized = validateShortcutBindings(bindings)
     const persisted = JSON.parse(JSON.stringify(normalized)) as readonly PersistedShortcutBinding[]
     const generation = ++this.customGeneration
-    const previous = this.customWrites.at(-1) ?? Promise.resolve()
+    const previous = this.customWriteTail
     const operation = previous.then(async () => {
       try {
         await this.scope.set('customBindings', persisted)
@@ -60,7 +60,7 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
         throw error
       }
     })
-    this.customWrites.push(operation.catch(() => undefined))
+    this.customWriteTail = operation.catch(() => undefined)
     return operation
   }
 

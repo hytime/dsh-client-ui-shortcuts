@@ -155,6 +155,7 @@ describe('shortcut profile registry', () => {
 
   it('retains built-in question and approval bindings and adds recommended global bindings', () => {
     const registry = createBuiltinProfileRegistry()
+    expect(registry.get('standard')).toBeDefined()
     const standard = registry.get('standard')!
 
     expect(standard.bindings).toEqual(expect.arrayContaining([

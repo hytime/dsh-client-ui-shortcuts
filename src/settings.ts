@@ -2,10 +2,11 @@ import z from '@deepseek-ai/schemastery'
 import { DEFAULT_SHORTCUT_PROFILE_ID } from './profile-catalog.js'
 import { SHORTCUTS_SETTINGS_NAMESPACE } from './settings-namespace.js'
 
-export { SHORTCUTS_SETTINGS_NAMESPACE } from './settings-namespace.js'
+import type { PersistedShortcutBinding } from './shortcut-binding-contract.js'
 
-/** One lossless persisted binding before semantic validation. */
-export type PersistedShortcutBinding = { readonly [key: string]: unknown }
+export type { PersistedShortcutBinding } from './shortcut-binding-contract.js'
+
+export { SHORTCUTS_SETTINGS_NAMESPACE } from './settings-namespace.js'
 
 /** Persisted shortcut settings for the active profile selection and custom bindings. */
 export interface ShortcutSettings {
