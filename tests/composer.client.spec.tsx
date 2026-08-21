@@ -12,6 +12,7 @@ const t = (key: string) => ({
   'question.skip': 'Skip',
   'question.next': 'Next',
   'question.submit': 'Submit',
+  'question.previous': 'Previous question',
   'approval.reject': '拒绝',
   'approval.allowOnce': '允许一次',
   'approval.title': '需要授权才能继续',
@@ -137,6 +138,25 @@ describe('shortcut composer flows', () => {
     fireEvent.keyDown(questionSurface(), { key: 'Enter' })
     await waitFor(() => expect(respond).toHaveBeenCalledTimes(1))
     expect(respond.mock.calls[0]?.[0]).toMatchObject({ value: { answer: { answers: [{ id: 'q1', selected: [] }, { id: 'q2', selected: [] }] } } })
+  })
+
+  it('returns to the previous question without losing its selection', () => {
+    const respond = vi.fn<Response>(() => receipt())
+    render(<QuestionFlow
+      matched={question(respond, [{ label: 'A' }], false, [
+        { id: 'q1', question: 'First', options: [{ label: 'A' }] },
+        { id: 'q2', question: 'Second', options: [{ label: 'B' }] },
+      ])}
+      activeProfile={standardProfile}
+      t={t}
+      cancelTask={vi.fn(async () => {})}
+    />)
+
+    fireEvent.click(screen.getByRole('radio', { name: 'A' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Previous question' }))
+    expect(screen.getByRole('heading', { name: 'First' })).toBeTruthy()
+    expect(screen.getByRole('radio', { name: 'A' }).getAttribute('aria-checked')).toBe('true')
+    expect(respond).not.toHaveBeenCalled()
   })
 
   it('submits a single non-multi custom textarea Enter only once', async () => {

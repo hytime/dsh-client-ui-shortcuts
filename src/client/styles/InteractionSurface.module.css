@@ -155,9 +155,21 @@ textarea.customInput {
 }
 
 .actionPrimary {
-  border-color: var(--dsw-alias-brand-primary);
-  background: var(--dsw-alias-brand-primary);
-  color: var(--dsw-alias-label-white, #fff);
+  border-color: var(--dsw-alias-button-primary-fill, var(--dsw-alias-brand-primary));
+  background: var(--dsw-alias-button-primary-fill, var(--dsw-alias-brand-primary));
+  color: var(--dsw-alias-label-primary-foreground, #fff);
+}
+
+.actionPrimary:hover:not(:disabled) {
+  border-color: var(--dsw-alias-button-primary-hover, var(--dsw-alias-brand-primary));
+  background: var(--dsw-alias-button-primary-hover, var(--dsw-alias-brand-primary));
+  color: var(--dsw-alias-label-primary-foreground, #fff);
+}
+
+.actionPrimary:focus-visible {
+  outline: 2px solid var(--dsw-alias-brand-primary);
+  outline-offset: 2px;
+  color: var(--dsw-alias-label-primary-foreground, #fff);
 }
 
 .action:disabled {
@@ -175,9 +187,9 @@ textarea.customInput {
 }
 
 .approvalAllow {
-  border-color: var(--dsw-alias-brand-primary);
-  background: var(--dsw-alias-brand-primary);
-  color: var(--dsw-alias-label-white, #fff);
+  border-color: var(--dsw-alias-button-primary-fill, var(--dsw-alias-brand-primary));
+  background: var(--dsw-alias-button-primary-fill, var(--dsw-alias-brand-primary));
+  color: var(--dsw-alias-label-primary-foreground, #fff);
 }
 
 .approvalReject {

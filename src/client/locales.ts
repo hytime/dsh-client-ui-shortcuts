@@ -32,6 +32,7 @@ export const zh = {
   'approval.actions': '审批操作',
   'question.custom': '补充说明',
   'question.skip': '跳过',
+  'question.previous': '上一题',
   'question.next': '下一题',
   'question.submit': '提交',
 } as const
@@ -66,6 +67,7 @@ export const en = {
   'approval.actions': 'Approval actions',
   'question.custom': 'Additional details',
   'question.skip': 'Skip',
+  'question.previous': 'Previous question',
   'question.next': 'Next',
   'question.submit': 'Submit',
 } satisfies Record<keyof typeof zh, string>

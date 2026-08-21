@@ -2,7 +2,13 @@
 
 All notable changes to `@hytime/dsh-client-ui-shortcuts` are documented here.
 
-## 0.1.8 - Dialog state and spacing polish
+## 0.1.9 - Keyboard navigation polish
+
+### Fixed
+
+- Added a previous-question action that preserves earlier answers in multi-question flows.
+- Fixed primary submit text contrast while keyboard focus is active by using DSH foreground tokens.
+
 
 ### Fixed
 

@@ -22,6 +22,7 @@ type FocusItem =
   | { readonly kind: 'option'; readonly label: string }
   | { readonly kind: 'custom' }
   | { readonly kind: 'skip' }
+  | { readonly kind: 'previous' }
   | { readonly kind: 'advance' }
 
 const composing = (event: React.KeyboardEvent<HTMLElement>): boolean => event.nativeEvent.isComposing || (event.nativeEvent as KeyboardEvent).isComposing
@@ -39,12 +40,15 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask }: Question
   const draft = drafts[index]
   const options = question?.options ?? []
   const multi = question?.multiSelect === true
-  const showAdvance = true
+  const previousOffset = index > 0 ? 1 : 0
+  const skipIndex = options.length + previousOffset + 1
+  const advanceIndex = skipIndex + 1
   const focusList: FocusItem[] = [
     ...options.map(option => ({ kind: 'option' as const, label: option.label })),
     { kind: 'custom' },
+    ...(index > 0 ? [{ kind: 'previous' as const }] : []),
     { kind: 'skip' },
-    ...(showAdvance ? [{ kind: 'advance' as const }] : []),
+    { kind: 'advance' as const },
   ]
   const moveFocus = (delta: number) => setFocusIndex(current => focusList.length === 0 ? 0 : (current + delta + focusList.length) % focusList.length)
 
@@ -101,7 +105,8 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask }: Question
       const item = focusList[focusIndex]
       if (item?.kind === 'option') choose(item.label)
       else if (item?.kind === 'custom' || item?.kind === 'advance') advance()
-      else if (item?.kind === 'skip') skipQuestion()
+      else if (item?.kind === 'previous') { setIndex(current => current - 1); setError(undefined); setFocusIndex(0) }
+       else if (item?.kind === 'skip') skipQuestion()
     }
   }
   if (!question || !draft) return React.createElement('div')
@@ -150,22 +155,30 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask }: Question
         </div>
       </div>
       <div className={surfaceStyles.actions} data-testid="question-actions">
-        <button
+        {index > 0 ? <button
           ref={node => { focusItems.current[options.length + 1] = node }}
-          className={clsx(surfaceStyles.action, draft.skipped && surfaceStyles.actionSelected)}
+          className={surfaceStyles.action}
           tabIndex={focusIndex === options.length + 1 ? 0 : -1}
           type="button"
           disabled={submitting}
-          onClick={() => { setFocusIndex(options.length + 1); skipQuestion() }}
+          onClick={() => { setIndex(current => current - 1); setError(undefined); setFocusIndex(0) }}
+        >{t('question.previous')}</button> : null}
+        <button
+          ref={node => { focusItems.current[skipIndex] = node }}
+          className={clsx(surfaceStyles.action, draft.skipped && surfaceStyles.actionSelected)}
+          tabIndex={focusIndex === skipIndex ? 0 : -1}
+          type="button"
+          disabled={submitting}
+          onClick={() => { setFocusIndex(skipIndex); skipQuestion() }}
         >{t('question.skip')}</button>
-        {showAdvance ? <button
-          ref={node => { focusItems.current[options.length + 2] = node }}
+        <button
+          ref={node => { focusItems.current[advanceIndex] = node }}
           className={clsx(surfaceStyles.action, surfaceStyles.actionPrimary)}
-          tabIndex={focusIndex === options.length + 2 ? 0 : -1}
+          tabIndex={focusIndex === advanceIndex ? 0 : -1}
           type="button"
           disabled={submitting}
           onClick={advance}
-        >{index === questions.length - 1 ? t('question.submit') : t('question.next')}</button> : null}
+        >{index === questions.length - 1 ? t('question.submit') : t('question.next')}</button>
       </div>
       {error ? <p role="alert" className={surfaceStyles.error}>{error}</p> : null}
     </div>
