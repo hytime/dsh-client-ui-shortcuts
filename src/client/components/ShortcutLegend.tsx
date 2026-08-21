@@ -19,7 +19,7 @@ function keyLabel(binding: ShortcutBinding): string[] {
   return [...modifiers, value]
 }
 
-const COMMAND_ICONS: Record<ShortcutCommand, ShortcutIconName> = {
+const COMMAND_ICONS: Partial<Record<ShortcutCommand, ShortcutIconName>> = {
   focusPrevious: 'arrow-up',
   focusNext: 'arrow-down',
   activate: 'check',
@@ -41,7 +41,7 @@ export function ShortcutLegend({ bindings, t }: ShortcutLegendProps): React.Reac
             const keys = keyLabel(binding)
             return <div className={styles.legendItem} role="listitem" key={`${binding.command}-${binding.scope}-${index}`}>
               <span className={styles.legendCommand}>
-                <ShortcutIcon name={COMMAND_ICONS[binding.command]} size={16} />
+                <ShortcutIcon name={COMMAND_ICONS[binding.command] ?? 'keyboard'} size={16} />
                 <span>{t(`keyboard.${binding.command}`)}</span>
               </span>
               <span className={styles.legendKeys}>

@@ -8,6 +8,13 @@ export type ShortcutCommand =
   | 'cancelTask'
   | 'openCommandPalette'
   | 'openSettings'
+  | 'startSession'
+  | 'previousSession'
+  | 'nextSession'
+  | 'previousWorkspace'
+  | 'nextWorkspace'
+  | 'forkSession'
+  | 'toggleTheme'
 
 /** Interaction surface whose controls receive a shortcut. */
 export type ShortcutScope = 'global' | 'question' | 'approval'
