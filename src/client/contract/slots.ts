@@ -29,6 +29,7 @@ export type ShortcutProfileCardProps = SettingsPluginItemOwnerProps & {
   readonly settings: ShortcutSettingsFace
   readonly profiles: readonly ShortcutProfile[]
   readonly t: (key: string) => string
+  readonly availableGlobalActions: readonly string[]
 }
 
 /** Select the highest-priority shortcut interaction from the owner currency. */

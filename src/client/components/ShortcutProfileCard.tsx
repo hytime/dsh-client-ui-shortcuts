@@ -15,7 +15,7 @@ export type ShortcutProfileCardProps = Omit<SlotShortcutProfileCardProps, keyof 
 const fallbackT = (key: string): string => key
 
 /** Settings UI uses the latest runtime snapshot as authoritative after every save attempt. */
-export function ShortcutProfileCard({ settings, profiles, t = fallbackT }: ShortcutProfileCardProps): React.ReactElement {
+export function ShortcutProfileCard({ settings, profiles, availableGlobalActions, t = fallbackT }: ShortcutProfileCardProps): React.ReactElement {
   const [, refresh] = useState(0)
   const [open, setOpen] = useState(false)
   const [pending, setPending] = useState<string>()
@@ -71,9 +71,9 @@ export function ShortcutProfileCard({ settings, profiles, t = fallbackT }: Short
           </label>
         </fieldset>
         {error !== undefined || settings.error() !== undefined ? <p role="alert" className={styles.error}>{t('settings.error').replace('{message}', error ?? settings.error() ?? '')}</p> : null}
-        {currentProfile === undefined ? <p role="status" className={styles.empty}>{t('settings.conflict')}</p> : currentProfile.id === 'custom' ? <ShortcutBindingEditor bindings={settings.customBindings()} t={t} onSave={settings.setCustomBindings} /> : <>
+        {currentProfile === undefined ? <p role="status" className={styles.empty}>{t('settings.conflict')}</p> : currentProfile.id === 'custom' ? <ShortcutBindingEditor bindings={settings.customBindings()} availableGlobalActions={availableGlobalActions as never} t={t} onSave={settings.setCustomBindings} /> : <>
           <p className={styles.summary}>{currentProfile.description ? t(currentProfile.description) : ''}</p>
-          <ShortcutLegend bindings={currentProfile.bindings} t={t} />
+          <ShortcutLegend bindings={currentProfile.bindings} availableGlobalActions={availableGlobalActions} t={t} />
         </>}
       </>
     )

@@ -244,7 +244,7 @@ describe('shortcut settings card', () => {
   it('starts collapsed and toggles profile details with an accessible disclosure header', () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     const settings = settingsFace()
-    render(<ShortcutProfileCard settings={settings} profiles={registry.list()} t={t} />)
+    render(<ShortcutProfileCard settings={settings} profiles={registry.list()} availableGlobalActions={[]} t={t} />)
     const trigger = screen.getByRole('button', { name: 'Expand: Shortcuts' })
     expect(trigger.getAttribute('aria-expanded')).toBe('false')
     expect(screen.queryByRole('combobox', { name: 'Profile' })).toBeNull()
@@ -259,7 +259,7 @@ describe('shortcut settings card', () => {
   it('renders accessible radios, selected state, and legends grouped by scope', () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     const settings = settingsFace()
-    render(<ShortcutProfileCard settings={settings} profiles={registry.list()} t={t} />)
+    render(<ShortcutProfileCard settings={settings} profiles={registry.list()} availableGlobalActions={[]} t={t} />)
     openCard()
     expect((screen.getByRole('combobox', { name: 'Profile' }) as HTMLSelectElement).value).toBe('standard')
     expect(screen.getByText('Current profile')).toBeTruthy()
@@ -267,9 +267,9 @@ describe('shortcut settings card', () => {
     expect(screen.getByRole('heading', { name: 'Approvals' })).toBeTruthy()
     expect(screen.getAllByText('Previous').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Activate').length).toBeGreaterThan(0)
-    expect(screen.getAllByRole('heading', { level: 3 })).toHaveLength(3)
+    expect(screen.getAllByRole('heading', { level: 3 })).toHaveLength(2)
     const lists = screen.getAllByRole('list')
-    expect(lists).toHaveLength(3)
+    expect(lists).toHaveLength(2)
     for (const list of lists) {
       const items = Array.from(list.querySelectorAll('[role="listitem"]'))
       expect(items.length).toBeGreaterThan(0)
@@ -286,7 +286,7 @@ describe('shortcut settings card', () => {
     let resolve!: () => void
     const settings = settingsFace()
     settings.setActiveProfile = vi.fn(() => new Promise<void>(r => { resolve = r }))
-    render(<ShortcutProfileCard settings={settings} profiles={registry.list()} t={t} />)
+    render(<ShortcutProfileCard settings={settings} profiles={registry.list()} availableGlobalActions={[]} t={t} />)
     openCard()
     fireEvent.change(screen.getByRole('combobox', { name: 'Profile' }), { target: { value: 'vim' } })
     expect(settings.setActiveProfile).toHaveBeenCalledWith('vim')
@@ -300,7 +300,7 @@ describe('shortcut settings card', () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     const settings = settingsFace()
     settings.failNext('no permission')
-    render(<ShortcutProfileCard settings={settings} profiles={registry.list()} t={t} />)
+    render(<ShortcutProfileCard settings={settings} profiles={registry.list()} availableGlobalActions={[]} t={t} />)
     openCard()
     fireEvent.change(screen.getByRole('combobox', { name: 'Profile' }), { target: { value: 'vim' } })
     await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('no permission'))
@@ -314,7 +314,7 @@ describe('shortcut settings card', () => {
     const settings = settingsFace()
     let settle!: (error?: Error) => void
     settings.setActiveProfile = vi.fn(() => new Promise<void>((resolve, reject) => { settle = error => error ? reject(error) : resolve() }))
-    render(<ShortcutProfileCard settings={settings} profiles={registry.list()} t={t} />)
+    render(<ShortcutProfileCard settings={settings} profiles={registry.list()} availableGlobalActions={[]} t={t} />)
     openCard()
     fireEvent.change(screen.getByRole('combobox', { name: 'Profile' }), { target: { value: 'vim' } })
     settings.setExternal('standard')
