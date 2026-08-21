@@ -51,5 +51,5 @@
 .empty { color: var(--dsw-alias-text-secondary); }
 .summary { margin: 0; color: var(--dsw-alias-text-secondary); }
 
-@media (max-width: 560px) { .body { padding: 16px 0 8px; } .questionSurface { padding: 12px; } .legendRow { grid-template-columns: 1fr; gap: 4px; } }
+@media (max-width: 560px) { .body { padding: 16px 0 8px; } .legendRow { grid-template-columns: 1fr; gap: 4px; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; } }
