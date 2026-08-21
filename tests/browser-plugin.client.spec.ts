@@ -127,7 +127,7 @@ describe('shortcut client slot wiring', () => {
     const b = await bench()
     expect(b.locale.bind('dsh-shortcuts')('profile.standard.label')).toBe('标准')
     expect(b.slots.entries('conversation.composer')).toHaveLength(1)
-    expect(b.slots.entries('conversation.composer')[0]!.options).toMatchObject({ locale: 'dsh-shortcuts' })
+    expect(b.slots.entries('conversation.composer')[0]!.options).toMatchObject({ locale: 'dsh-shortcuts', priority: 2 })
     expect(b.slots.entries('settings.plugin.item')[0]!.options).toMatchObject({ key: 'dsh-ui-shortcuts', locale: 'dsh-shortcuts' })
     await b.feature.dispose()
   })

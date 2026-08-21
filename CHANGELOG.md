@@ -2,6 +2,13 @@
 
 All notable changes to `@hytime/dsh-client-ui-shortcuts` are documented here.
 
+## 0.1.2 - Composer takeover fix
+
+### Fixed
+
+- Fixed the shortcuts composer priority so it takes over the official DSH question and approval composer instead of leaving the native UI active.
+- Added a slot-wiring regression that locks the takeover priority above the built-in approval entry.
+
 ## 0.1.1 - UI interaction fixes
 
 ### Fixed
@@ -11,6 +18,7 @@ All notable changes to `@hytime/dsh-client-ui-shortcuts` are documented here.
 - Added a collapsible settings card matching the DSH plugin-card disclosure pattern.
 - Preserved session-scoped cancellation while refreshing the active conversation lookup at cancel time.
 
+## 0.1.0 - Initial release
 
 ### Added
 

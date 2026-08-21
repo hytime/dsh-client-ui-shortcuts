@@ -2,6 +2,13 @@
 
 `@hytime/dsh-client-ui-shortcuts` 的重要变更记录如下。
 
+## 0.1.2 - Composer 接管修复
+
+### 修复
+
+- 修复 shortcuts composer priority，使其接管 DSH 官方 question/approval composer，不再继续显示 native UI。
+- 新增 slot wiring 回归，锁定其优先级高于内置 approval entry。
+
 ## 0.1.1 - 交互修复
 
 ### 修复
@@ -11,6 +18,7 @@
 - 新增与 DSH plugin card disclosure 模式一致的可折叠 settings card。
 - 保留 session-scoped cancel，并在取消时重新获取当前 conversation。
 
+## 0.1.0 - 首次发布
 
 ### 新增
 
