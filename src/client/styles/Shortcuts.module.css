@@ -51,40 +51,5 @@
 .empty { color: var(--dsw-alias-text-secondary); }
 .summary { margin: 0; color: var(--dsw-alias-text-secondary); }
 
-.questionSurface {
-  display: grid;
-  gap: 12px;
-  max-width: 720px;
-  padding: 16px;
-  color: var(--dsw-alias-text-primary);
-  background: var(--dsw-alias-bg-layer-3);
-  border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 12px;
-}
-.questionTitle, .questionDetail { margin: 0; }
-.questionDetail { color: var(--dsw-alias-label-tertiary); }
-.optionGroup { display: grid; gap: 8px; }
-.option {
-  width: 100%;
-  appearance: none;
-  border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 8px;
-  padding: 10px 12px;
-  background: var(--dsw-alias-bg-layer-2);
-  color: var(--dsw-alias-label-primary);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-.option:hover, .option:focus-visible, .optionSelected { border-color: var(--dsw-alias-brand-primary); }
-.option:focus-visible, .questionAction:focus-visible, .customInput:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 2px; }
-.optionSelected { background: var(--dsw-alias-bg-module-platform); }
-.customInput { width: 100%; min-height: 76px; box-sizing: border-box; resize: vertical; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; padding: 10px 12px; background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); font: inherit; }
-.questionActions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
-.questionAction { appearance: none; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; padding: 7px 14px; background: none; color: var(--dsw-alias-label-secondary); font: inherit; cursor: pointer; }
-.questionAction:hover, .questionAction:focus-visible, .questionActionSelected { border-color: var(--dsw-alias-brand-primary); color: var(--dsw-alias-label-primary); }
-.questionActionPrimary { background: var(--dsw-alias-label-primary); color: var(--dsw-alias-bg-layer-3); }
-.questionError { margin: 0; color: var(--dsw-alias-label-error); }
-
 @media (max-width: 560px) { .body { padding: 16px 0 8px; } .questionSurface { padding: 12px; } .legendRow { grid-template-columns: 1fr; gap: 4px; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; } }
