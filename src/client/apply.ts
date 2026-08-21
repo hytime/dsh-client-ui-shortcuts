@@ -26,14 +26,14 @@ export function apply(ctx: ClientContext): void {
   const controller = createShortcutSettingsController(scope, registry)
   ctx.effect(() => () => controller.dispose(), 'dsh-shortcuts: settings controller')
   const t = ctx.locale.bind(NS)
-  const pending = ctx.get('interactions') as { readonly current?: () => { readonly kind?: string } | undefined } | undefined
+  const sessions = ctx.get('sessions') as GlobalActionCapabilities['sessions']
+  const workspaces = ctx.get('workspaces') as GlobalActionCapabilities['workspaces']
+  const theme = ctx.get('theme') as GlobalActionCapabilities['theme']
+  const actions = createGlobalActions({ sessions, workspaces, theme })
+  const pending = ctx.get('interactions') as { readonly current?: () => unknown } | undefined
   ctx.effect(() => createGlobalKeyboardRouter(window, {
     getProfile: () => registry.active(),
-    getActions: () => createGlobalActions({
-      sessions: ctx.get('sessions') as GlobalActionCapabilities['sessions'],
-      workspaces: ctx.get('workspaces') as GlobalActionCapabilities['workspaces'],
-      theme: ctx.get('theme') as GlobalActionCapabilities['theme'],
-    }),
+    getActions: () => actions,
     isInteractionPending: () => pending?.current?.() !== undefined,
   }), 'dsh-shortcuts: global keyboard router')
   ctx.effect(() => ctx.slots.inject('conversation.composer', () => ctx.slots.register({

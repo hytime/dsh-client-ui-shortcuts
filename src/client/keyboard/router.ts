@@ -26,7 +26,10 @@ export function createGlobalKeyboardRouter(target: RouterWindow, options: Global
   }
   const onKeyDown = (event: RouterEvent): void => {
     if (isGuardedTarget(event.target) || event.isComposing || event.keyCode === 229 || event.repeat) return
-    if (options.isInteractionPending?.() && (event.key === 'Enter' || event.key === 'Escape')) return
+    if (options.isInteractionPending?.() && (event.key === 'Enter' || event.key === 'Escape')) {
+      reset()
+      return
+    }
     const input = normalizeKeyboardEvent(event)
     const decision = resolver.resolve(options.getProfile(), 'global', input)
     if (decision.kind === 'command') {
