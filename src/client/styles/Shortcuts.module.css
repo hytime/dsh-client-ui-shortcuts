@@ -42,14 +42,17 @@
 .profile small { color: var(--dsw-alias-text-secondary); }
 .profile:focus-within { outline: 2px solid var(--dsw-alias-border-focus); outline-offset: 2px; }
 .legend { display: grid; gap: 16px; }
-.legendGroup { display: grid; gap: 8px; }
-.legendRow { display: grid; grid-template-columns: minmax(120px, 1fr) 1fr; gap: 12px; align-items: center; }
-.legendRow dt { color: var(--dsw-alias-text-secondary); }
-.legendRow dd { margin: 0; }
-.keycap { display: inline-block; min-width: 24px; padding: 2px 6px; border: 1px solid var(--dsw-alias-border-subtle); text-align: center; font-size: 0.875rem; }
+.legendGroup { display: grid; gap: 6px; min-width: 0; }
+.legendGroup h3 { margin: 0; color: var(--dsw-alias-text-primary); font-size: 12px; font-weight: 600; line-height: 1.4; text-transform: uppercase; letter-spacing: .04em; }
+.legendList { min-width: 0; }
+.legendItem { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; min-width: 0; padding: 7px 8px; border-top: 1px solid var(--dsw-alias-border-subtle); transition: background .16s; }
+.legendItem:hover, .legendItem:focus-within { background: var(--dsw-alias-bg-module-platform); }
+.legendCommand { min-width: 0; overflow-wrap: anywhere; color: var(--dsw-alias-text-secondary); }
+.legendKeys { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 4px; min-width: 0; color: var(--dsw-alias-text-secondary); }
+.keycap { display: inline-block; min-width: 24px; padding: 2px 6px; border: 1px solid var(--dsw-alias-border-subtle); background: var(--dsw-alias-bg-layer-2); text-align: center; font-size: 0.875rem; }
 .error { color: var(--dsw-alias-text-danger); }
 .empty { color: var(--dsw-alias-text-secondary); }
 .summary { margin: 0; color: var(--dsw-alias-text-secondary); }
 
-@media (max-width: 560px) { .body { padding: 16px 0 8px; } .legendRow { grid-template-columns: 1fr; gap: 4px; } }
+@media (max-width: 560px) { .body { padding: 16px 0 8px; } .legendItem { grid-template-columns: 1fr; gap: 4px; } .legendKeys { justify-content: flex-start; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; } }

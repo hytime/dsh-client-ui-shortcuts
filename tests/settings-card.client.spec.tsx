@@ -67,7 +67,17 @@ describe('shortcut settings card', () => {
     expect(screen.getByRole('heading', { name: 'Approvals' })).toBeTruthy()
     expect(screen.getAllByText('Previous').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Activate').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('ArrowUp').length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('heading', { level: 3 })).toHaveLength(2)
+    const lists = screen.getAllByRole('list')
+    expect(lists).toHaveLength(2)
+    for (const list of lists) {
+      const items = Array.from(list.querySelectorAll('[role="listitem"]'))
+      expect(items.length).toBeGreaterThan(0)
+      for (const item of items) {
+        expect(item.textContent).toBeTruthy()
+        expect(item.querySelectorAll('kbd').length).toBeGreaterThan(0)
+      }
+    }
   })
 
   it('sets vim and disables radios while save is pending', async () => {

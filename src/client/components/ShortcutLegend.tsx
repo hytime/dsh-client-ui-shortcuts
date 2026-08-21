@@ -23,12 +23,17 @@ export function ShortcutLegend({ bindings, t }: ShortcutLegendProps): React.Reac
       if (entries.length === 0) return null
       return <section className={styles.legendGroup} key={scope} aria-labelledby={`shortcut-legend-${scope}`}>
         <h3 id={`shortcut-legend-${scope}`}>{t(`legend.scope.${scope}`)}</h3>
-        <dl>
-          {entries.map((binding, index) => <div className={styles.legendRow} key={`${binding.command}-${binding.scope}-${index}`}>
-            <dt>{t(`keyboard.${binding.command}`)}</dt>
-            <dd>{keyLabel(binding).map((key, keyIndex) => <React.Fragment key={`${key}-${keyIndex}`}><kbd className={styles.keycap}>{key}</kbd>{keyIndex < keyLabel(binding).length - 1 ? ' + ' : null}</React.Fragment>)}</dd>
-          </div>)}
-        </dl>
+        <div className={styles.legendList} role="list">
+          {entries.map((binding, index) => {
+            const keys = keyLabel(binding)
+            return <div className={styles.legendItem} role="listitem" key={`${binding.command}-${binding.scope}-${index}`}>
+              <span className={styles.legendCommand}>{t(`keyboard.${binding.command}`)}</span>
+              <span className={styles.legendKeys}>
+                {keys.map((key, keyIndex) => <React.Fragment key={`${key}-${keyIndex}`}><kbd className={styles.keycap}>{key}</kbd>{keyIndex < keys.length - 1 ? ' + ' : null}</React.Fragment>)}
+              </span>
+            </div>
+          })}
+        </div>
       </section>
     })}
   </div>
