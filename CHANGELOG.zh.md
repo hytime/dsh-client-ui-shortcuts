@@ -2,12 +2,18 @@
 
 `@hytime/dsh-client-ui-shortcuts` 的重要变更记录如下。
 
-## 0.1.2 - Composer 接管修复
+## 0.1.3 - Composer 顺序修复
 
 ### 修复
 
-- 修复 shortcuts composer priority，使其接管 DSH 官方 question/approval composer，不再继续显示 native UI。
-- 新增 slot wiring 回归，锁定其优先级高于内置 approval entry。
+- 修复 shortcuts composer 的 priority 顺序，使其先于 DSH 官方 question/approval composer 尝试。
+- 新增针对 DSH chain 低 priority 优先选举规则的 slot wiring 回归。
+
+## 0.1.2 - Composer priority metadata
+
+### 修复
+
+- 新增 composer priority metadata 和 slot wiring 回归，开始对齐 DSH chain routing。
 
 ## 0.1.1 - 交互修复
 

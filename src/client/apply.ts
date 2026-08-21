@@ -25,7 +25,7 @@ export function apply(ctx: ClientContext): void {
   ctx.effect(() => () => controller.dispose(), 'dsh-shortcuts: settings controller')
   const t = ctx.locale.bind(NS)
   ctx.effect(() => ctx.slots.inject('conversation.composer', () => ctx.slots.register({
-    name: 'conversation.composer', select: selectShortcut, priority: 2, locale: NS,
+    name: 'conversation.composer', select: selectShortcut, priority: -1, locale: NS,
     inject: (sessionId: SessionId): { activeProfile: ShortcutProfile; t: (key: string) => string; cancelTask: () => Promise<void> } => {
       const session = ctx.sessions.scope(sessionId)
       if (session === undefined) throw new Error(`dsh-shortcuts: unknown session "${sessionId}"`)

@@ -2,12 +2,18 @@
 
 All notable changes to `@hytime/dsh-client-ui-shortcuts` are documented here.
 
-## 0.1.2 - Composer takeover fix
+## 0.1.3 - Composer ordering fix
 
 ### Fixed
 
-- Fixed the shortcuts composer priority so it takes over the official DSH question and approval composer instead of leaving the native UI active.
-- Added a slot-wiring regression that locks the takeover priority above the built-in approval entry.
+- Fixed the shortcuts composer priority ordering so it is tried before the official DSH question and approval composers.
+- Added a slot-wiring regression for the lower-first DSH chain election order.
+
+## 0.1.2 - Composer priority metadata
+
+### Fixed
+
+- Added explicit composer priority metadata and a slot-wiring regression while aligning the takeover with DSH chain routing.
 
 ## 0.1.1 - UI interaction fixes
 
