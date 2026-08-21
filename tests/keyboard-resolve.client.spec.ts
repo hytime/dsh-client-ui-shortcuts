@@ -3,7 +3,7 @@ import { standardProfile, vimProfile } from '../src/client/profiles/builtins.js'
 import { findShortcutConflicts } from '../src/client/keyboard/conflicts.js'
 import { normalizeKeyboardEvent } from '../src/client/keyboard/normalize.js'
 import { createKeyResolver, resolveKey } from '../src/client/keyboard/resolve.js'
-import { createBuiltinProfileRegistry, canonicalBindingKey } from '../src/client/profiles/registry.js'
+import { createBuiltinProfileRegistry, canonicalBindingKey, canonicalSequenceKey } from '../src/client/profiles/registry.js'
 import type { KeyInput } from '../src/client/contract/keyboard.js'
 import type { ShortcutProfile } from '../src/client/contract/profile.js'
 
@@ -108,6 +108,21 @@ describe('profile-aware keyboard resolver', () => {
     expect(resolveKey(modProfile, 'global', input('p', { ctrl: true }))).toEqual({ kind: 'command', command: 'openSettings' })
     expect(resolveKey(modProfile, 'global', input('p', { meta: true }))).toEqual({ kind: 'command', command: 'openSettings' })
     expect(resolveKey(ctrlProfile, 'global', input('p', { meta: true }))).toEqual({ kind: 'pass' })
+  })
+
+  it('does not match Mod against a dual-platform modifier event', () => {
+    const profile: ShortcutProfile = {
+      ...standardProfile,
+      id: 'dual-mod',
+      bindings: [{ command: 'openSettings', scope: 'global', key: input('p'), modifier: 'Mod' }],
+    }
+    expect(resolveKey(profile, 'global', input('p', { ctrl: true, meta: true }))).toEqual({ kind: 'pass' })
+  })
+
+  it('preserves the legacy single-stroke key and exposes sequence canonicalization separately', () => {
+    const binding = { command: 'activate' as const, scope: 'approval' as const, key: input('Enter') }
+    expect(canonicalBindingKey(binding)).toBe('||||Enter')
+    expect(canonicalSequenceKey({ strokes: [input('g'), input('s')] })).toBe('||||g ||||s')
   })
 
   it('selects persisted built-in profiles and falls back when missing', () => {

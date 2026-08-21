@@ -81,6 +81,7 @@ function sameStroke(left: KeyStroke | KeyInput, right: KeyStroke | KeyInput): bo
   const effectiveLeftModifier = leftModifier ?? (left.ctrl ? 'Ctrl' : left.meta ? 'Meta' : undefined)
   const rightCtrl = right.ctrl
   const rightMeta = right.meta
+  if (rightCtrl && rightMeta) return false
   const modifierMatches = effectiveLeftModifier === 'Mod'
     ? rightCtrl || rightMeta
     : effectiveLeftModifier === 'Ctrl'

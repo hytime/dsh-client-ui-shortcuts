@@ -141,7 +141,7 @@ function validateAndNormalizeProfile(
 
   const bindings = profile.bindings.map(normalizeBinding)
   validateConflicts(profile.bindings)
-  return freezeProfile({ ...profile, bindings: profile.bindings })
+  return freezeProfile({ ...profile, bindings: normalizeProfileBindings(profile.bindings, bindings) })
 }
 
 function normalizeBinding(binding: ShortcutBinding): NormalizedSequence[] {
@@ -172,9 +172,42 @@ function normalizeBinding(binding: ShortcutBinding): NormalizedSequence[] {
   }))
 }
 
+function normalizeProfileBindings(
+  source: readonly ShortcutBinding[],
+  normalized: readonly NormalizedSequence[][],
+): ShortcutBinding[] {
+  return source.map((binding, index) => {
+    const bindingSequences = normalizeBinding(binding)
+    const first = bindingSequences[0]!.strokes[0]!
+    const normalizedKey = {
+      key: first.key,
+      alt: first.alt,
+      ctrl: first.ctrl,
+      meta: first.meta,
+      shift: first.shift,
+    }
+    return {
+      ...binding,
+      ...(binding.key ? { key: normalizedKey } : {}),
+      ...(binding.sequence ? { sequence: bindingSequences[0]!.strokes } : {}),
+      ...(binding.sequences ? { sequences: bindingSequences.map(sequence => sequence.strokes) } : {}),
+    }
+  })
+}
+
 function normalizeStroke(stroke: KeyStroke, modifier?: ShortcutModifier): NormalizedStroke {
   if (!isKeyStroke(stroke)) {
     throw new Error('invalid shortcut key')
+  }
+  if (modifier === 'Mod' && stroke.ctrl && stroke.meta) {
+    throw new Error('invalid shortcut modifier')
+  }
+  if (modifier === 'Mod' && (stroke.alt || stroke.shift || stroke.ctrl || stroke.meta)
+    || modifier === 'Alt' && (!stroke.alt || stroke.ctrl || stroke.meta || stroke.shift)
+    || modifier === 'Shift' && (!stroke.shift || stroke.ctrl || stroke.meta || stroke.alt)
+    || modifier === 'Ctrl' && (!stroke.ctrl || stroke.meta || stroke.alt || stroke.shift)
+    || modifier === 'Meta' && (!stroke.meta || stroke.ctrl || stroke.alt || stroke.shift)) {
+    throw new Error('invalid shortcut modifier')
   }
   return {
     ...stroke,
@@ -223,7 +256,7 @@ function equivalentModifier(first: NormalizedStroke, second: NormalizedStroke): 
 
 function canonicalStrokeKey(stroke: NormalizedStroke): string {
   const modifier = stroke.modifier
-    ?? [stroke.ctrl ? 'ctrl' : '', stroke.meta ? 'meta' : ''].filter(Boolean).join('|')
+    ?? [stroke.ctrl ? 'ctrl' : '', stroke.meta ? 'meta' : ''].join('|')
   return [stroke.alt ? 'alt' : '', modifier, stroke.shift ? 'shift' : '', stroke.key].join('|')
 }
 

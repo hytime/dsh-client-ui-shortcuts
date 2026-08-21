@@ -195,14 +195,29 @@ describe('shortcut profile registry', () => {
     expect(Object.isFrozen(binding.sequences?.[0]?.[0])).toBe(true)
   })
 
-  it('rejects Mod-equivalent conflicts while keeping explicit modifiers distinct', () => {
+  it('rejects contradictory modifier declarations and dual-platform conflicts', () => {
     expect(() => createProfileRegistry([{
       ...alphaProfile,
-      id: 'mod-conflict',
-      bindings: [
-        { command: 'openSettings', scope: 'global', key: stroke('p'), modifier: 'Mod' },
-        { command: 'openCommandPalette', scope: 'global', key: stroke('p', { ctrl: true }) },
-      ],
-    }])).toThrow('conflict')
+      id: 'contradictory-modifier',
+      bindings: [{ command: 'openSettings', scope: 'global', key: stroke('p', { ctrl: true }), modifier: 'Alt' }],
+    }])).toThrow('modifier')
+
+    expect(() => createProfileRegistry([{
+      ...alphaProfile,
+      id: 'dual-platform',
+      bindings: [{ command: 'openSettings', scope: 'global', key: stroke('p', { ctrl: true, meta: true }), modifier: 'Mod' }],
+    }])).toThrow('modifier')
   })
+
+  it('stores normalized frozen bindings instead of caller-owned objects', () => {
+    const binding = { command: 'openSettings' as const, scope: 'global' as const, sequences: [[stroke('Esc')]] }
+    const profile = { ...alphaProfile, id: 'owned-sequence', bindings: [binding] }
+    const registry = createProfileRegistry([profile])
+    binding.sequences[0]![0]!.key = 'mutated'
+
+    const stored = registry.get('owned-sequence')!.bindings[0]!
+    expect(stored.sequences?.[0]?.[0]?.key).toBe('Escape')
+    expect(Object.isFrozen(stored.sequences)).toBe(true)
+  })
+
 })

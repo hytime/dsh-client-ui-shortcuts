@@ -19,7 +19,7 @@ export function findShortcutConflicts(profile: ShortcutProfile): ShortcutConflic
       if (first.binding.scope !== second.binding.scope || !isPrefix(first.sequence, second.sequence)) continue
       conflicts.push({
         scope: first.binding.scope,
-        key: canonicalSequenceKey(first.sequence).replace(/^\|\|\|/, '||||'),
+        key: canonicalSequenceKey(first.sequence).replace(/^\|\|\|\|\|/, '||||'),
         first: first.binding,
         second: second.binding,
       })
