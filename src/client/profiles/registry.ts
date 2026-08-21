@@ -298,8 +298,9 @@ function equivalentModifier(first: NormalizedStroke, second: NormalizedStroke): 
 }
 
 function canonicalStrokeKey(stroke: NormalizedStroke): string {
-  const modifier = stroke.modifier
-    ?? [stroke.ctrl ? 'ctrl' : '', stroke.meta ? 'meta' : ''].join('|')
+  const modifier = stroke.modifier === 'Mod'
+    ? 'ctrl'
+    : [stroke.ctrl ? 'ctrl' : '', stroke.meta ? 'meta' : ''].join('|')
   return [stroke.alt ? 'alt' : '', modifier, stroke.shift ? 'shift' : '', stroke.key].join('|')
 }
 

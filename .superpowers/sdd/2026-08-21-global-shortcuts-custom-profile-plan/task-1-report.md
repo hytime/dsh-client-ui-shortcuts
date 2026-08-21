@@ -132,7 +132,25 @@ Concerns:
 
 本轮未运行 focused Vitest/typecheck，未创建提交，未进入 Task 2。
 
-## 修复轮 4
+
+
+## 修复轮 5（最终允许轮）
+
+状态：DONE
+
+修复提交：7a67ef9
+
+修复内容：
+- `canonicalBindingKey()` 对单 stroke 继续使用既有 `[alt, ctrl, meta, shift, key]` legacy slot 格式。
+- declarative/symbolic `Mod` 单 stroke 映射到 canonical physical `ctrl` slot，不再序列化内部 `modifier` 字段。
+- 保留 `canonicalSequenceKey()` 作为结构化完整 symbolic/multi-stroke identity；未改动 resolver、snapshot 或其他行为。
+- 新增回归测试，验证 legacy physical 输出不变、symbolic `Mod` 使用同一 slot 格式且输出不包含 `modifier`。
+
+实际命令与结果：
+- Red phase：focused Vitest 首先因 canonical key 仍产生错误格式而失败；修正测试插入语法和期望后，确认失败来自待修复行为。
+- `CI=true pnpm exec vitest run tests/profile-registry.client.spec.ts tests/keyboard-resolve.client.spec.ts`：通过，6 files、90 tests passed。
+- `CI=true pnpm run typecheck`：通过。
+- `git diff --check`：通过。
 
 状态：DONE
 

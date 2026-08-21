@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createBuiltinProfileRegistry, createProfileRegistry } from '../src/client/profiles/registry.js'
+import { canonicalBindingKey, createBuiltinProfileRegistry, createProfileRegistry } from '../src/client/profiles/registry.js'
 import type { ShortcutProfile, ShortcutStroke } from '../src/client/contract/profile.js'
 
 const stroke = (key: string, modifiers: Partial<ShortcutProfile['bindings'][number]['key']> = {}) => ({
@@ -241,6 +241,22 @@ describe('shortcut profile registry', () => {
     const stored = registry.get('owned-sequence')!.bindings[0]!
     expect(stored.sequences?.[0]?.[0]?.key).toBe('Escape')
     expect(Object.isFrozen(stored.sequences)).toBe(true)
+  })
+
+  it('preserves legacy canonical slots for declarative Mod bindings without internal labels', () => {
+    expect(canonicalBindingKey({
+      command: 'openSettings',
+      scope: 'global',
+      key: stroke('p', { ctrl: true }),
+    })).toBe('|ctrl|||p')
+
+    const symbolicKey = canonicalBindingKey({
+      command: 'openCommandPalette',
+      scope: 'global',
+      key: { key: 'p', modifiers: ['Mod'] },
+    })
+    expect(symbolicKey).toBe('|ctrl||p')
+    expect(symbolicKey).not.toContain('modifier')
   })
 
   it('owns declarative representations without internal modifier fields', () => {
