@@ -8,6 +8,29 @@ import { createProfileRegistry } from '../src/client/profiles/registry.js'
 import { standardProfile, vimProfile } from '../src/client/profiles/builtins.js'
 import type { ShortcutSettingsFace } from '../src/client/settings/controller.js'
 import type { ShortcutProfile } from '../src/client/contract/profile.js'
+import type { SettingsScope, SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-runtime/client'
+
+const customBindings = [{
+  command: 'openSettings' as const,
+  scope: 'global' as const,
+  key: { key: 's', modifiers: ['Mod'] as const },
+}]
+
+function controllerScope(initial: { activeProfile: string; customBindings?: typeof customBindings }, fail = false): SettingsScope<import('../src/settings.js').ShortcutSettings> {
+  let snapshot: SettingsScopeSnapshot<import('../src/settings.js').ShortcutSettings> = {
+    status: 'ready', value: { customBindings: initial.customBindings ?? standardProfile.bindings, activeProfile: initial.activeProfile },
+    base: undefined, user: undefined, revision: 0, writable: true, mode: 'host',
+  }
+  return {
+    getSnapshot: () => snapshot,
+    subscribe: () => () => {},
+    set: vi.fn(async (field: string, value: unknown) => {
+      if (fail) throw new Error('permission denied')
+      snapshot = { ...snapshot, value: { ...snapshot.value!, [field]: value } }
+    }),
+    unset: vi.fn(async () => {}),
+  }
+}
 
 const labels: Record<string, string> = {
   'settings.title': 'Shortcuts', 'settings.description': 'Choose controls.', 'settings.profile': 'Profile',
@@ -40,6 +63,46 @@ function settingsFace(initial = 'standard') {
 }
 
 afterEach(cleanup)
+
+describe('shortcut settings controller custom profile', () => {
+  it('loads a valid persisted custom profile before writes', async () => {
+    const registry = createProfileRegistry([standardProfile, vimProfile])
+    const scope = controllerScope({ activeProfile: 'standard', customBindings })
+    const { createShortcutSettingsController } = await import('../src/client/settings/controller.js')
+    const controller = createShortcutSettingsController(scope, registry)
+
+    expect(controller.customBindings()).toEqual(customBindings)
+    expect(registry.get('custom')?.bindings).toEqual(customBindings)
+    controller.dispose()
+  })
+
+  it('defaults custom bindings from standard and replaces the custom profile after persistence', async () => {
+    const registry = createProfileRegistry([standardProfile, vimProfile])
+    const scope = controllerScope({ activeProfile: 'standard' })
+    const { createShortcutSettingsController } = await import('../src/client/settings/controller.js')
+    const controller = createShortcutSettingsController(scope, registry)
+
+    expect(controller.customBindings()).toEqual(standardProfile.bindings)
+    await controller.setCustomBindings(customBindings)
+    expect(controller.customBindings()).toEqual(customBindings)
+    expect(registry.get('custom')?.bindings).toEqual(customBindings)
+    controller.dispose()
+  })
+
+  it('keeps the active profile and old custom bindings when persistence fails', async () => {
+    const registry = createProfileRegistry([standardProfile, vimProfile])
+    const scope = controllerScope({ activeProfile: 'vim', customBindings }, true)
+    const { createShortcutSettingsController } = await import('../src/client/settings/controller.js')
+    const controller = createShortcutSettingsController(scope, registry)
+
+    expect(controller.activeProfileId()).toBe('vim')
+    await expect(controller.setCustomBindings(standardProfile.bindings)).rejects.toThrow('permission denied')
+    expect(controller.activeProfileId()).toBe('vim')
+    expect(controller.customBindings()).toEqual(customBindings)
+    expect(registry.get('custom')?.bindings).toEqual(customBindings)
+    controller.dispose()
+  })
+})
 
 describe('shortcut settings card', () => {
   it('starts collapsed and toggles profile details with an accessible disclosure header', () => {
@@ -149,7 +212,7 @@ describe('shortcut settings card', () => {
     const { rerender } = render(<ShortcutProfileCard settings={settings} profiles={registry.list()} t={zh} />)
     openCard()
     expect((screen.getByRole('combobox', { name: 'Profile' }) as HTMLSelectElement).value).toBe('standard')
-    expect(standardProfile.bindings).toHaveLength(8)
+    expect(standardProfile.bindings).toHaveLength(10)
     rerender(<ShortcutProfileCard settings={settings} profiles={registry.list()} t={t} />)
     expect((screen.getByRole('combobox', { name: 'Profile' }) as HTMLSelectElement).value).toBe('standard')
   })

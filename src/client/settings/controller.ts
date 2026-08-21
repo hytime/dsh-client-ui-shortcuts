@@ -1,5 +1,6 @@
 import type { SettingsScope, SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-runtime/client'
 import type { ShortcutSettings } from '../../settings.js'
+import type { ShortcutBinding } from '../contract/profile.js'
 import type { ShortcutProfileRegistry } from '../profiles/types.js'
 
 /** Public settings face consumed by settings cards and keyboard components. */
@@ -7,6 +8,8 @@ export interface ShortcutSettingsFace {
   readonly activeProfileId: () => string
   readonly subscribe: (listener: () => void) => () => void
   readonly setActiveProfile: (id: string) => Promise<void>
+  readonly customBindings: () => readonly ShortcutBinding[]
+  readonly setCustomBindings: (bindings: readonly ShortcutBinding[]) => Promise<void>
   readonly error: () => string | undefined
 }
 
@@ -22,12 +25,33 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
     private readonly scope: SettingsScope<ShortcutSettings>,
     private readonly registry: ShortcutProfileRegistry,
   ) {
-    this.currentId = this.readPersistedId(scope.getSnapshot()) ?? registry.active().id
+    const snapshot = scope.getSnapshot()
+    this.currentId = this.readPersistedId(snapshot) ?? registry.active().id
     registry.setActive(this.currentId)
+    if (snapshot.value?.customBindings !== undefined) {
+      try { registry.replaceCustom(snapshot.value.customBindings) } catch { /* invalid persisted custom data falls back to standard */ }
+    }
     this.disposeScope = scope.subscribe(() => this.onScopeChanged())
   }
 
   activeProfileId(): string { return this.currentId }
+
+  customBindings(): readonly ShortcutBinding[] { return this.registry.custom() }
+
+  async setCustomBindings(bindings: readonly ShortcutBinding[]): Promise<void> {
+    if (this.disposed) return
+    try {
+      await this.scope.set('customBindings', bindings)
+      if (this.disposed) return
+      this.registry.replaceCustom(bindings)
+      this.lastError = undefined
+      this.notify()
+    } catch (error) {
+      this.lastError = error instanceof Error ? error.message : String(error)
+      this.notify()
+      throw error
+    }
+  }
 
   error(): string | undefined { return this.lastError }
 

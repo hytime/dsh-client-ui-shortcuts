@@ -37,6 +37,10 @@ export function canonicalSequenceKey(sequence: NormalizedSequence): string {
   return sequence.strokes.map(stroke => canonicalStrokeKey(stroke)).join(' ')
 }
 
+export function validateShortcutBindings(bindings: readonly ShortcutBinding[]): readonly ShortcutBinding[] {
+  return validateAndNormalizeProfile({ id: 'custom', label: 'custom', description: 'custom', bindings }, new Set()).bindings
+}
+
 export function createBuiltinProfileRegistry(persistedId?: string): ShortcutProfileRegistry {
   return createProfileRegistry([standardProfile, vimProfile], DEFAULT_SHORTCUT_PROFILE_ID, persistedId)
 }
@@ -62,6 +66,7 @@ export function createProfileRegistry(
   }
 
   let snapshot: readonly ShortcutProfile[] = Object.freeze(profiles)
+  const standard = snapshot.find(profile => profile.id === DEFAULT_SHORTCUT_PROFILE_ID) ?? snapshot[0]!
   let activeId = persistedId !== undefined && initialIds.has(persistedId)
     ? persistedId
     : defaultProfileId
@@ -109,6 +114,16 @@ export function createProfileRegistry(
       if (activeId === id) return
       activeId = id
       notify()
+    },
+
+    replaceCustom(bindings) {
+      const custom = validateAndNormalizeProfile({ id: 'custom', label: 'custom', description: 'custom', bindings }, new Set(snapshot.filter(profile => profile.id !== 'custom').map(profile => profile.id)))
+      snapshot = Object.freeze([...snapshot.filter(profile => profile.id !== 'custom'), custom])
+      notify()
+    },
+
+    custom() {
+      return snapshot.find(profile => profile.id === 'custom')?.bindings ?? standard.bindings
     },
 
     subscribe(listener) {

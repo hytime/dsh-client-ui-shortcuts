@@ -1,5 +1,6 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { isShortcutProfileId } from './profile-catalog.js'
+import { validatePersistedShortcutBindings } from './settings-validation.js'
 import {
   SHORTCUTS_SETTINGS_NAMESPACE,
   ShortcutSettingsSchema,
@@ -26,6 +27,7 @@ export function apply(ctx: Context): void {
         if (!isShortcutProfileId(value.activeProfile)) {
           throw new Error(`unknown shortcut profile "${value.activeProfile}"`)
         }
+        validatePersistedShortcutBindings(value.customBindings)
       },
     })
   })

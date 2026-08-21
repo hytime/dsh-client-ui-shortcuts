@@ -12,6 +12,10 @@ export interface ShortcutProfileRegistry {
   active(): ShortcutProfile
   /** Select an existing profile by id. */
   setActive(id: string): void
+  /** Replace the persisted custom profile bindings atomically. */
+  replaceCustom(bindings: readonly import('../contract/profile.js').ShortcutBinding[]): void
+  /** Return the current custom profile bindings, falling back to standard. */
+  custom(): readonly import('../contract/profile.js').ShortcutBinding[]
   /** Subscribe to profile registration, removal, or active changes. */
   subscribe(listener: () => void): () => void
 }
