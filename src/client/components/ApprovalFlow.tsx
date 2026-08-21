@@ -54,7 +54,7 @@ export function ApprovalFlow({ matched, activeProfile, t, cancelTask }: Approval
   return <InteractionSurface kind="approval" data-approval-key={matched.key} onKeyDown={onKeyDown} aria-busy={busy}>
     <div className={styles.card}>
       <header className={styles.header}>
-        <strong>{matched.payload.reason ?? matched.payload.toolName}</strong>
+        <strong>{t('approval.title')}</strong>
       </header>
       <div className={styles.body} data-testid="approval-scroll" data-approval-scroll tabIndex={0} role="group" aria-label={t('approval.details')}>
         <p className={styles.detail}>{matched.payload.reason ?? matched.payload.toolName}</p>

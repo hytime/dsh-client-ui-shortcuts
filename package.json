@@ -1,6 +1,6 @@
 {
   "name": "@hytime/dsh-client-ui-shortcuts",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Profile-aware keyboard shortcuts for the DeepSeek Harness Web Client",
   "keywords": [
     "dsh-plugin",

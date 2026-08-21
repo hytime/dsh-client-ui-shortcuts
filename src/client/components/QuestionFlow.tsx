@@ -6,6 +6,7 @@ import type { KeyInput } from '../contract/keyboard.js'
 import surfaceStyles from '../styles/InteractionSurface.module.css'
 import clsx from 'clsx'
 import { InteractionSurface } from './InteractionSurface.js'
+import { ShortcutIcon } from './ShortcutIcon.js'
 
 export interface QuestionFlowProps {
   readonly matched: QuestionWait
@@ -122,7 +123,7 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask }: Question
             aria-checked={draft.selected.includes(option.label)}
             disabled={submitting}
             onClick={() => { setFocusIndex(optionIndex); choose(option.label) }}
-          >{option.label}</button>)}
+          >{multi ? <span className={clsx(surfaceStyles.optionMark, draft.selected.includes(option.label) && surfaceStyles.optionMarkSelected)}>{draft.selected.includes(option.label) ? <ShortcutIcon name="check" size={14} /> : null}</span> : null}<span className={surfaceStyles.optionLabel}>{option.label}</span></button>)}
           {options.length > 0 ? <input
             ref={node => { focusItems.current[options.length] = node }}
             className={surfaceStyles.customInput}

@@ -2,7 +2,14 @@
 
 All notable changes to `@hytime/dsh-client-ui-shortcuts` are documented here.
 
-## 0.1.7 - Question dialog hierarchy
+## 0.1.8 - Dialog state and spacing polish
+
+### Fixed
+
+- Restored DSH button resets so question options no longer render as oversized native gray controls.
+- Added visible keyboard focus/hover states and check icons for multi-select options.
+- Separated approval status title from approval details and tightened its action spacing.
+
 
 ### Changed
 

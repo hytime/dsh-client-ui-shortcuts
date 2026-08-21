@@ -18,9 +18,13 @@
 }
 
 .root[data-interaction-kind='approval'] .header {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--interaction-warn-border, var(--dsw-alias-border-l2));
   background: var(--interaction-warn-surface, rgb(217 119 6 / 10%));
   color: var(--interaction-warn-text, #b45309);
 }
+
+.root[data-interaction-kind='approval'] .body { padding: 10px 14px 12px; }
 
 .card {
   width: 100%;
@@ -78,11 +82,37 @@
 }
 
 .option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   width: 100%;
+  appearance: none;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 6px;
   padding: 8px 10px;
-  text-align: left;
+  background: var(--dsw-alias-bg-layer-2);
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
   font-size: 14px;
+  text-align: left;
+  cursor: pointer;
 }
+
+.option:hover,
+.option:focus-visible {
+  border-color: var(--dsw-alias-brand-primary);
+  box-shadow: 0 0 0 2px var(--dsw-alias-bg-module-platform);
+}
+
+.option:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.optionLabel { min-width: 0; overflow-wrap: anywhere; }
+.optionMark { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 18px; height: 18px; border: 1px solid var(--dsw-alias-border-subtle); border-radius: 4px; color: var(--dsw-alias-label-white, #fff); }
+.optionMarkSelected { border-color: var(--dsw-alias-brand-primary); background: var(--dsw-alias-brand-primary); }
+
 
 .optionSelected {
   border-color: var(--dsw-alias-brand-primary);

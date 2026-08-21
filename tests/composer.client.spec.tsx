@@ -14,6 +14,7 @@ const t = (key: string) => ({
   'question.submit': 'Submit',
   'approval.reject': '拒绝',
   'approval.allowOnce': '允许一次',
+  'approval.title': '需要授权才能继续',
 }[key] ?? key)
 type Receipt = { accepted: true } | { accepted: false; reason: string }
 type Response = (result: unknown) => Promise<Receipt>
@@ -97,6 +98,17 @@ describe('shortcut composer flows', () => {
     })
   })
 
+  it('selects an option from a mouse click without submitting early', () => {
+    const respond = vi.fn<Response>(() => receipt())
+    render(<QuestionFlow matched={question(respond)} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} />)
+
+    const option = screen.getByRole('radio', { name: 'A' })
+    fireEvent.click(option)
+    expect(option.getAttribute('aria-checked')).toBe('true')
+    expect(option.className).toContain('optionSelected')
+    expect(respond).not.toHaveBeenCalled()
+  })
+
   it('submits a skipped final question from click with an empty selection', async () => {
     const respond = vi.fn<Response>(() => receipt())
     render(<QuestionFlow matched={question(respond, [], false)} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} />)
@@ -176,6 +188,7 @@ describe('shortcut composer flows', () => {
     const surface = questionSurface()
     const options = screen.getAllByRole('checkbox')
     fireEvent.click(options[0]!)
+    expect(options[0]?.querySelector('svg')).toBeTruthy()
     fireEvent.click(options[1]!)
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'custom text' } })
     fireEvent.keyDown(surface, { key: 'j' })
@@ -217,6 +230,7 @@ describe('shortcut composer flows', () => {
     const allow = screen.getByRole('button', { name: '允许一次' })
     expect(document.activeElement).toBe(allow)
     expect(screen.getByTestId('interaction-surface').getAttribute('data-interaction-kind')).toBe('approval')
+    expect(screen.getByText('需要授权才能继续')).toBeTruthy()
     expect(screen.getByTestId('approval-scroll').textContent).toContain('Run command')
     expect(screen.getByTestId('approval-actions').contains(screen.getByRole('button', { name: '允许一次' }))).toBe(true)
     expect(screen.getByTestId('approval-scroll').contains(screen.getByTestId('approval-actions'))).toBe(false)
