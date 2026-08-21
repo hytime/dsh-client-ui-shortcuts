@@ -2,6 +2,7 @@ import { Context } from '@deepseek-ai/cordis'
 import { describe, expect, it } from 'vitest'
 import { SettingsProvider, type SettingsNamespace } from '@deepseek-ai/dsh-settings'
 import { apply, SHORTCUTS_SETTINGS_NAMESPACE } from '../src/index.js'
+import { validatePersistedShortcutBindings } from '../src/settings-validation.js'
 import { defaultShortcutBindings } from '../src/settings.js'
 import type { ShortcutSettings } from '../src/settings.js'
 
@@ -30,6 +31,29 @@ describe('shortcut Host settings', () => {
     expect(first).not.toBe(second)
     expect(first[0]).not.toBe(second[0])
     expect(first[0]?.key).not.toBe(second[0]?.key)
+  })
+
+  it.each([
+    ['undefined', undefined],
+    ['function', () => undefined],
+    ['symbol', Symbol('invalid')],
+    ['bigint', 1n],
+    ['infinite number', Infinity],
+    ['date object', new Date()],
+  ])('rejects non-JSON value: %s', async (_label, value) => {
+    expect(() => validatePersistedShortcutBindings([{
+      command: 'openSettings', scope: 'global', key: { key: 's', modifiers: ['Mod'], invalid: value },
+    }])).toThrow()
+  })
+
+  it('accepts Mod with Alt and Shift while rejecting dual platform modifiers', () => {
+    expect(() => validatePersistedShortcutBindings([
+      { command: 'openSettings', scope: 'global', key: { key: 's', modifiers: ['Mod', 'Alt'] } },
+      { command: 'openCommandPalette', scope: 'global', key: { key: 'p', modifiers: ['Mod', 'Shift'] } },
+    ])).not.toThrow()
+    expect(() => validatePersistedShortcutBindings([
+      { command: 'openSettings', scope: 'global', key: { key: 's', modifiers: ['Mod', 'Ctrl'] } },
+    ])).toThrow()
   })
 
   it('does not require a settings provider', async () => {

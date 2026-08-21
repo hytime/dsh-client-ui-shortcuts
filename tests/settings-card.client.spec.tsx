@@ -105,6 +105,46 @@ describe('shortcut settings controller custom profile', () => {
     controller.dispose()
   })
 
+  it('matches Host alias and modifier acceptance rules', async () => {
+    const registry = createProfileRegistry([standardProfile, vimProfile])
+    expect(() => registry.replaceCustom([
+      { command: 'openSettings', scope: 'global', key: { key: 'Esc', modifiers: ['Mod', 'Alt'] } },
+      { command: 'openCommandPalette', scope: 'global', key: { key: 'p', modifiers: ['Mod', 'Shift'] } },
+    ])).not.toThrow()
+    expect(() => registry.replaceCustom([
+      { command: 'openSettings', scope: 'global', key: { key: 's', modifiers: ['Mod', 'Ctrl'] } },
+    ])).toThrow()
+    expect(() => registry.replaceCustom([
+      { command: 'openSettings', scope: 'global', key: { key: 'Return', modifiers: [] } },
+      { command: 'openCommandPalette', scope: 'global', key: { key: 'Enter', modifiers: [] } },
+    ])).toThrow()
+    expect(() => registry.replaceCustom([
+      { command: 'openSettings', scope: 'global', sequences: [[{ key: 'Spacebar', modifiers: [] }], [{ key: 'Space', modifiers: [] }]] },
+    ])).toThrow()
+  })
+
+  it('cancels queued custom persistence after disposal', async () => {
+    const registry = createProfileRegistry([standardProfile, vimProfile])
+    const scope = controllerScope({ activeProfile: 'standard' })
+    const resolvers: Array<() => void> = []
+    vi.mocked(scope.set).mockImplementation(async () => {
+      await new Promise<void>(resolve => { resolvers.push(resolve) })
+    })
+    const { createShortcutSettingsController } = await import('../src/client/settings/controller.js')
+    const controller = createShortcutSettingsController(scope, registry)
+    const first = controller.setCustomBindings(customBindings)
+    const second = controller.setCustomBindings([{ command: 'openCommandPalette', scope: 'global', key: { key: 'p', modifiers: ['Mod'] } }])
+    await Promise.resolve()
+    expect(resolvers).toHaveLength(1)
+    controller.dispose()
+    resolvers.shift()!()
+    await Promise.resolve()
+    expect(resolvers).toHaveLength(0)
+    await expect(first).resolves.toBeUndefined()
+    await expect(second).resolves.toBeUndefined()
+    expect(scope.set).toHaveBeenCalledTimes(1)
+  })
+
   it('keeps the active profile and old custom bindings when persistence fails', async () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     const scope = controllerScope({ activeProfile: 'vim', customBindings }, true)
@@ -118,6 +158,7 @@ describe('shortcut settings controller custom profile', () => {
     expect(registry.get('custom')?.bindings).toEqual(customBindings)
     controller.dispose()
   })
+
   it('keeps the registry owned when the caller mutates submitted bindings', async () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     const scope = controllerScope({ activeProfile: 'standard' })

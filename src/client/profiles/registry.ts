@@ -4,7 +4,7 @@ import type {
 import { DEFAULT_SHORTCUT_PROFILE_ID } from '../../profile-catalog.js'
 import type { ShortcutProfileRegistry } from './types.js'
 import { standardProfile, vimProfile } from './builtins.js'
-import { normalizePersistedShortcutBindings } from '../../shortcut-binding-contract.js'
+import { canonicalShortcutBindings } from '../../shortcut-binding-contract.js'
 
 const COMMANDS: readonly ShortcutCommand[] = [
   'focusPrevious',
@@ -39,8 +39,18 @@ export function canonicalSequenceKey(sequence: NormalizedSequence): string {
 }
 
 export function validateShortcutBindings(bindings: readonly ShortcutBinding[]): readonly ShortcutBinding[] {
-  normalizePersistedShortcutBindings(bindings as unknown as readonly Record<string, unknown>[])
-  return validateAndNormalizeProfile({ id: 'custom', label: 'custom', description: 'custom', bindings }, new Set()).bindings
+  const canonical = canonicalShortcutBindings(bindings as unknown as readonly Record<string, unknown>[])
+  return canonical.map(binding => ({
+    command: binding.command,
+    scope: binding.scope,
+    ...(binding.sequences.length === 1
+      ? { key: toShortcutStroke(binding.sequences[0]![0]!) }
+      : { key: toShortcutStroke(binding.sequences[0]![0]!), sequences: binding.sequences.map(sequence => sequence.map(toShortcutStroke)) }),
+  }))
+}
+
+function toShortcutStroke(stroke: { readonly key: string; readonly modifiers: readonly ShortcutModifier[] }): ShortcutStroke {
+  return { key: stroke.key, modifiers: stroke.modifiers }
 }
 
 export function createBuiltinProfileRegistry(persistedId?: string): ShortcutProfileRegistry {

@@ -23,6 +23,7 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
   private lastError: string | undefined
   private disposed = false
   private customGeneration = 0
+  private disposeWaiters: Array<() => void> = []
 
   constructor(
     private readonly scope: SettingsScope<ShortcutSettings>,
@@ -46,6 +47,7 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
     const generation = ++this.customGeneration
     const previous = this.customWriteTail
     const operation = previous.then(async () => {
+      if (this.disposed) return
       try {
         await this.scope.set('customBindings', persisted)
         if (this.disposed || generation !== this.customGeneration) return
@@ -100,6 +102,7 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
     this.disposed = true
     this.disposeScope()
     this.listeners.clear()
+    for (const resolve of this.disposeWaiters.splice(0)) resolve()
   }
 
   private onScopeChanged(): void {

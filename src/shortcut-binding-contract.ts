@@ -19,6 +19,7 @@ export function normalizePersistedShortcutBindings(bindings: readonly PersistedS
   if (!Array.isArray(bindings) || bindings.length === 0) throw new Error('customBindings must be a non-empty array')
   const normalized: CanonicalShortcutBinding[] = []
   for (const value of bindings) {
+    assertJsonSafe(value)
     const binding = recordOf(value, 'invalid custom shortcut binding')
     if (typeof binding.command !== 'string' || !SHORTCUT_COMMANDS.includes(binding.command as never)) {
       throw new Error('invalid custom shortcut command')
@@ -49,6 +50,10 @@ export function normalizePersistedShortcutBindings(bindings: readonly PersistedS
     }
   }
   return normalized
+}
+
+export function canonicalShortcutBindings(bindings: readonly PersistedShortcutBinding[]): readonly CanonicalShortcutBinding[] {
+  return normalizePersistedShortcutBindings(bindings)
 }
 
 export function validatePersistedShortcutBindings(bindings: readonly PersistedShortcutBinding[]): void {
@@ -127,6 +132,27 @@ function isPrefix(first: CanonicalShortcutSequence, second: CanonicalShortcutSeq
 
 function isPhysicalStroke(value: Record<string, unknown>): value is Record<string, unknown> & { alt: boolean; ctrl: boolean; meta: boolean; shift: boolean } {
   return ['alt', 'ctrl', 'meta', 'shift'].every(field => typeof value[field] === 'boolean')
+}
+
+function assertJsonSafe(value: unknown, seen = new Set<object>()): void {
+  if (value === undefined || typeof value === 'function' || typeof value === 'symbol' || typeof value === 'bigint') {
+    throw new Error('custom shortcut bindings must contain JSON values')
+  }
+  if (typeof value === 'number' && !Number.isFinite(value)) throw new Error('custom shortcut bindings must contain JSON values')
+  if (typeof value !== 'object' || value === null) return
+  if (seen.has(value)) throw new Error('custom shortcut bindings must contain JSON values')
+  if (Array.isArray(value)) {
+    seen.add(value)
+    for (const item of value) assertJsonSafe(item, seen)
+    seen.delete(value)
+    return
+  }
+  if (Object.getPrototypeOf(value) !== Object.prototype && Object.getPrototypeOf(value) !== null) {
+    throw new Error('custom shortcut bindings must contain plain JSON objects')
+  }
+  seen.add(value)
+  for (const child of Object.values(value)) assertJsonSafe(child, seen)
+  seen.delete(value)
 }
 
 function recordOf(value: unknown, message: string): Record<string, unknown> {
