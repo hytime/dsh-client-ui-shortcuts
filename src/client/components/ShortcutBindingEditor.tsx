@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import type { ShortcutBinding, ShortcutCommand, ShortcutModifier, ShortcutScope, ShortcutStroke } from '../contract/profile.js'
+import type { ShortcutBinding, ShortcutCommand, GlobalShortcutCommand, ShortcutModifier, ShortcutScope, ShortcutStroke } from '../contract/profile.js'
 import type { ShortcutLocaleKey } from '../locales.js'
 import { validateShortcutBindings } from '../profiles/registry.js'
 import { ShortcutIcon, type ShortcutIconName } from './ShortcutIcon.js'
@@ -7,7 +7,7 @@ import styles from '../styles/Shortcuts.module.css'
 
 export interface ShortcutBindingEditorProps {
   readonly bindings: readonly ShortcutBinding[]
-  readonly availableGlobalActions?: readonly ShortcutCommand[]
+  readonly availableGlobalActions?: readonly GlobalShortcutCommand[]
   readonly t: (key: ShortcutLocaleKey | string) => string
   readonly onSave: (bindings: readonly ShortcutBinding[]) => Promise<void>
   readonly onCancel?: () => void
@@ -34,7 +34,7 @@ export function ShortcutBindingEditor({ bindings, availableGlobalActions, t, onS
   const [error, setError] = useState<string>()
   const [saving, setSaving] = useState(false)
   useEffect(() => { setDraft(bindings); setError(undefined) }, [bindings])
-  const visible = useMemo(() => draft.filter(binding => binding.scope !== 'global' || availableGlobalActions === undefined || availableGlobalActions.includes(binding.command)), [draft, availableGlobalActions])
+  const visible = useMemo(() => draft.filter(binding => binding.scope !== 'global' || availableGlobalActions === undefined || availableGlobalActions.includes(binding.command as GlobalShortcutCommand)), [draft, availableGlobalActions])
   const conflict = useMemo(() => {
     try { validateShortcutBindings(visible); return undefined } catch (reason) { return reason instanceof Error ? reason.message : String(reason) }
   }, [visible])

@@ -1,7 +1,7 @@
 import React, { useEffect, useId, useRef, useState } from 'react'
 import clsx from 'clsx'
 import type { ShortcutLocaleKey } from '../locales.js'
-import type { ShortcutProfile } from '../contract/profile.js'
+import type { ShortcutProfile, GlobalShortcutCommand } from '../contract/profile.js'
 import type { ShortcutProfileCardProps as SlotShortcutProfileCardProps } from '../contract/slots.js'
 import { ShortcutIcon } from './ShortcutIcon.js'
 import { ShortcutBindingEditor } from './ShortcutBindingEditor.js'
@@ -71,9 +71,9 @@ export function ShortcutProfileCard({ settings, profiles, availableGlobalActions
           </label>
         </fieldset>
         {error !== undefined || settings.error() !== undefined ? <p role="alert" className={styles.error}>{t('settings.error').replace('{message}', error ?? settings.error() ?? '')}</p> : null}
-        {currentProfile === undefined ? <p role="status" className={styles.empty}>{t('settings.conflict')}</p> : currentProfile.id === 'custom' ? <ShortcutBindingEditor bindings={settings.customBindings()} availableGlobalActions={availableGlobalActions as never} t={t} onSave={settings.setCustomBindings} /> : <>
+        {currentProfile === undefined ? <p role="status" className={styles.empty}>{t('settings.conflict')}</p> : currentProfile.id === 'custom' ? <ShortcutBindingEditor bindings={settings.customBindings()} availableGlobalActions={availableGlobalActions as readonly GlobalShortcutCommand[]} t={t} onSave={settings.setCustomBindings} /> : <>
           <p className={styles.summary}>{currentProfile.description ? t(currentProfile.description) : ''}</p>
-          <ShortcutLegend bindings={currentProfile.bindings} availableGlobalActions={availableGlobalActions} t={t} />
+          <ShortcutLegend bindings={currentProfile.bindings} availableGlobalActions={availableGlobalActions as readonly GlobalShortcutCommand[]} t={t} />
         </>}
       </>
     )

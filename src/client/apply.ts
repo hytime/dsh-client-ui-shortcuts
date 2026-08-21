@@ -11,7 +11,7 @@ import { createShortcutSettingsController, type ShortcutSettingsFace } from './s
 import { NS, en, zh } from './locales.js'
 import type { ShortcutSettings } from '../settings.js'
 import { SHORTCUTS_SETTINGS_NAMESPACE } from '../settings-namespace.js'
-import type { ShortcutProfile } from './contract/profile.js'
+import type { ShortcutProfile, GlobalShortcutCommand } from './contract/profile.js'
 import { ShortcutProfileCard } from './components/ShortcutProfileCard.js'
 import { createGlobalActions, type GlobalActionCapabilities } from './actions/global-actions.js'
 import { createGlobalKeyboardRouter } from './keyboard/router.js'
@@ -58,6 +58,6 @@ export function apply(ctx: ClientContext): void {
   }, ShortcutComposer)), 'dsh-shortcuts: composer slot')
   ctx.effect(() => ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
     name: 'settings.plugin.item', key: SHORTCUTS_SETTINGS_NAMESPACE, locale: NS,
-    inject: (): { settings: ShortcutSettingsFace; profiles: readonly ShortcutProfile[]; availableGlobalActions: readonly string[]; t: (key: string) => string } => ({ settings: controller, profiles: registry.list(), availableGlobalActions: Object.keys(actions), t: (key: string) => t(key as never) }),
+    inject: (): { settings: ShortcutSettingsFace; profiles: readonly ShortcutProfile[]; availableGlobalActions: readonly string[]; t: (key: string) => string } => ({ settings: controller, profiles: registry.list(), availableGlobalActions: Object.keys(actions) as GlobalShortcutCommand[], t: (key: string) => t(key as never) }),
   }, ShortcutProfileCard)), 'dsh-shortcuts: settings card slot')
 }

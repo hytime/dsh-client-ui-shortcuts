@@ -16,7 +16,8 @@ export type ShortcutCommand =
   | 'forkSession'
   | 'toggleTheme'
 
-/** Interaction surface whose controls receive a shortcut. */
+export type GlobalShortcutCommand = 'startSession' | 'previousSession' | 'nextSession' | 'previousWorkspace' | 'nextWorkspace' | 'forkSession' | 'toggleTheme'
+
 export type ShortcutScope = 'global' | 'question' | 'approval'
 
 /** Modifier-aware browser key identity. */

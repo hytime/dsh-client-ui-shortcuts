@@ -1,5 +1,5 @@
 import React from 'react'
-import type { ShortcutBinding, ShortcutCommand } from '../contract/profile.js'
+import type { ShortcutBinding, ShortcutCommand, GlobalShortcutCommand } from '../contract/profile.js'
 import type { ShortcutLocaleKey } from '../locales.js'
 import { ShortcutIcon, type ShortcutIconName } from './ShortcutIcon.js'
 import styles from '../styles/Shortcuts.module.css'
@@ -7,7 +7,7 @@ import styles from '../styles/Shortcuts.module.css'
 export interface ShortcutLegendProps {
   readonly bindings: readonly ShortcutBinding[]
   readonly t: (key: ShortcutLocaleKey | string) => string
-  readonly availableGlobalActions?: readonly string[]
+  readonly availableGlobalActions?: readonly GlobalShortcutCommand[]
 }
 
 function keyLabel(binding: ShortcutBinding): string[] {
@@ -33,7 +33,7 @@ export function ShortcutLegend({ bindings, t, availableGlobalActions }: Shortcut
   const grouped = ['question', 'approval', 'global'] as const
   return <div className={styles.legend}>
     {grouped.map(scope => {
-       const entries = bindings.filter(binding => binding.scope === scope && (scope !== 'global' || availableGlobalActions === undefined || availableGlobalActions.includes(binding.command)))
+       const entries = bindings.filter(binding => binding.scope === scope && (scope !== 'global' || availableGlobalActions === undefined || availableGlobalActions.includes(binding.command as GlobalShortcutCommand)))
       if (entries.length === 0) return null
       return <section className={styles.legendGroup} key={scope} aria-labelledby={`shortcut-legend-${scope}`}>
         <h3 id={`shortcut-legend-${scope}`}>{t(`legend.scope.${scope}`)}</h3>
