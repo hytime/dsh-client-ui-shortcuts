@@ -8,22 +8,14 @@
 - 满足该 DSH 安装要求的 Node.js 和 package manager 版本。
 - DSH 安装或 profile 能解析本包声明的 peer packages。
 
-本包自身声明的开发 package manager 是 pnpm `11.21.0`。它与目标 DSH 安装要求的 package manager 版本相互独立。执行 DSH command 前先读取目标 checkout 的声明：
-
-```bash
-node -e "console.log(JSON.parse(require('node:fs').readFileSync('/path/to/deepseek-harness/package.json', 'utf8')).packageManager)"
-```
-
-应使用目标 DSH checkout 声明的版本，不要把本包的开发版本当作 DSH 运行版本。
-
-如果 DSH source checkout 位于 `/Volumes/hydisk/deepseek-harness`，下面的命令使用 `pnpm --dir`。使用其他安装路径时替换该目录。
+DSH CLI 负责 profile 的插件安装和依赖协调。本包声明的 pnpm 版本只适用于开发或打包源码，不是将插件安装到 DSH profile 的命令。不要执行 `npm install`、`pnpm add`，也不要直接修改 profile manifest 或 lockfile。
 
 ## 安装已发布的包
 
 使用 DSH plugin command 安装到 Web profile：
 
 ```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.0
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.4
 ```
 
 该命令会把包安装到 profile，并根据包中声明的 `dsh.bundle.patch` 将它加入 `dsh.profile.bundles`。
@@ -44,9 +36,8 @@ pnpm pack --pack-destination /tmp/dsh-client-ui-shortcuts-pack
 ```bash
 export DSH_HOME="$(mktemp -d)"
 
-pnpm --dir /Volumes/hydisk/deepseek-harness \\
-  dsh plugin --profile web add \\
-  /tmp/dsh-client-ui-shortcuts-pack/hytime-dsh-client-ui-shortcuts-0.1.0.tgz
+dsh plugin --profile web add \\
+  /tmp/dsh-client-ui-shortcuts-pack/hytime-dsh-client-ui-shortcuts-0.1.4.tgz
 ```
 
 如果希望 profile 在 shell 退出后继续存在，请将 `mktemp -d` 换成持久目录。发布 tarball 必须包含 `lib/client.js`、`lib/index.js`、`lib/invariant.js`、类型声明和 `cordis.patch.yml`。
@@ -56,8 +47,7 @@ pnpm --dir /Volumes/hydisk/deepseek-harness \\
 先导出组合后的 profile 配置，不启动 Web server：
 
 ```bash
-pnpm --dir /Volumes/hydisk/deepseek-harness \\
-  dsh --profile web --dump-config
+dsh --profile web --dump-config
 ```
 
 输出中应包含安装包和 canonical row：
@@ -75,36 +65,20 @@ profile manifest 也应在 `dependencies` 和 `dsh.profile.bundles` 中列出该
 安装 profile 后，通过 DSH 启动 Web surface：
 
 ```bash
-pnpm --dir /Volumes/hydisk/deepseek-harness \\
-  dsh --profile web
+dsh --profile web
 ```
 
 快捷键设置卡片会出现在已组合的 settings plugin surface 中。持久化 settings namespace 是 `dsh-ui-shortcuts`，`activeProfile` 可设为 `standard` 或 `vim`。
 
 不要直接打开 `apps/web`。该 Web entry 需要 DSH boot 注入和真实 composition 提供的 Client module table。
 
-## DSH source checkout 的 package-manager 版本
+## DSH CLI
 
-如果 source checkout 拒绝当前 pnpm 版本，请使用该 checkout 声明的版本，并将 Corepack 缓存隔离到临时目录。例如 checkout 要求 pnpm `11.7.0` 时：
-
-```bash
-export COREPACK_HOME=/tmp/dsh-corepack
-
-COREPACK_HOME="$COREPACK_HOME" \\
-  corepack pnpm@11.7.0 --dir /Volumes/hydisk/deepseek-harness \\
-  dsh plugin --profile web add \\
-  /tmp/dsh-client-ui-shortcuts-pack/hytime-dsh-client-ui-shortcuts-0.1.0.tgz
-
-COREPACK_HOME="$COREPACK_HOME" \\
-  corepack pnpm@11.7.0 --dir /Volumes/hydisk/deepseek-harness \\
-  dsh --profile web --dump-config
-```
-
-实际使用时应以目标 DSH checkout 的版本为准，不要直接照抄示例版本。
+使用目标 DSH 安装提供的 `dsh` executable。CLI 负责选择 profile、协调 package、更新 bundle list 并启动 composition。不要在 profile 目录中绕过 CLI 直接执行 package-manager 命令。
 
 ## 升级或移除
 
-DSH 的 `plugin` command 会把剩余参数转发给 profile 目录中的 package manager。因此下面的命令等价于在该 profile 中执行 `pnpm update @hytime/dsh-client-ui-shortcuts`：
+使用 DSH plugin command 升级：
 
 ```bash
 dsh plugin --profile web update @hytime/dsh-client-ui-shortcuts

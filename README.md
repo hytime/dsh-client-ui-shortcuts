@@ -29,11 +29,19 @@ The package contributes a Host settings namespace and a Client plugin. Its `cord
 
 ## Installation
 
-See the [installation guide](docs/installation.md) for registry and local-tarball installation, profile verification, upgrades, and troubleshooting. See the [changelog](CHANGELOG.md) for release history and the [Chinese changelog](CHANGELOG.zh.md) for the translated version.
+Install or upgrade the plugin in a DSH profile only through the DSH CLI:
+
+```bash
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.4
+```
+
+See the [installation guide](docs/installation.md) for DSH CLI installation, local tarball installation, profile verification, upgrades, and troubleshooting. Do not use `npm install`, `pnpm add`, or direct edits to a DSH profile's `package.json` or lockfile. See the [changelog](CHANGELOG.md) for release history and the [Chinese changelog](CHANGELOG.zh.md) for the translated version.
 
 The browser artifact is a DSH lazy-CJS loader factory. Do not open the `apps/web` Vite entry directly to validate this plugin; it requires DSH boot injection and a real Web composition.
 
 ## Development
+
+These `pnpm` commands are for developing this package only; consumers must install the published or packed plugin through `dsh plugin --profile <name> add ...`.
 
 ```bash
 pnpm install

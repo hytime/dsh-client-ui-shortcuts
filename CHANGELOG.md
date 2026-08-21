@@ -2,7 +2,13 @@
 
 All notable changes to `@hytime/dsh-client-ui-shortcuts` are documented here.
 
-## 0.1.4 - Interaction card and shortcut list fixes
+## 0.1.5 - Package metadata and installation docs
+
+### Changed
+
+- Documented DSH CLI as the only profile installation and upgrade path.
+- Added npm keywords for DSH plugin discovery, including `dsh-plugin`.
+
 
 ### Fixed
 

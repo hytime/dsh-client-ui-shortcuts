@@ -2,7 +2,13 @@
 
 `@hytime/dsh-client-ui-shortcuts` 的重要变更记录如下。
 
-## 0.1.4 - 交互卡片与快捷键列表修复
+## 0.1.5 - 包元数据与安装文档
+
+### 变更
+
+- 明确 DSH CLI 是 profile 安装和升级的唯一入口。
+- 增加用于 DSH plugin 检索的 npm keywords，其中包含 `dsh-plugin`。
+
 
 ### 修复
 

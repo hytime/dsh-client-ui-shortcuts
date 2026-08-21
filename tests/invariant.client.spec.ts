@@ -64,13 +64,13 @@ describe('shortcuts package invariant', () => {
     expect([...owned]).toEqual([])
   })
 
-  it('keeps superpowers material ignored without ignoring package sources', () => {
+  it('keeps planning material and local agent instructions ignored without ignoring package sources', () => {
     const ignore = readFileSync(resolve(root, '.gitignore'), 'utf8')
     expect(ignore).toMatch(/\.superpowers\//)
     expect(ignore).toMatch(/docs\/superpowers\//)
+    expect(ignore).toMatch(/(?:^|\n)AGENTS\.md/)
     expect(ignore).not.toMatch(/(?:^|\n)src\//)
     expect(ignore).not.toMatch(/(?:^|\n)tests\//)
     expect(ignore).not.toMatch(/(?:^|\n)README\.md/)
-    expect(ignore).not.toMatch(/(?:^|\n)AGENTS\.md/)
   })
 })

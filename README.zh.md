@@ -29,11 +29,19 @@
 
 ## 安装
 
-完整的 registry/tarball 安装、profile 验证、升级和排错步骤见[安装指南](docs/installation.zh.md)。发布历史见[变更日志](CHANGELOG.zh.md)，英文版本见[English changelog](CHANGELOG.md)。
+只能通过 DSH CLI 将插件安装或升级到 DSH profile：
+
+```bash
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.4
+```
+
+完整的 DSH CLI 安装、本地 tarball 安装、profile 验证、升级和排错步骤见[安装指南](docs/installation.zh.md)。不要使用 `npm install`、`pnpm add`，也不要直接修改 DSH profile 的 `package.json` 或 lockfile。发布历史见[变更日志](CHANGELOG.zh.md)，英文版本见[English changelog](CHANGELOG.md)。
 
 浏览器产物是由 DSH lazy-CJS loader 加载的 factory。不要直接打开 `apps/web` 的 Vite entry 验证插件，因为它依赖 DSH boot 注入和真实的 Web composition。
 
 ## 开发
+
+下面的 `pnpm` 命令只用于开发本包；消费者必须通过 `dsh plugin --profile <name> add ...` 安装已发布包或本地 tarball。
 
 ```bash
 pnpm install
