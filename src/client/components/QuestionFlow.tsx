@@ -38,7 +38,7 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask }: Question
   const draft = drafts[index]
   const options = question?.options ?? []
   const multi = question?.multiSelect === true
-  const showAdvance = multi || questions.length > 1 || options.length === 0
+  const showAdvance = true
   const focusList: FocusItem[] = [
     ...options.map(option => ({ kind: 'option' as const, label: option.label })),
     { kind: 'custom' },
@@ -82,7 +82,7 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask }: Question
     else {
       const next = drafts.map((item, i) => i === index ? { ...item, selected: [label], skipped: false } : item)
       setDrafts(next)
-      if (index < questions.length - 1) setIndex(index + 1); else void submit(next)
+      if (index < questions.length - 1) setIndex(index + 1)
     }
   }
   const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
@@ -111,7 +111,7 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask }: Question
         {question.detail ? <p className={surfaceStyles.detail}>{question.detail}</p> : null}
       </div>
       <div className={surfaceStyles.body} data-testid="question-scroll">
-        <div role="group" aria-label={question.question}>
+        <div className={surfaceStyles.optionGroup} role="group" aria-label={question.question}>
           {options.map((option, optionIndex) => <button
             key={option.label}
             ref={node => { focusItems.current[optionIndex] = node; if (focusIndex === optionIndex) node?.focus() }}
@@ -123,17 +123,30 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask }: Question
             disabled={submitting}
             onClick={() => { setFocusIndex(optionIndex); choose(option.label) }}
           >{option.label}</button>)}
+          {options.length > 0 ? <input
+            ref={node => { focusItems.current[options.length] = node }}
+            className={surfaceStyles.customInput}
+            tabIndex={focusIndex === options.length ? 0 : -1}
+            type="text"
+            aria-label={t('question.custom')}
+            placeholder={t('question.custom')}
+            value={draft.custom}
+            disabled={submitting}
+            onChange={event => updateDraft({ custom: event.target.value })}
+            onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey && !composing(event) && event.keyCode !== 229 && !event.repeat && !submitting) { event.preventDefault(); event.stopPropagation(); advance() } }}
+          /> : <textarea
+            ref={node => { focusItems.current[options.length] = node }}
+            className={surfaceStyles.customInput}
+            tabIndex={focusIndex === options.length ? 0 : -1}
+            aria-label={t('question.custom')}
+            placeholder={t('question.custom')}
+            rows={2}
+            value={draft.custom}
+            disabled={submitting}
+            onChange={event => updateDraft({ custom: event.target.value })}
+            onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey && !composing(event) && event.keyCode !== 229 && !event.repeat && !submitting) { event.preventDefault(); event.stopPropagation(); advance() } }}
+          />}
         </div>
-        <textarea
-          ref={node => { focusItems.current[options.length] = node }}
-          className={surfaceStyles.customInput}
-          tabIndex={focusIndex === options.length ? 0 : -1}
-          aria-label={t('question.custom')}
-          value={draft.custom}
-          disabled={submitting}
-          onChange={event => updateDraft({ custom: event.target.value })}
-          onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey && !composing(event) && event.keyCode !== 229 && !event.repeat && !submitting) { event.preventDefault(); event.stopPropagation(); advance() } }}
-        />
       </div>
       <div className={surfaceStyles.actions} data-testid="question-actions">
         <button

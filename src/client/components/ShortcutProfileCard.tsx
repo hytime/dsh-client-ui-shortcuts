@@ -60,7 +60,7 @@ export function ShortcutProfileCard({ settings, profiles, t = fallbackT }: Short
         <fieldset className={styles.profileSelectGroup} disabled={pending !== undefined}>
           <legend>{t('settings.profile')}</legend>
           <label className={styles.profileSelect}>
-            <span>{t('settings.profile')}</span>
+            <span>{t('settings.currentProfile')}</span>
             <select aria-label={t('settings.profile')} value={selection} onChange={event => void choose(event.target.value)}>
               {profiles.map(profile => <option key={profile.id} value={profile.id}>{t(profile.label)}</option>)}
             </select>

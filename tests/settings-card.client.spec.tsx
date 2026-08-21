@@ -13,6 +13,7 @@ const labels: Record<string, string> = {
   'settings.title': 'Shortcuts', 'settings.description': 'Choose controls.', 'settings.profile': 'Profile',
   'settings.expand': 'Expand', 'settings.collapse': 'Collapse',
   'settings.saving': 'Saving...', 'settings.error': 'Save failed: {message}', 'settings.conflict': 'Unavailable.',
+  'settings.currentProfile': 'Current profile',
   'settings.empty': 'No profiles.', 'legend.scope.question': 'Questions', 'legend.scope.approval': 'Approvals',
   'aria.profileOption': 'Shortcut profile {name}',
   'keyboard.focusPrevious': 'Previous', 'keyboard.focusNext': 'Next', 'keyboard.activate': 'Activate', 'keyboard.cancelTask': 'Cancel',
@@ -62,7 +63,7 @@ describe('shortcut settings card', () => {
     render(<ShortcutProfileCard settings={settings} profiles={registry.list()} t={t} />)
     openCard()
     expect((screen.getByRole('combobox', { name: 'Profile' }) as HTMLSelectElement).value).toBe('standard')
-    expect((screen.getByRole('combobox', { name: 'Profile' }) as HTMLSelectElement).value).toBe('standard')
+    expect(screen.getByText('Current profile')).toBeTruthy()
     expect(screen.getByRole('heading', { name: 'Questions' })).toBeTruthy()
     expect(screen.getByRole('heading', { name: 'Approvals' })).toBeTruthy()
     expect(screen.getAllByText('Previous').length).toBeGreaterThan(0)

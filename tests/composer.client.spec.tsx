@@ -67,6 +67,8 @@ describe('shortcut composer flows', () => {
     expect(screen.getByTestId('interaction-surface').getAttribute('data-interaction-kind')).toBe('question')
     expect(screen.getByTestId('question-scroll').contains(first)).toBe(true)
     const skipButton = screen.getByRole('button', { name: 'Skip' })
+    const optionsGroup = screen.getByRole('group', { name: 'Pick' })
+    expect(optionsGroup.className).toContain('optionGroup')
     expect(screen.getByTestId('question-actions').contains(skipButton)).toBe(true)
     expect(skipButton.className).toContain('action')
     expect(screen.getByTestId('question-scroll').contains(screen.getByTestId('question-actions'))).toBe(false)
@@ -86,6 +88,8 @@ describe('shortcut composer flows', () => {
     render(<QuestionFlow matched={question(respond)} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} />)
 
     fireEvent.click(screen.getByRole('radio', { name: 'A' }))
+    expect(respond).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }))
     await waitFor(() => expect(respond).toHaveBeenCalled())
     expect(respond.mock.calls[0]?.[0]).toEqual({
       ok: true,

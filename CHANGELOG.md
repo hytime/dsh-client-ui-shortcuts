@@ -2,7 +2,13 @@
 
 All notable changes to `@hytime/dsh-client-ui-shortcuts` are documented here.
 
-## 0.1.6 - Interaction controls polish
+## 0.1.7 - Question dialog hierarchy
+
+### Changed
+
+- Reduced question option and input heights, added consistent option gaps, and kept the primary submit action visible for single-select questions.
+- Clarified the settings profile hierarchy with separate section and current-profile labels.
+
 
 ### Fixed
 

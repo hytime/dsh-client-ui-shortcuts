@@ -35,7 +35,8 @@
 .pending { flex: none; border-radius: 999px; padding: 1px 8px; font-size: 11px; line-height: 17px; background: var(--dsw-alias-bg-module-platform); color: var(--dsw-alias-label-secondary); }
 .body { border-top: 1px solid var(--dsw-alias-border-l2); margin: 0 16px; padding: 16px 0 12px; }
 .profileSelectGroup { border: 0; min-width: 0; margin: 0; padding: 0; }
-.profileSelect { display: grid; grid-template-columns: minmax(0, 1fr) minmax(160px, 1fr) auto; gap: 12px; align-items: center; }
+.profileSelectGroup legend { margin: 0 0 8px; padding: 0; color: var(--dsw-alias-text-primary); font-size: 14px; font-weight: 600; line-height: 1.4; }
+.profileSelect { display: grid; grid-template-columns: minmax(0, 1fr) minmax(160px, 1fr) auto; gap: 12px; align-items: center; padding: 0 0 12px; border-bottom: 1px solid var(--dsw-alias-border-subtle); }
 .profileSelect > span:first-child { color: var(--dsw-alias-text-secondary); }
 .profileSelect select { width: 100%; min-width: 0; border: 1px solid var(--dsw-alias-border-subtle); border-radius: 6px; padding: 8px 10px; background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-text-primary); font: inherit; }
 .profileSelect select:focus-visible { outline: 2px solid var(--dsw-alias-border-focus); outline-offset: 2px; }
@@ -47,8 +48,9 @@
 .profile span { display: grid; gap: 3px; flex: 1; min-width: 0; }
 .profile small { color: var(--dsw-alias-text-secondary); }
 .profile:focus-within { outline: 2px solid var(--dsw-alias-border-focus); outline-offset: 2px; }
-.legend { display: grid; gap: 16px; }
+.legend { display: grid; gap: 16px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--dsw-alias-border-subtle); }
 .legendGroup { display: grid; gap: 6px; min-width: 0; }
+.legendGroup + .legendGroup { padding-top: 14px; border-top: 1px solid var(--dsw-alias-border-subtle); }
 .legendGroup h3 { margin: 0; color: var(--dsw-alias-text-primary); font-size: 12px; font-weight: 600; line-height: 1.4; text-transform: uppercase; letter-spacing: .04em; }
 .legendList { min-width: 0; }
 .legendItem { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; min-width: 0; padding: 7px 8px; border-top: 1px solid var(--dsw-alias-border-subtle); transition: background .16s; }

@@ -58,6 +58,8 @@
   color: var(--dsw-alias-label-primary);
 }
 
+.header h2 { margin: 0; color: inherit; font-size: 17px; font-weight: 600; line-height: 1.4; }
+
 .detail {
   margin: 0;
   color: var(--dsw-alias-label-tertiary);
@@ -65,7 +67,8 @@
   line-height: 1.5;
 }
 
-.option,
+.optionGroup { display: grid; gap: 6px; min-width: 0; }
+
 .customInput {
   border: 1px solid var(--dsw-alias-border-l2);
   border-radius: 8px;
@@ -76,8 +79,9 @@
 
 .option {
   width: 100%;
-  padding: 10px 12px;
+  padding: 8px 10px;
   text-align: left;
+  font-size: 14px;
 }
 
 .optionSelected {
@@ -88,8 +92,12 @@
 .customInput {
   box-sizing: border-box;
   width: 100%;
-  min-height: 76px;
-  padding: 10px 12px;
+  min-height: 42px;
+  padding: 9px 10px;
+}
+
+textarea.customInput {
+  min-height: 64px;
   resize: vertical;
 }
 
