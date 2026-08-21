@@ -100,6 +100,44 @@ describe('shortcut Host settings', () => {
     await fiber.dispose()
   })
 
+  it('accepts declarative sequence alternatives and Mod combinations', async () => {
+    const ctx = new Context()
+    await ctx.plugin(MemorySettings).await()
+    const fiber = ctx.plugin({ apply })
+    await fiber.await()
+
+    await expect(ctx.settings.update(SHORTCUTS_SETTINGS_NAMESPACE, {
+      activeProfile: 'standard',
+      customBindings: [{
+        command: 'openSettings',
+        scope: 'global',
+        sequences: [[
+          { key: 'g', modifiers: ['Mod', 'Alt'] },
+          { key: 's', modifiers: [] },
+        ], [{ key: 's', modifiers: ['Mod', 'Shift'] }]],
+      }],
+    })).resolves.toBeUndefined()
+
+    await fiber.dispose()
+  })
+
+  it('rejects sequence prefix conflicts at the settings boundary', async () => {
+    const ctx = new Context()
+    await ctx.plugin(MemorySettings).await()
+    const fiber = ctx.plugin({ apply })
+    await fiber.await()
+
+    await expect(ctx.settings.update(SHORTCUTS_SETTINGS_NAMESPACE, {
+      activeProfile: 'standard',
+      customBindings: [
+        { command: 'openSettings', scope: 'global', sequence: [{ key: 'g', modifiers: [] }] },
+        { command: 'openCommandPalette', scope: 'global', sequence: [{ key: 'g', modifiers: [] }, { key: 's', modifiers: [] }] },
+      ],
+    })).rejects.toThrow()
+
+    await fiber.dispose()
+  })
+
   it('registers defaults, validates profile updates, and disposes with its fiber', async () => {
     const ctx = new Context()
     await ctx.plugin(MemorySettings).await()

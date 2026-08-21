@@ -76,6 +76,20 @@ describe('shortcut settings controller custom profile', () => {
     controller.dispose()
   })
 
+  it('falls back to standard when persisted custom sequences are malformed', async () => {
+    const registry = createProfileRegistry([standardProfile, vimProfile])
+    const scope = controllerScope({
+      activeProfile: 'standard',
+      customBindings: [{ command: 'openSettings', scope: 'global', sequence: [] }] as never,
+    })
+    const { createShortcutSettingsController } = await import('../src/client/settings/controller.js')
+    const controller = createShortcutSettingsController(scope, registry)
+
+    expect(controller.customBindings()).toEqual(standardProfile.bindings)
+    expect(registry.get('custom')).toBeUndefined()
+    controller.dispose()
+  })
+
   it('defaults custom bindings from standard and replaces the custom profile after persistence', async () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     const scope = controllerScope({ activeProfile: 'standard' })
@@ -100,6 +114,53 @@ describe('shortcut settings controller custom profile', () => {
     expect(controller.activeProfileId()).toBe('vim')
     expect(controller.customBindings()).toEqual(customBindings)
     expect(registry.get('custom')?.bindings).toEqual(customBindings)
+    controller.dispose()
+  })
+  it('keeps the registry owned when the caller mutates submitted bindings', async () => {
+    const registry = createProfileRegistry([standardProfile, vimProfile])
+    const scope = controllerScope({ activeProfile: 'standard' })
+    const { createShortcutSettingsController } = await import('../src/client/settings/controller.js')
+    const controller = createShortcutSettingsController(scope, registry)
+    const submitted = [{
+      command: 'openSettings' as const,
+      scope: 'global' as const,
+      key: { key: 's', modifiers: ['Mod'] as const },
+    }]
+
+    await controller.setCustomBindings(submitted)
+    ;(submitted[0]!.key as { modifiers: string[] }).modifiers.push('Alt')
+
+    expect(controller.customBindings()).toEqual([{
+      command: 'openSettings',
+      scope: 'global',
+      key: { key: 's', modifiers: ['Mod'] },
+    }])
+    controller.dispose()
+  })
+
+  it('publishes only the latest custom binding after serialized saves', async () => {
+    const registry = createProfileRegistry([standardProfile, vimProfile])
+    const scope = controllerScope({ activeProfile: 'standard' })
+    const resolvers: Array<() => void> = []
+    vi.mocked(scope.set).mockImplementation(async () => {
+      await new Promise<void>(resolve => { resolvers.push(resolve) })
+    })
+    const { createShortcutSettingsController } = await import('../src/client/settings/controller.js')
+    const controller = createShortcutSettingsController(scope, registry)
+    const first = [{ command: 'openSettings' as const, scope: 'global' as const, key: { key: 's', modifiers: ['Mod'] as const } }]
+    const second = [{ command: 'openCommandPalette' as const, scope: 'global' as const, key: { key: 'p', modifiers: ['Mod'] as const } }]
+
+    const firstSave = controller.setCustomBindings(first)
+    const secondSave = controller.setCustomBindings(second)
+    await Promise.resolve()
+    expect(resolvers).toHaveLength(1)
+    resolvers.shift()!()
+    await new Promise<void>(resolve => { setTimeout(resolve, 0) })
+    expect(resolvers).toHaveLength(1)
+    resolvers.shift()!()
+    await Promise.all([firstSave, secondSave])
+
+    expect(controller.customBindings()).toEqual(second)
     controller.dispose()
   })
 })

@@ -1,6 +1,7 @@
 import type { SettingsScope, SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-runtime/client'
-import type { ShortcutSettings } from '../../settings.js'
+import type { PersistedShortcutBinding, ShortcutSettings } from '../../settings.js'
 import type { ShortcutBinding } from '../contract/profile.js'
+import { validateShortcutBindings } from '../profiles/registry.js'
 import type { ShortcutProfileRegistry } from '../profiles/types.js'
 
 /** Public settings face consumed by settings cards and keyboard components. */
@@ -17,20 +18,20 @@ export interface ShortcutSettingsFace {
 export class ShortcutSettingsController implements ShortcutSettingsFace {
   private readonly listeners = new Set<() => void>()
   private readonly disposeScope: () => void
+  private readonly customWrites: Promise<void>[] = []
   private currentId: string
   private lastError: string | undefined
   private disposed = false
+  private customGeneration = 0
 
   constructor(
     private readonly scope: SettingsScope<ShortcutSettings>,
     private readonly registry: ShortcutProfileRegistry,
   ) {
     const snapshot = scope.getSnapshot()
+    this.loadCustom(snapshot)
     this.currentId = this.readPersistedId(snapshot) ?? registry.active().id
     registry.setActive(this.currentId)
-    if (snapshot.value?.customBindings !== undefined) {
-      try { registry.replaceCustom(snapshot.value.customBindings) } catch { /* invalid persisted custom data falls back to standard */ }
-    }
     this.disposeScope = scope.subscribe(() => this.onScopeChanged())
   }
 
@@ -40,17 +41,27 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
 
   async setCustomBindings(bindings: readonly ShortcutBinding[]): Promise<void> {
     if (this.disposed) return
-    try {
-      await this.scope.set('customBindings', bindings)
-      if (this.disposed) return
-      this.registry.replaceCustom(bindings)
-      this.lastError = undefined
-      this.notify()
-    } catch (error) {
-      this.lastError = error instanceof Error ? error.message : String(error)
-      this.notify()
-      throw error
-    }
+    const normalized = validateShortcutBindings(bindings)
+    const persisted = JSON.parse(JSON.stringify(normalized)) as readonly PersistedShortcutBinding[]
+    const generation = ++this.customGeneration
+    const previous = this.customWrites.at(-1) ?? Promise.resolve()
+    const operation = previous.then(async () => {
+      try {
+        await this.scope.set('customBindings', persisted)
+        if (this.disposed || generation !== this.customGeneration) return
+        this.registry.replaceCustom(normalized)
+        this.lastError = undefined
+        this.notify()
+      } catch (error) {
+        if (generation === this.customGeneration) {
+          this.lastError = error instanceof Error ? error.message : String(error)
+          this.notify()
+        }
+        throw error
+      }
+    })
+    this.customWrites.push(operation.catch(() => undefined))
+    return operation
   }
 
   error(): string | undefined { return this.lastError }
@@ -73,19 +84,12 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
     try {
       await this.scope.set('activeProfile', id)
     } catch (error) {
-      // The registry is deliberately untouched until persistence settles.
       this.lastError = error instanceof Error ? error.message : String(error)
       this.notify()
       throw error
     }
     if (this.disposed) return
-    try {
-      this.registry.setActive(id)
-    } catch (error) {
-      this.lastError = error instanceof Error ? error.message : String(error)
-      this.notify()
-      throw error
-    }
+    this.registry.setActive(id)
     this.currentId = id
     this.lastError = undefined
     this.notify()
@@ -100,16 +104,23 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
 
   private onScopeChanged(): void {
     if (this.disposed) return
-    const id = this.readPersistedId(this.scope.getSnapshot())
+    const snapshot = this.scope.getSnapshot()
+    this.loadCustom(snapshot)
+    const id = this.readPersistedId(snapshot)
     if (id === undefined || id === this.currentId || this.registry.get(id) === undefined) return
+    this.registry.setActive(id)
+    this.currentId = id
+    this.lastError = undefined
+    this.notify()
+  }
+
+  private loadCustom(snapshot: SettingsScopeSnapshot<ShortcutSettings>): void {
+    const persisted = snapshot.value?.customBindings
+    if (persisted === undefined) return
     try {
-      this.registry.setActive(id)
-      this.currentId = id
-      this.lastError = undefined
-      this.notify()
-    } catch (error) {
-      this.lastError = error instanceof Error ? error.message : String(error)
-      this.notify()
+      this.registry.replaceCustom(persisted as unknown as readonly ShortcutBinding[])
+    } catch {
+      // Invalid persisted JSON remains visible to Host validation but falls back to standard bindings here.
     }
   }
 

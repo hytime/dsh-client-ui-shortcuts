@@ -1,35 +1,21 @@
 import z from '@deepseek-ai/schemastery'
-import {
-  DEFAULT_SHORTCUT_PROFILE_ID,
-} from './profile-catalog.js'
+import { DEFAULT_SHORTCUT_PROFILE_ID } from './profile-catalog.js'
 import { SHORTCUTS_SETTINGS_NAMESPACE } from './settings-namespace.js'
-import type { ShortcutBinding } from './client/contract/profile.js'
 
 export { SHORTCUTS_SETTINGS_NAMESPACE } from './settings-namespace.js'
+
+/** One lossless persisted binding before semantic validation. */
+export type PersistedShortcutBinding = { readonly [key: string]: unknown }
 
 /** Persisted shortcut settings for the active profile selection and custom bindings. */
 export interface ShortcutSettings {
   readonly activeProfile: string
-  readonly customBindings: readonly ShortcutBinding[]
+  readonly customBindings: PersistedShortcutBinding[]
 }
 
-const modifier = z.union(['Mod', 'Alt', 'Ctrl', 'Meta', 'Shift'])
-const jsonValue = z.union([
-  z.string(),
-  z.number(),
-  z.boolean(),
-  z.never(),
-  z.array(z.never()),
-  z.object({}),
-])
-const binding = z.object({
-  command: jsonValue,
-  scope: jsonValue,
-  key: z.object({}),
-  sequence: z.array(z.object({})),
-  sequences: z.array(z.array(z.object({}))),
-})
-const defaultCustomBindings: readonly ShortcutBinding[] = [
+const jsonObject = z.dict(z.any())
+
+const defaultCustomBindings: PersistedShortcutBinding[] = [
   { command: 'openCommandPalette', scope: 'global', key: { key: 'p', modifiers: ['Mod'] } },
   { command: 'openSettings', scope: 'global', key: { key: ',', modifiers: ['Mod'] } },
   { command: 'focusPrevious', scope: 'question', key: { key: 'ArrowUp', modifiers: [] } },
@@ -45,9 +31,9 @@ const defaultCustomBindings: readonly ShortcutBinding[] = [
 /** Schema and defaults for the shortcut settings namespace. */
 export const ShortcutSettingsSchema: z<ShortcutSettings> = z.object({
   activeProfile: z.string().default(DEFAULT_SHORTCUT_PROFILE_ID),
-  customBindings: z.array(binding).default(defaultCustomBindings as unknown as never[]),
-}) as unknown as z<ShortcutSettings>
+  customBindings: z.array(jsonObject).default(defaultCustomBindings),
+})
 
-export function defaultShortcutBindings(): readonly ShortcutBinding[] {
+export function defaultShortcutBindings(): readonly PersistedShortcutBinding[] {
   return defaultCustomBindings
 }
