@@ -69,6 +69,13 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask }: Question
     if (index < questions.length - 1) setIndex(index + 1)
     else void submit()
   }
+  const skipQuestion = () => {
+    if (submitting) return
+    const nextDrafts = drafts.map((item, i) => i === index ? { ...item, selected: [], custom: '', skipped: true } : item)
+    setDrafts(nextDrafts)
+    if (index < questions.length - 1) setIndex(index + 1)
+    else void submit(nextDrafts)
+  }
   const choose = (label: string) => {
     if (submitting) return
     if (multi) updateDraft({ selected: draft.selected.includes(label) ? draft.selected.filter(x => x !== label) : [...draft.selected, label], skipped: false })
@@ -93,7 +100,7 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask }: Question
       const item = focusList[focusIndex]
       if (item?.kind === 'option') choose(item.label)
       else if (item?.kind === 'custom' || item?.kind === 'advance') advance()
-      else if (item?.kind === 'skip') updateDraft({ skipped: !draft.skipped, selected: [], custom: '' })
+      else if (item?.kind === 'skip') skipQuestion()
     }
   }
   if (!question || !draft) return React.createElement('div')
@@ -135,8 +142,8 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask }: Question
           tabIndex={focusIndex === options.length + 1 ? 0 : -1}
           type="button"
           disabled={submitting}
-          onClick={() => { setFocusIndex(options.length + 1); updateDraft({ skipped: !draft.skipped }) }}
-        >{draft.skipped ? t('question.unskip') : t('question.skip')}</button>
+          onClick={() => { setFocusIndex(options.length + 1); skipQuestion() }}
+        >{t('question.skip')}</button>
         {showAdvance ? <button
           ref={node => { focusItems.current[options.length + 2] = node }}
           className={surfaceStyles.optionSelected}

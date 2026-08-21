@@ -24,6 +24,10 @@ export const zh = {
   'keyboard.activate': '确认当前项',
   'keyboard.cancelTask': '取消当前任务',
   'error.saveFailed': '快捷键方案保存失败',
+  'question.custom': '补充说明',
+  'question.skip': '跳过',
+  'question.next': '下一题',
+  'question.submit': '提交',
 } as const
 
 export const en = {
@@ -48,6 +52,10 @@ export const en = {
   'keyboard.activate': 'Activate current item',
   'keyboard.cancelTask': 'Cancel current task',
   'error.saveFailed': 'Could not save shortcut profile',
+  'question.custom': 'Additional details',
+  'question.skip': 'Skip',
+  'question.next': 'Next',
+  'question.submit': 'Submit',
 } satisfies Record<keyof typeof zh, string>
 
 export type ShortcutLocaleKey = keyof typeof zh

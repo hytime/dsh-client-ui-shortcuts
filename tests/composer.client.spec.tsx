@@ -7,7 +7,12 @@ import { ApprovalFlow } from '../src/client/components/ApprovalFlow.js'
 import { QuestionFlow } from '../src/client/components/QuestionFlow.js'
 import { standardProfile, vimProfile } from '../src/client/profiles/builtins.js'
 
-const t = (key: string) => key
+const t = (key: string) => ({
+  'question.custom': 'Additional details',
+  'question.skip': 'Skip',
+  'question.next': 'Next',
+  'question.submit': 'Submit',
+}[key] ?? key)
 type Receipt = { accepted: true } | { accepted: false; reason: string }
 type Response = (result: unknown) => Promise<Receipt>
 
@@ -19,13 +24,14 @@ function question(
   respond: Response = vi.fn(() => receipt()),
   options: readonly { label: string }[] = [{ label: 'A' }, { label: 'B' }],
   multiSelect = false,
+  questions: readonly { id: string; question: string; options: readonly { label: string }[]; multiSelect?: boolean }[] = [{ id: 'q', question: 'Pick', options: [...options], multiSelect }],
 ): QuestionWait {
   return {
     kind: 'question',
     key: 'q:q1',
     sessionId: 's1' as never,
     payload: {
-      questions: [{ id: 'q', question: 'Pick', options: [...options], multiSelect }],
+      questions: questions.map(item => ({ ...item, options: [...item.options] })),
     },
     respond,
   } as unknown as QuestionWait
@@ -58,7 +64,7 @@ describe('shortcut composer flows', () => {
     const first = screen.getByRole('radio', { name: 'A' })
     expect(screen.getByTestId('interaction-surface').getAttribute('data-interaction-kind')).toBe('question')
     expect(screen.getByTestId('question-scroll').contains(first)).toBe(true)
-    expect(screen.getByTestId('question-actions').contains(screen.getByRole('button', { name: 'question.skip' }))).toBe(true)
+    expect(screen.getByTestId('question-actions').contains(screen.getByRole('button', { name: 'Skip' }))).toBe(true)
     expect(screen.getByTestId('question-scroll').contains(screen.getByTestId('question-actions'))).toBe(false)
     const second = screen.getByRole('radio', { name: 'B' })
     await waitFor(() => expect(document.activeElement).toBe(first))
@@ -83,6 +89,36 @@ describe('shortcut composer flows', () => {
     })
   })
 
+  it('submits a skipped final question from click with an empty selection', async () => {
+    const respond = vi.fn<Response>(() => receipt())
+    render(<QuestionFlow matched={question(respond, [], false)} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
+    await waitFor(() => expect(respond).toHaveBeenCalledTimes(1))
+    expect(respond.mock.calls[0]?.[0]).toMatchObject({ value: { answer: { answers: [{ id: 'q', selected: [] }] } } })
+  })
+
+  it('advances skipped questions and submits the final answer', async () => {
+    const respond = vi.fn<Response>(() => receipt())
+    render(<QuestionFlow
+      matched={question(respond, [], false, [
+        { id: 'q1', question: 'First', options: [] },
+        { id: 'q2', question: 'Second', options: [] },
+      ])}
+      activeProfile={standardProfile}
+      t={t}
+      cancelTask={vi.fn(async () => {})}
+    />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
+    expect(screen.getByRole('heading', { name: 'Second' })).toBeTruthy()
+    expect(respond).not.toHaveBeenCalled()
+    fireEvent.keyDown(questionSurface(), { key: 'ArrowDown' })
+    fireEvent.keyDown(questionSurface(), { key: 'Enter' })
+    await waitFor(() => expect(respond).toHaveBeenCalledTimes(1))
+    expect(respond.mock.calls[0]?.[0]).toMatchObject({ value: { answer: { answers: [{ id: 'q1', selected: [] }, { id: 'q2', selected: [] }] } } })
+  })
+
   it('submits a single non-multi custom textarea Enter only once', async () => {
     const respond = vi.fn<Response>(() => receipt())
     render(<QuestionFlow matched={question(respond, [], false)} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} />)
@@ -96,9 +132,9 @@ describe('shortcut composer flows', () => {
     render(<QuestionFlow matched={question(respond, [], false)} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} />)
     expect(screen.queryAllByRole('radio')).toHaveLength(0)
     expect(screen.getByRole('textbox')).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'question.skip' })).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: 'question.skip' }))
-    fireEvent.click(screen.getByRole('button', { name: 'question.submit' }))
+    expect(screen.getByRole('button', { name: 'Skip' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }))
     await waitFor(() => expect(respond).toHaveBeenCalledTimes(1))
     expect(respond.mock.calls[0]?.[0]).toMatchObject({ value: { answer: { answers: [{ id: 'q', selected: [] }] } } })
   })
@@ -110,24 +146,19 @@ describe('shortcut composer flows', () => {
     fireEvent.keyDown(surface, { key: 'ArrowDown' })
     expect(document.activeElement).toBe(screen.getByRole('textbox'))
     fireEvent.keyDown(surface, { key: 'ArrowDown' })
-    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'question.skip' }))
-    fireEvent.keyDown(surface, { key: 'Enter' })
-    expect(screen.getByRole('button', { name: 'question.unskip' })).toBeTruthy()
-    fireEvent.keyDown(surface, { key: 'ArrowDown' })
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Skip' }))
     fireEvent.keyDown(surface, { key: 'Enter' })
     await waitFor(() => expect(respond).toHaveBeenCalledTimes(1))
   })
 
-  it('round-trips skip through keyboard activation', () => {
+  it('submits a skipped question from keyboard activation', async () => {
     const respond = vi.fn<Response>(() => receipt())
     render(<QuestionFlow matched={question(respond, [], true)} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} />)
     const surface = questionSurface()
     fireEvent.keyDown(surface, { key: 'ArrowDown' })
     fireEvent.keyDown(surface, { key: 'Enter' })
-    expect(screen.getByRole('button', { name: 'question.unskip' })).toBeTruthy()
-    fireEvent.keyDown(surface, { key: 'Enter' })
-    expect(screen.getByRole('button', { name: 'question.skip' })).toBeTruthy()
-    expect(respond).not.toHaveBeenCalled()
+    await waitFor(() => expect(respond).toHaveBeenCalledTimes(1))
+    expect(respond.mock.calls[0]?.[0]).toMatchObject({ value: { answer: { answers: [{ id: 'q', selected: [] }] } } })
   })
   it('supports multi-select, custom text, and profile navigation', async () => {
     const respond = vi.fn<Response>(() => receipt())
