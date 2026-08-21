@@ -7,6 +7,21 @@
   padding: 8px var(--dsh-composer-side-clearance, 16px) 12px;
 }
 
+.root[data-interaction-kind='approval'] {
+  --interaction-warn-border: var(--dsw-alias-border-warning, var(--dsw-alias-text-warning, var(--dsw-alias-label-warning, #d97706)));
+  --interaction-warn-surface: var(--dsw-alias-bg-warning, var(--dsw-alias-bg-warning-light, rgb(217 119 6 / 10%)));
+  --interaction-warn-text: var(--dsw-alias-text-warning, var(--dsw-alias-label-warning, #b45309));
+}
+
+.root[data-interaction-kind='approval'] .card {
+  border-color: var(--interaction-warn-border, #d97706);
+}
+
+.root[data-interaction-kind='approval'] .header {
+  background: var(--interaction-warn-surface, rgb(217 119 6 / 10%));
+  color: var(--interaction-warn-text, #b45309);
+}
+
 .card {
   width: 100%;
   max-width: var(--dsh-chat-content-width, 748px);
