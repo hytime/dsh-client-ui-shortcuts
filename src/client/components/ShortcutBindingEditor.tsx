@@ -38,7 +38,7 @@ export function ShortcutBindingEditor({ bindings, availableGlobalActions, t, onS
   const conflict = useMemo(() => {
     try { validateShortcutBindings(visible); return undefined } catch (reason) { return reason instanceof Error ? reason.message : String(reason) }
   }, [visible])
-  const update = (index: number, stroke: ShortcutStroke): void => setDraft(current => current.map((binding, position) => position === index ? { ...binding, key: stroke, sequence: undefined, sequences: undefined } : binding))
+  const update = (index: number, stroke: ShortcutStroke): void => setDraft(current => current.map((binding, position) => position === index ? { ...binding, key: stroke, ...(binding.sequence !== undefined ? { sequence: undefined } : {}), ...(binding.sequences !== undefined ? { sequences: undefined } : {}) } : binding))
   const capture = (event: React.KeyboardEvent, index: number): void => {
     event.preventDefault()
     if (event.key === 'Escape') { setRecording(undefined); return }

@@ -38,15 +38,16 @@ describe('ShortcutBindingEditor', () => {
 
   it('saves a captured binding and retains draft after failed save', async () => {
     const onSave = vi.fn().mockRejectedValue(new Error('nope'))
-    render(<ShortcutBindingEditor bindings={bindings} t={t} onSave={onSave} />)
+    render(<ShortcutBindingEditor bindings={[{ ...bindings[0]!, key: { key: 'p', modifiers: ['Mod'] as const } }, { command: 'openSettings' as const, scope: 'global' as const, key: { key: ',', modifiers: ['Mod'] as const } }]} t={t} onSave={onSave} />)
     const record = screen.getAllByRole('button')[0]!
     fireEvent.click(record)
-    fireEvent.keyDown(record, { key: 'b', metaKey: true, shiftKey: true })
-    fireEvent.blur(record)
-    const buttons = screen.getAllByRole('button')
-    fireEvent.click(buttons[buttons.length - 1]!)
-    expect(onSave).not.toHaveBeenCalled()
-    expect(screen.getByText(/nope/)).toBeTruthy()
+    fireEvent.keyDown(record, { key: 'b', ctrlKey: true, shiftKey: true })
+    expect(record.textContent).toContain('b')
+    expect((screen.getByText('editor.save').closest('button') as HTMLButtonElement).disabled).toBe(false)
+    fireEvent.click(screen.getByText('editor.save').closest('button')!)
+    expect(onSave).toHaveBeenCalled()
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(screen.getByText(/editor.saveFailed/)).toBeTruthy()
     expect(record.textContent).toContain('b')
   })
 })
