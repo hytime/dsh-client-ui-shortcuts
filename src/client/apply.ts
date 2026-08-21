@@ -13,6 +13,8 @@ import type { ShortcutSettings } from '../settings.js'
 import { SHORTCUTS_SETTINGS_NAMESPACE } from '../settings-namespace.js'
 import type { ShortcutProfile } from './contract/profile.js'
 import { ShortcutProfileCard } from './components/ShortcutProfileCard.js'
+import { createGlobalActions, type GlobalActionCapabilities } from './actions/global-actions.js'
+import { createGlobalKeyboardRouter } from './keyboard/router.js'
 
 /** Required browser services. */
 export const inject = ['slots', 'locale', 'settingsScope', 'sessions'] as const
@@ -24,6 +26,16 @@ export function apply(ctx: ClientContext): void {
   const controller = createShortcutSettingsController(scope, registry)
   ctx.effect(() => () => controller.dispose(), 'dsh-shortcuts: settings controller')
   const t = ctx.locale.bind(NS)
+  const pending = ctx.get('interactions') as { readonly current?: () => { readonly kind?: string } | undefined } | undefined
+  ctx.effect(() => createGlobalKeyboardRouter(window, {
+    getProfile: () => registry.active(),
+    getActions: () => createGlobalActions({
+      sessions: ctx.get('sessions') as GlobalActionCapabilities['sessions'],
+      workspaces: ctx.get('workspaces') as GlobalActionCapabilities['workspaces'],
+      theme: ctx.get('theme') as GlobalActionCapabilities['theme'],
+    }),
+    isInteractionPending: () => pending?.current?.() !== undefined,
+  }), 'dsh-shortcuts: global keyboard router')
   ctx.effect(() => ctx.slots.inject('conversation.composer', () => ctx.slots.register({
     name: 'conversation.composer', select: selectShortcut, priority: -1, locale: NS,
     inject: (sessionId: SessionId): { activeProfile: ShortcutProfile; t: (key: string) => string; cancelTask: () => Promise<void> } => {
