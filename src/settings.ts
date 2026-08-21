@@ -14,7 +14,7 @@ export interface ShortcutSettings {
   readonly customBindings: PersistedShortcutBinding[]
 }
 
-const jsonObject = z.dict(z.any())
+const jsonArray = z.array(z.any())
 
 const defaultCustomBindings: PersistedShortcutBinding[] = [
   { command: 'openCommandPalette', scope: 'global', key: { key: 'p', modifiers: ['Mod'] } },
@@ -29,12 +29,29 @@ const defaultCustomBindings: PersistedShortcutBinding[] = [
   { command: 'cancelTask', scope: 'approval', key: { key: 'Escape', modifiers: [] } },
 ]
 
+const clonePersistedBindings = (bindings: readonly PersistedShortcutBinding[]): PersistedShortcutBinding[] => (
+  bindings.map(binding => ({
+    ...binding,
+    ...(binding.key !== undefined ? { key: cloneJsonValue(binding.key) } : {}),
+    ...(binding.sequence !== undefined ? { sequence: cloneJsonValue(binding.sequence) } : {}),
+    ...(binding.sequences !== undefined ? { sequences: cloneJsonValue(binding.sequences) } : {}),
+  }))
+)
+
+function cloneJsonValue(value: unknown): any {
+  if (Array.isArray(value)) return value.map(cloneJsonValue)
+  if (typeof value === 'object' && value !== null) {
+    return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, cloneJsonValue(child)]))
+  }
+  return value
+}
+
 /** Schema and defaults for the shortcut settings namespace. */
 export const ShortcutSettingsSchema: z<ShortcutSettings> = z.object({
   activeProfile: z.string().default(DEFAULT_SHORTCUT_PROFILE_ID),
-  customBindings: z.array(jsonObject).default(defaultCustomBindings),
+  customBindings: jsonArray.default(clonePersistedBindings(defaultCustomBindings)),
 })
 
 export function defaultShortcutBindings(): readonly PersistedShortcutBinding[] {
-  return defaultCustomBindings
+  return clonePersistedBindings(defaultCustomBindings)
 }

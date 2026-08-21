@@ -42,7 +42,7 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
   async setCustomBindings(bindings: readonly ShortcutBinding[]): Promise<void> {
     if (this.disposed) return
     const normalized = validateShortcutBindings(bindings)
-    const persisted = JSON.parse(JSON.stringify(normalized)) as readonly PersistedShortcutBinding[]
+    const persisted = clonePersistedBindings(normalized as unknown as readonly PersistedShortcutBinding[])
     const generation = ++this.customGeneration
     const previous = this.customWriteTail
     const operation = previous.then(async () => {
@@ -132,6 +132,23 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
   private notify(): void {
     for (const listener of [...this.listeners]) listener()
   }
+}
+
+function clonePersistedBindings(bindings: readonly PersistedShortcutBinding[]): PersistedShortcutBinding[] {
+  return bindings.map(binding => ({
+    ...binding,
+    ...(binding.key !== undefined ? { key: cloneJsonValue(binding.key) } : {}),
+    ...(binding.sequence !== undefined ? { sequence: cloneJsonValue(binding.sequence) } : {}),
+    ...(binding.sequences !== undefined ? { sequences: cloneJsonValue(binding.sequences) } : {}),
+  }))
+}
+
+function cloneJsonValue(value: unknown): any {
+  if (Array.isArray(value)) return value.map(cloneJsonValue)
+  if (typeof value === 'object' && value !== null) {
+    return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, cloneJsonValue(child)]))
+  }
+  return value
 }
 
 export function createShortcutSettingsController(

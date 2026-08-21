@@ -180,7 +180,13 @@ function normalizeBinding(binding: ShortcutBinding): NormalizedSequence[] {
   if (legacyModifier !== undefined && !MODIFIERS.includes(legacyModifier)) {
     throw new Error(`invalid shortcut modifier: ${String(legacyModifier)}`)
   }
-  const rawSequences = binding.sequences ?? (binding.sequence ? [binding.sequence] : binding.key ? [[binding.key]] : [])
+  const rawSequences = binding.sequences !== undefined
+    ? binding.sequences
+    : binding.sequence !== undefined
+      ? [binding.sequence]
+      : binding.key !== undefined
+        ? [[binding.key]]
+        : []
 
   if (rawSequences.length === 0 || rawSequences.some(sequence => sequence.length < 1 || sequence.length > 2)) {
     throw new Error(`invalid shortcut key in profile: ${binding.scope}`)

@@ -2,6 +2,7 @@ import { Context } from '@deepseek-ai/cordis'
 import { describe, expect, it } from 'vitest'
 import { SettingsProvider, type SettingsNamespace } from '@deepseek-ai/dsh-settings'
 import { apply, SHORTCUTS_SETTINGS_NAMESPACE } from '../src/index.js'
+import { defaultShortcutBindings } from '../src/settings.js'
 import type { ShortcutSettings } from '../src/settings.js'
 
 class MemorySettings extends SettingsProvider {
@@ -23,6 +24,14 @@ const validCustomBinding = {
 }
 
 describe('shortcut Host settings', () => {
+  it('returns owned fresh default binding copies', () => {
+    const first = defaultShortcutBindings()
+    const second = defaultShortcutBindings()
+    expect(first).not.toBe(second)
+    expect(first[0]).not.toBe(second[0])
+    expect(first[0]?.key).not.toBe(second[0]?.key)
+  })
+
   it('does not require a settings provider', async () => {
     const ctx = new Context()
     const fiber = ctx.plugin({ apply })

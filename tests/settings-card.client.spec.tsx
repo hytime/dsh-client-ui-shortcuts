@@ -100,6 +100,8 @@ describe('shortcut settings controller custom profile', () => {
     await controller.setCustomBindings(customBindings)
     expect(controller.customBindings()).toEqual(customBindings)
     expect(registry.get('custom')?.bindings).toEqual(customBindings)
+    expect(scope.set).toHaveBeenCalledWith('customBindings', expect.any(Array))
+    expect(scope.set.mock.calls[0]?.[1]).not.toBe(customBindings)
     controller.dispose()
   })
 
