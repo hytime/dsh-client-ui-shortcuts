@@ -46,17 +46,36 @@ describe('capability-aware global actions', () => {
   })
 
   it('uses workspace connection in both directions and preserves selection on rejection', async () => {
+    let currentSession = 's1'
+    let workspaceItems = [{ workspaceId: 'w1', sessionIds: ['s1'] }, { workspaceId: 'w2', sessionIds: ['s2'] }]
     const d = services()
-    d.workspaces.connectWorkspace.mockResolvedValueOnce('connected-prev').mockRejectedValueOnce(new Error('offline'))
+    d.sessions.list.getSnapshot = () => ({ ids: ['s1', 's2'], current: currentSession })
+    d.workspaces.list.getSnapshot = () => ({ items: workspaceItems })
+    d.workspaces.connectWorkspace
+      .mockResolvedValueOnce('connected-prev')
+      .mockResolvedValueOnce('connected-next')
+      .mockRejectedValueOnce(new Error('offline'))
     const actions = createGlobalActions(d)
+
     actions.previousWorkspace?.()
     await Promise.resolve()
-    expect(d.workspaces.connectWorkspace).toHaveBeenCalledWith('w2')
+    expect(d.workspaces.connectWorkspace).toHaveBeenNthCalledWith(1, 'w2')
     expect(d.sessions.open).toHaveBeenCalledWith('connected-prev')
+
+    currentSession = 'connected-prev'
+    workspaceItems = [{ workspaceId: 'w1', sessionIds: ['connected-prev'] }, { workspaceId: 'w2', sessionIds: ['s2'] }]
     d.sessions.open.mockClear()
     actions.nextWorkspace?.()
     await Promise.resolve()
-    expect(d.workspaces.connectWorkspace).toHaveBeenCalledWith('w2')
+    expect(d.workspaces.connectWorkspace).toHaveBeenNthCalledWith(2, 'w2')
+    expect(d.sessions.open).toHaveBeenCalledWith('connected-next')
+
+    currentSession = 'connected-next'
+    workspaceItems = [{ workspaceId: 'w1', sessionIds: ['s1'] }, { workspaceId: 'w2', sessionIds: ['connected-next'] }]
+    d.sessions.open.mockClear()
+    actions.previousWorkspace?.()
+    await Promise.resolve()
+    expect(d.workspaces.connectWorkspace).toHaveBeenNthCalledWith(3, 'w1')
     expect(d.sessions.open).not.toHaveBeenCalled()
   })
 
