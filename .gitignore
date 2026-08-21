@@ -6,4 +6,6 @@ dist/
 *.log
 .worktrees/
 .superpowers/
+.pnpm_*/
+AGENTS.md
 docs/superpowers/
