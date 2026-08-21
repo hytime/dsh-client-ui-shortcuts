@@ -1,98 +1,36 @@
 import type { SessionId, WorkspaceId } from '@deepseek-ai/dsh-client-runtime/client'
 
-export type GlobalActionId =
-  | 'startSession'
-  | 'previousSession'
-  | 'nextSession'
-  | 'previousWorkspace'
-  | 'nextWorkspace'
-  | 'forkSession'
-  | 'toggleTheme'
-
+export type GlobalActionId = 'startSession' | 'previousSession' | 'nextSession' | 'previousWorkspace' | 'nextWorkspace' | 'forkSession' | 'toggleTheme'
 export type GlobalAction = () => void
 export type GlobalActions = Partial<Record<GlobalActionId, GlobalAction>>
 
-type Snapshot<T> = { getSnapshot(): T }
-type Sessions = {
-  list: Snapshot<{ ids: readonly SessionId[]; current: SessionId | undefined }>
-  open(id: SessionId): void
-  fork(opts: { sessionId: SessionId; increaseTitle?: boolean }): Promise<SessionId>
-}
-type Workspaces = {
-  list: Snapshot<{ items: readonly { workspaceId: WorkspaceId; sessionIds: readonly SessionId[] }[] }>
-  startSession(workspaceId?: WorkspaceId): void
-  connectWorkspace(workspaceId: WorkspaceId): Promise<SessionId>
-}
-type Theme = {
-  getTheme(): { preference: string }
-  setTheme(id: string): void
-}
-
-export interface GlobalActionServices {
-  readonly sessions?: Partial<Sessions>
-  readonly workspaces?: Partial<Workspaces>
-  readonly theme?: Partial<Theme>
-}
+export interface SessionActionFace { readonly list: { getSnapshot(): { ids: readonly SessionId[]; current: SessionId | undefined } }; open(id: SessionId): void; fork(opts: { sessionId: SessionId; increaseTitle?: boolean }): Promise<SessionId> }
+export interface WorkspaceActionFace { readonly list: { getSnapshot(): { items: readonly { workspaceId: WorkspaceId; sessionIds: readonly SessionId[] }[] } }; startSession(workspaceId?: WorkspaceId): void; connectWorkspace(workspaceId: WorkspaceId): Promise<SessionId> }
+export interface ThemeActionFace { getTheme(): { preference: string; active?: { colorScheme: 'light' | 'dark' } }; setTheme(id: string): void }
+export interface GlobalActionCapabilities { readonly sessions?: SessionActionFace; readonly workspaces?: WorkspaceActionFace; readonly theme?: ThemeActionFace }
 
 function adjacent<T>(items: readonly T[], current: T | undefined, delta: number): T | undefined {
   if (current === undefined) return undefined
   const index = items.indexOf(current)
-  if (index < 0 || items.length < 2) return undefined
-  return items[(index + delta + items.length) % items.length]
+  return index < 0 || items.length < 2 ? undefined : items[(index + delta + items.length) % items.length]
 }
 
-export function createGlobalActions(services: GlobalActionServices): GlobalActions {
+export function createGlobalActions({ sessions, workspaces, theme }: GlobalActionCapabilities): GlobalActions {
   const actions: GlobalActions = {}
-  const sessions = services.sessions
-  const workspaces = services.workspaces
-  const theme = services.theme
-  const sessionList = sessions?.list
-  const sessionOpen = sessions?.open
-  const sessionFork = sessions?.fork
-  const workspaceList = workspaces?.list
-  const workspaceStart = workspaces?.startSession
-  const workspaceConnect = workspaces?.connectWorkspace
-  const themeGet = theme?.getTheme
-  const themeSet = theme?.setTheme
-
-  if (workspaceStart !== undefined && sessionList !== undefined) {
-    actions.startSession = () => { workspaceStart.call(workspaces) }
+  if (workspaces?.startSession !== undefined) actions.startSession = () => { workspaces.startSession() }
+  if (sessions !== undefined && sessions.open !== undefined) {
+    const navigate = (delta: number) => { const target = adjacent(sessions.list.getSnapshot().ids, sessions.list.getSnapshot().current, delta); if (target !== undefined) sessions.open(target) }
+    actions.previousSession = () => { navigate(-1) }; actions.nextSession = () => { navigate(1) }
   }
-  if (sessionOpen !== undefined && sessionList !== undefined) {
+  if (sessions !== undefined && workspaces !== undefined) {
     const navigate = (delta: number) => {
-      const snapshot = sessionList.getSnapshot()
-      const target = adjacent(snapshot.ids, snapshot.current, delta)
-      if (target !== undefined) sessionOpen.call(sessions, target)
+      const state = sessions.list.getSnapshot(); const items = workspaces.list.getSnapshot().items
+      const current = items.find(item => item.sessionIds.includes(state.current as SessionId)); const target = adjacent(items, current, delta)
+      if (target !== undefined) void workspaces.connectWorkspace(target.workspaceId).then(id => { sessions.open(id) }, () => {})
     }
-    actions.previousSession = () => { navigate(-1) }
-    actions.nextSession = () => { navigate(1) }
+    actions.previousWorkspace = () => { navigate(-1) }; actions.nextWorkspace = () => { navigate(1) }
   }
-  if (sessionOpen !== undefined && sessionList !== undefined && workspaceList !== undefined) {
-    const navigateWorkspace = (delta: number) => {
-      const sessionSnapshot = sessionList.getSnapshot()
-      const workspaceSnapshot = workspaceList.getSnapshot()
-      const currentWorkspace = workspaceSnapshot.items.find(item => item.sessionIds.includes(sessionSnapshot.current as SessionId))
-      const target = adjacent(workspaceSnapshot.items, currentWorkspace, delta)
-      const targetSession = target?.sessionIds.find(id => id !== undefined)
-      if (targetSession !== undefined) sessionOpen.call(sessions, targetSession)
-    }
-    actions.previousWorkspace = () => { navigateWorkspace(-1) }
-    actions.nextWorkspace = () => { navigateWorkspace(1) }
-  }
-  if (sessionFork !== undefined && sessionOpen !== undefined && sessionList !== undefined) {
-    actions.forkSession = () => {
-      const current = sessionList.getSnapshot().current
-      if (current === undefined) return
-      void sessionFork.call(sessions, { sessionId: current, increaseTitle: true }).then(child => {
-        sessionOpen.call(sessions, child)
-      }, () => {})
-    }
-  }
-  if (themeGet !== undefined && themeSet !== undefined) {
-    actions.toggleTheme = () => {
-      const preference = themeGet.call(theme).preference
-      themeSet.call(theme, preference === 'dark' ? 'light' : 'dark')
-    }
-  }
+  if (sessions !== undefined && sessions.open !== undefined && sessions.fork !== undefined) actions.forkSession = () => { const current = sessions.list.getSnapshot().current; if (current !== undefined) void sessions.fork({ sessionId: current, increaseTitle: true }).then(id => { sessions.open(id) }, () => {}) }
+  if (theme !== undefined) actions.toggleTheme = () => { const snapshot = theme.getTheme(); const scheme = snapshot.preference === 'system' ? snapshot.active?.colorScheme : snapshot.preference; theme.setTheme(scheme === 'dark' ? 'light' : 'dark') }
   return actions
 }

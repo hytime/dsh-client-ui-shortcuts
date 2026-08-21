@@ -33,7 +33,7 @@ describe('capability-aware global actions', () => {
 
   it('omits actions without optional capabilities or list state', () => {
     expect(createGlobalActions({}).startSession).toBeUndefined()
-    expect(createGlobalActions({ sessions: { list: services().sessions.list } }).forkSession).toBeUndefined()
+    expect(createGlobalActions({ sessions: { list: services().sessions.list, open: undefined, fork: undefined } as never }).forkSession).toBeUndefined()
   })
 
   it('does not change selection when fork fails', async () => {
@@ -44,4 +44,46 @@ describe('capability-aware global actions', () => {
     await Promise.resolve()
     expect(d.sessions.open).not.toHaveBeenCalled()
   })
+
+  it('uses workspace connection in both directions and preserves selection on rejection', async () => {
+    const d = services()
+    d.workspaces.connectWorkspace.mockResolvedValueOnce('connected-prev').mockRejectedValueOnce(new Error('offline'))
+    const actions = createGlobalActions(d)
+    actions.previousWorkspace?.()
+    await Promise.resolve()
+    expect(d.workspaces.connectWorkspace).toHaveBeenCalledWith('w2')
+    expect(d.sessions.open).toHaveBeenCalledWith('connected-prev')
+    d.sessions.open.mockClear()
+    actions.nextWorkspace?.()
+    await Promise.resolve()
+    expect(d.workspaces.connectWorkspace).toHaveBeenCalledWith('w2')
+    expect(d.sessions.open).not.toHaveBeenCalled()
+  })
+
+  it('allows start session without a sessions list', () => {
+    const d = services()
+    const actions = createGlobalActions({ workspaces: d.workspaces })
+    actions.startSession?.()
+    expect(d.workspaces.startSession).toHaveBeenCalledTimes(1)
+  })
+
+  it('uses dynamic session snapshots and resolves system theme from active scheme', () => {
+    const d = services()
+    let current = 's1'
+    d.sessions.list.getSnapshot = () => ({ ids: current === 's1' ? ['s1', 's2'] : ['s2', 's3'], current })
+    const actions = createGlobalActions(d)
+    current = 's2'
+    actions.nextSession?.()
+    expect(d.sessions.open).toHaveBeenCalledWith('s3')
+    d.theme.getTheme = () => ({ preference: 'system', active: { colorScheme: 'dark' } })
+    actions.toggleTheme?.()
+    expect(d.theme.setTheme).toHaveBeenCalledWith('light')
+  })
+
+  it('does not expose settings or unavailable actions', () => {
+    const actions = createGlobalActions({})
+    expect(actions.openSettings).toBeUndefined()
+    expect(actions.previousWorkspace).toBeUndefined()
+  })
+
 })
