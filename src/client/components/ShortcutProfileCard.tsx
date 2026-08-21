@@ -4,6 +4,7 @@ import type { ShortcutLocaleKey } from '../locales.js'
 import type { ShortcutProfile } from '../contract/profile.js'
 import type { ShortcutProfileCardProps as SlotShortcutProfileCardProps } from '../contract/slots.js'
 import { ShortcutIcon } from './ShortcutIcon.js'
+import { ShortcutBindingEditor } from './ShortcutBindingEditor.js'
 import { ShortcutLegend } from './ShortcutLegend.js'
 import styles from '../styles/Shortcuts.module.css'
 
@@ -25,7 +26,9 @@ export function ShortcutProfileCard({ settings, profiles, t = fallbackT }: Short
   const id = useId()
   const titleId = `shortcut-settings-title-${id}`
   const bodyId = `shortcut-settings-body-${id}`
-  const active = profiles.find(profile => profile.id === selection) ?? profiles.find(profile => profile.id === settings.activeProfileId())
+  const registryProfiles = profiles.some(profile => profile.id === 'custom') ? profiles : [...profiles, { id: 'custom', label: 'profile.custom.label', description: 'profile.custom.description', bindings: settings.customBindings() }]
+  const translatedProfiles = registryProfiles.map(profile => profile.id === 'custom' ? { ...profile, label: 'profile.custom.label' } : profile)
+  const currentProfile = registryProfiles.find(profile => profile.id === selection) ?? registryProfiles.find(profile => profile.id === settings.activeProfileId())
 
   useEffect(() => settings.subscribe(() => {
     setSelection(settings.activeProfileId())
@@ -53,7 +56,7 @@ export function ShortcutProfileCard({ settings, profiles, t = fallbackT }: Short
     }
   }
 
-  const body = profiles.length === 0
+  const body = registryProfiles.length === 0
     ? <p role="status" className={styles.empty}>{t('settings.empty')}</p>
     : (
       <>
@@ -62,15 +65,15 @@ export function ShortcutProfileCard({ settings, profiles, t = fallbackT }: Short
           <label className={styles.profileSelect}>
             <span>{t('settings.currentProfile')}</span>
             <select aria-label={t('settings.profile')} value={selection} onChange={event => void choose(event.target.value)}>
-              {profiles.map(profile => <option key={profile.id} value={profile.id}>{t(profile.label)}</option>)}
+              {translatedProfiles.map(profile => <option key={profile.id} value={profile.id}>{t(profile.label)}</option>)}
             </select>
             {pending !== undefined ? <span role="status">{t('settings.saving')}</span> : null}
           </label>
         </fieldset>
         {error !== undefined || settings.error() !== undefined ? <p role="alert" className={styles.error}>{t('settings.error').replace('{message}', error ?? settings.error() ?? '')}</p> : null}
-        {active === undefined ? <p role="status" className={styles.empty}>{t('settings.conflict')}</p> : <>
-          <p className={styles.summary}>{active.description ? t(active.description) : ''}</p>
-          <ShortcutLegend bindings={active.bindings} t={t} />
+        {currentProfile === undefined ? <p role="status" className={styles.empty}>{t('settings.conflict')}</p> : currentProfile.id === 'custom' ? <ShortcutBindingEditor bindings={settings.customBindings()} t={t} onSave={settings.setCustomBindings} /> : <>
+          <p className={styles.summary}>{currentProfile.description ? t(currentProfile.description) : ''}</p>
+          <ShortcutLegend bindings={currentProfile.bindings} t={t} />
         </>}
       </>
     )
@@ -85,7 +88,7 @@ export function ShortcutProfileCard({ settings, profiles, t = fallbackT }: Short
       aria-label={`${expandedLabel}: ${t('settings.title')}`}
       onClick={() => { setOpen(value => !value) }}
     >
-      <ShortcutIcon name={profiles.length === 0 ? 'settings-2' : 'keyboard'} size={20} />
+      <ShortcutIcon name={registryProfiles.length === 0 ? 'settings-2' : 'keyboard'} size={20} />
       <span className={styles.headerText}>
         <span id={titleId} className={styles.title}>{t('settings.title')}</span>
         <span className={styles.description}>{t('settings.description')}</span>

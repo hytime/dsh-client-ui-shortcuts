@@ -42,6 +42,13 @@ const labels: Record<string, string> = {
   'keyboard.focusPrevious': 'Previous', 'keyboard.focusNext': 'Next', 'keyboard.activate': 'Activate', 'keyboard.cancelTask': 'Cancel',
   'profile.standard.label': 'Standard', 'profile.standard.description': 'Arrows',
   'profile.vim.label': 'Vim', 'profile.vim.description': 'J/K',
+  'profile.custom.label': 'Custom', 'profile.custom.description': 'Your bindings',
+  'legend.scope.global': 'Global',
+  'keyboard.openCommandPalette': 'Command palette', 'keyboard.openSettings': 'Settings',
+  'keyboard.startSession': 'New session', 'keyboard.previousSession': 'Previous session', 'keyboard.nextSession': 'Next session',
+  'keyboard.previousWorkspace': 'Previous workspace', 'keyboard.nextWorkspace': 'Next workspace', 'keyboard.forkSession': 'Fork session', 'keyboard.toggleTheme': 'Toggle theme',
+  'editor.save': 'Save', 'editor.cancel': 'Cancel', 'editor.record': 'Record shortcut', 'editor.conflict': 'Shortcut conflicts with another command.', 'editor.invalid': 'Resolve shortcut conflicts before saving.', 'editor.saveFailed': 'Could not save custom shortcuts: {message}',
+  'modifier.Mod': 'Mod', 'modifier.Ctrl': 'Ctrl', 'modifier.Alt': 'Alt', 'modifier.Meta': 'Meta', 'modifier.Shift': 'Shift',
 }
 const t = (key: string) => labels[key] ?? key
 const openCard = () => fireEvent.click(screen.getByRole('button', { name: 'Expand: Shortcuts' }))
@@ -55,6 +62,8 @@ function settingsFace(initial = 'standard') {
     subscribe: listener => { listeners.add(listener); return () => listeners.delete(listener) },
     setActiveProfile: async id => { if (failure) { const error = failure; failure = undefined; throw error } active = id; listeners.forEach(listener => listener()) },
     error: () => undefined,
+    customBindings: () => standardProfile.bindings,
+    setCustomBindings: async () => {},
     emit: () => listeners.forEach(listener => listener()),
     failNext: message => { failure = new Error(message) },
     setExternal: id => { active = id; listeners.forEach(listener => listener()) },
@@ -258,9 +267,9 @@ describe('shortcut settings card', () => {
     expect(screen.getByRole('heading', { name: 'Approvals' })).toBeTruthy()
     expect(screen.getAllByText('Previous').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Activate').length).toBeGreaterThan(0)
-    expect(screen.getAllByRole('heading', { level: 3 })).toHaveLength(2)
+    expect(screen.getAllByRole('heading', { level: 3 })).toHaveLength(3)
     const lists = screen.getAllByRole('list')
-    expect(lists).toHaveLength(2)
+    expect(lists).toHaveLength(3)
     for (const list of lists) {
       const items = Array.from(list.querySelectorAll('[role="listitem"]'))
       expect(items.length).toBeGreaterThan(0)
@@ -320,17 +329,34 @@ describe('shortcut settings card', () => {
     await waitFor(() => expect((screen.getByRole('combobox', { name: 'Profile' }) as HTMLSelectElement).value).toBe('standard'))
   })
 
-  it('renders conflict and empty states', () => {
-    const settings = settingsFace('missing')
+  it('shows Custom and editor rows when selected, including global capability rows', async () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
-    render(<ShortcutProfileCard settings={settings} profiles={registry.list()} t={t} />)
+    registry.replaceCustom([
+      { command: 'activate', scope: 'question', key: { key: 'Enter', alt: false, ctrl: false, meta: false, shift: false } },
+      { command: 'openCommandPalette', scope: 'global', key: { key: 'n', modifiers: ['Mod'] } },
+    ])
+    const settings = settingsFace()
+    settings.customBindings = () => registry.custom()
+    settings.setCustomBindings = vi.fn(async bindings => { registry.replaceCustom(bindings); settings.emit() })
+    render(<ShortcutProfileCard settings={settings} profiles={[...registry.list()]} t={t} />)
     openCard()
-    expect(screen.getByText('Unavailable.')).toBeTruthy()
-    cleanup()
-    render(<ShortcutProfileCard settings={settings} profiles={[]} t={t} />)
-    openCard()
-    expect(screen.getByText('No profiles.')).toBeTruthy()
+    expect(screen.getByRole('option', { name: 'Custom' })).toBeTruthy()
+    fireEvent.change(screen.getByRole('combobox', { name: 'Profile' }), { target: { value: 'custom' } })
+    await waitFor(() => expect(screen.getByText('Command palette')).toBeTruthy())
+    expect(screen.getByRole('heading', { name: 'Global' })).toBeTruthy()
+    expect(screen.queryByText('Settings')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Save' })).toBeTruthy()
   })
+
+  it('keeps standard and Vim profiles read-only', () => {
+    const registry = createProfileRegistry([standardProfile, vimProfile])
+    const settings = settingsFace()
+    render(<ShortcutProfileCard settings={settings} profiles={[...registry.list(), { id: 'custom', label: 'profile.custom.label', description: 'profile.custom.description', bindings: standardProfile.bindings }]} t={t} />)
+    openCard()
+    expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Record shortcut' })).toBeNull()
+  })
+
 
   it('updates translated labels without changing profile ids or bindings', () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])

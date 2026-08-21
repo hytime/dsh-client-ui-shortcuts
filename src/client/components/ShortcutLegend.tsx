@@ -7,6 +7,7 @@ import styles from '../styles/Shortcuts.module.css'
 export interface ShortcutLegendProps {
   readonly bindings: readonly ShortcutBinding[]
   readonly t: (key: ShortcutLocaleKey | string) => string
+  readonly availableGlobalActions?: readonly string[]
 }
 
 function keyLabel(binding: ShortcutBinding): string[] {
@@ -28,11 +29,11 @@ const COMMAND_ICONS: Partial<Record<ShortcutCommand, ShortcutIconName>> = {
   openSettings: 'settings-2',
 }
 
-export function ShortcutLegend({ bindings, t }: ShortcutLegendProps): React.ReactElement {
-  const grouped = ['question', 'approval'] as const
+export function ShortcutLegend({ bindings, t, availableGlobalActions }: ShortcutLegendProps): React.ReactElement {
+  const grouped = ['question', 'approval', 'global'] as const
   return <div className={styles.legend}>
     {grouped.map(scope => {
-      const entries = bindings.filter(binding => binding.scope === scope)
+       const entries = bindings.filter(binding => binding.scope === scope && (scope !== 'global' || availableGlobalActions === undefined || availableGlobalActions.includes(binding.command)))
       if (entries.length === 0) return null
       return <section className={styles.legendGroup} key={scope} aria-labelledby={`shortcut-legend-${scope}`}>
         <h3 id={`shortcut-legend-${scope}`}>{t(`legend.scope.${scope}`)}</h3>
