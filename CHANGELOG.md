@@ -2,7 +2,18 @@
 
 All notable changes to `@hytime/dsh-client-ui-shortcuts` are documented here.
 
-## 0.1.10 - Selection activation fix
+### Added
+
+- Added the editable `Custom` profile with persisted bindings, explicit modifiers, `Mod` platform mapping, alternatives, and bounded two-stroke chords.
+- Added capability-aware global actions for command-palette opening, session and Workspace navigation, session creation and forking, and theme switching.
+- Added a fiber-owned global keyboard router with guards for editable controls, IME composition, repeated events, pending question/approval takeover, and host popups.
+- Added grouped global shortcut rows that hide actions unavailable in the current DSH composition.
+
+### Changed
+
+- Kept the settings opener binding hidden and inactive because DSH does not expose a public settings opener; no private DOM route is used.
+- Documented DSH CLI installation and real-composition verification as the supported integration path.
+
 
 ### Fixed
 

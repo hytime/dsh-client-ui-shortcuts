@@ -30,11 +30,11 @@ For upgrades, removal, local tarballs, profile inspection, and troubleshooting, 
 | Standard profile | Available | Arrow keys, `Enter`, and `Escape` for question and approval interactions. |
 | Vim profile | Available | `j`/`k`, `Enter`, and `Escape` for question and approval interactions. |
 | Settings card | Available | Switch the active profile through the `dsh-ui-shortcuts` settings namespace. |
-| Custom profile | Planned | Edit bindings, modifiers, alternatives, and two-stroke chords. |
-| Global navigation | Planned | Move across sessions and Workspaces, create sessions, fork sessions, and switch theme. |
-| Capability filtering | Planned | Show a global action only when the current DSH composition exposes its public action face. |
+| Custom profile | Available | Edit question, approval, and capability-backed global bindings, including modifiers, alternatives, and two-stroke chords. |
+| Global actions | Available | Route capability-aware session, Workspace, session-branch, command-palette, and theme actions through the DSH public faces. |
+| Capability filtering | Available | Register and render each global action only when the current DSH composition exposes its required public action face. |
 
-The current release contains the interaction takeover and the `standard`/`vim` profiles. Custom profiles and global navigation are documented here so their intended behavior is visible before implementation lands.
+The current release contains interaction takeover, the `standard`/`vim` profiles, the editable `Custom` profile, and the capability-aware global router. The settings opener remains hidden because DSH does not expose a public opener; the plugin does not simulate it through private DOM clicks or guessed routes.
 
 ## Shortcut reference
 
@@ -53,22 +53,22 @@ The Vim profile replaces the two focus bindings with `k` and `j`; confirmation a
 
 These are four logical commands, eight question/approval bindings, and sixteen built-in profile rows across `standard` and `vim`. They are scoped to the active interaction card and do not become document-wide shortcuts.
 
-### Planned global shortcuts
+### Global shortcuts
 
-The following actions are planned for the global router. They are not shipped as working global shortcuts in the current release.
+The global router is available in the active profile. Its built-in global bindings are:
 
-| Action | Proposed default | Current DSH capability | Roadmap state |
-| --- | --- | --- | --- |
-| Create a session | `Mod+N` | `workspaces.startSession()` | Public face available; plugin integration planned |
-| Previous session | `Mod+Alt+ArrowUp` | `sessions.list` + `sessions.open()` | Public faces available; navigation adapter planned |
-| Next session | `Mod+Alt+ArrowDown` | `sessions.list` + `sessions.open()` | Public faces available; navigation adapter planned |
-| Previous Workspace | `Mod+Shift+ArrowLeft` | `workspaces.list` + `connectWorkspace()` + `sessions.open()` | Public faces available; navigation adapter planned |
-| Next Workspace | `Mod+Shift+ArrowRight` | `workspaces.list` + `connectWorkspace()` + `sessions.open()` | Public faces available; navigation adapter planned |
-| Fork current session | `Mod+Shift+B` | `sessions.fork()` + `sessions.open()` | Public faces available; integration planned |
-| Toggle light/dark theme | `Mod+Shift+L` | `theme.getTheme()` + `theme.setTheme()` | Public face available; integration planned |
-| Open settings panel | `Mod+,` | No public `openSettings()` face confirmed | Hidden until DSH exposes an opener |
+| Action | Default binding | Capability requirement |
+| --- | --- | --- |
+| Open command palette | `Mod+P` | DSH command-palette opener |
+| Create a session | `Mod+N` | `workspaces.startSession()` |
+| Previous session | `Mod+Alt+ArrowUp` | session list and `sessions.open()` |
+| Next session | `Mod+Alt+ArrowDown` | session list and `sessions.open()` |
+| Previous Workspace | `Mod+Shift+ArrowLeft` | Workspace list, `connectWorkspace()`, and `sessions.open()` |
+| Next Workspace | `Mod+Shift+ArrowRight` | Workspace list, `connectWorkspace()`, and `sessions.open()` |
+| Fork current session | `Mod+Shift+B` | `sessions.fork()` and `sessions.open()` |
+| Toggle light/dark theme | `Mod+Shift+L` | `theme.getTheme()` and `theme.setTheme()` |
 
-That means **7 of the 8 planned global actions already have a current DSH public capability**. The plugin will not simulate the missing settings action through private DOM clicks or guessed routes.
+The `Mod+,` settings binding is retained in the profile data but remains hidden and inactive because no public DSH settings opener is available. Capability filtering removes unavailable global actions from both routing and the shortcut list; it does not leave dead rows or simulate private DSH UI behavior.
 
 ### DSH actions worth reserving next
 
@@ -85,7 +85,7 @@ These are useful future candidates because the current DSH Web composition alrea
 
 ## Key design
 
-The planned Custom profile follows conventions familiar from Claude Code and Codex without claiming to copy their complete default maps:
+The Custom profile follows conventions familiar from Claude Code and Codex without claiming to copy their complete default maps:
 
 - `Mod` maps to `Meta` on macOS and `Ctrl` on other platforms.
 - The UI displays `Cmd` or `Ctrl` according to the platform instead of storing two conflicting bindings.
@@ -94,7 +94,7 @@ The planned Custom profile follows conventions familiar from Claude Code and Cod
 - Key aliases are normalized before comparison, including `Esc`/`Escape` and `Return`/`Enter`.
 - A chord cannot have three or more strokes, and one binding cannot be a prefix of another binding in the same scope.
 
-The planned global router yields to text inputs, textareas, contenteditable controls, IME composition, repeated key events, pending question/approval takeover, and host-owned popup focus. Every listener is owned by the current Client fiber and is removed when the plugin stops or updates.
+The global router yields to text inputs, textareas, contenteditable controls, IME composition, repeated key events, pending question/approval takeover, and host-owned popup focus. Every listener is owned by the current Client fiber and is removed when the plugin stops or updates.
 
 ## DSH compatibility
 
@@ -106,39 +106,26 @@ The plugin is an out-of-tree DSH Web Client extension. It uses public compositio
 - `dsh-shortcuts` for Client locale dictionaries;
 - fiber-owned effects for slot, settings, locale, and future keyboard registrations.
 
-The package currently injects the session face needed by the interaction composer. Future global actions will consume the narrow public `sessions`, `workspaces`, `theme`, and `layout` faces and pass plain callbacks into components. DSH live services will not cross into React props or persisted settings.
+The plugin injects the session, Workspace, theme, and command-palette faces needed by the active global actions. It extracts only plain action callbacks before passing data to React; DSH live services do not cross into React props or persisted settings.
 
 ## Roadmap
 
-### Released
+### Current integration
 
 - Compact question and approval cards inside the DSH conversation composer.
-- Standard and Vim profiles with one active profile at a time.
-- Single-select, multi-select, custom-answer, skip, submit, and previous-question flows.
-- Approval allow-once, reject, details, and cancellation flows.
-- Localized English and Chinese settings copy.
-- DSH semantic tokens, responsive layout, keyboard focus states, and local Iconify data.
-
-### Current DSH integration
-
-- Capability-aware global action adapter for the seven currently matchable actions.
+- Standard, Vim, and editable Custom profiles with one active profile at a time.
+- Custom binding persistence with `Mod`, explicit modifiers, alternatives, and two-stroke chords.
+- Capability-aware global action adapter and fiber-owned keyboard router.
 - Session and Workspace navigation based on DSH list snapshots.
 - Branch creation followed by opening the new child session.
 - Light/dark theme switching through the public theme face.
-- Sidebar, details panel, subagent, and draft-submit action reservations.
-
-### Planned in this plugin
-
-- Custom profile editing and persistence.
-- `Mod`, explicit modifiers, alternative bindings, and two-stroke chords.
-- Global shortcut routing with input and pending-interaction guards.
-- Grouped shortcut legend for question, approval, and global scopes.
-- Capability-gated visibility so unavailable actions disappear instead of becoming dead rows.
+- Grouped question, approval, and global shortcut legend with unavailable actions hidden.
+- Input, IME, repeat, pending-interaction, and host-popup guards for global routing.
 
 ### Waiting for a DSH public face
 
-- Open the settings panel directly.
-- Open a session switcher or command palette.
+- Open the settings panel directly; the existing settings binding stays hidden.
+- Open a session switcher or command palette when no public opener is available.
 - Switch transcript/trajectory views.
 - Open model, permission-mode, Plan Mode, or background-job pickers.
 - Expose queue steering, undo/redo, clipboard, and other InputBar-private operations to extension packages.
@@ -166,9 +153,10 @@ For the full DSH composition workflow, use the [installation guide](docs/install
 | Current version | `0.1.10` |
 | Bundle row | `dsh-ui-shortcuts` |
 | Settings namespace | `dsh-ui-shortcuts` |
-| Persisted field | `activeProfile` |
+| Persisted fields | `activeProfile`, `customBindings` |
 | Locale namespace | `dsh-shortcuts` |
 | Built-in profiles | `standard`, `vim` |
+| Editable profile | `custom` |
 | Browser entry | `lib/client.js` |
 
 ## FAQ
