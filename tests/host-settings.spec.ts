@@ -46,6 +46,38 @@ describe('shortcut Host settings', () => {
     }])).toThrow()
   })
 
+  it('documents nested undefined loss during Schemastery settings resolution', async () => {
+    const ctx = new Context()
+    await ctx.plugin(MemorySettings).await()
+    const fiber = ctx.plugin({ apply })
+    await fiber.await()
+
+    await expect(ctx.settings.update(SHORTCUTS_SETTINGS_NAMESPACE, {
+      activeProfile: 'standard',
+      customBindings: [{ command: 'openSettings', scope: 'global', key: { key: 's', modifiers: ['Mod'], invalid: undefined } }],
+    })).resolves.toBeUndefined()
+    // Schemastery 3.18.1 strips nested undefined before the provider validate callback.
+    await fiber.dispose()
+  })
+
+  it.each([
+    ['function', () => undefined],
+    ['symbol', Symbol('invalid')],
+    ['bigint', 1n],
+    ['infinite number', Infinity],
+    ['date object', new Date()],
+  ])('rejects non-JSON value through settings update: %s', async (_label, value) => {
+    const ctx = new Context()
+    await ctx.plugin(MemorySettings).await()
+    const fiber = ctx.plugin({ apply })
+    await fiber.await()
+    await expect(ctx.settings.update(SHORTCUTS_SETTINGS_NAMESPACE, {
+      activeProfile: 'standard',
+      customBindings: [{ command: 'openSettings', scope: 'global', key: { key: 's', modifiers: ['Mod'], invalid: value } }],
+    })).rejects.toThrow()
+    await fiber.dispose()
+  })
+
   it('accepts Mod with Alt and Shift while rejecting dual platform modifiers', () => {
     expect(() => validatePersistedShortcutBindings([
       { command: 'openSettings', scope: 'global', key: { key: 's', modifiers: ['Mod', 'Alt'] } },

@@ -4,7 +4,7 @@ import type {
 import { DEFAULT_SHORTCUT_PROFILE_ID } from '../../profile-catalog.js'
 import type { ShortcutProfileRegistry } from './types.js'
 import { standardProfile, vimProfile } from './builtins.js'
-import { canonicalShortcutBindings } from '../../shortcut-binding-contract.js'
+import { normalizePersistedShortcutResult } from '../../shortcut-binding-contract.js'
 
 const COMMANDS: readonly ShortcutCommand[] = [
   'focusPrevious',
@@ -39,18 +39,8 @@ export function canonicalSequenceKey(sequence: NormalizedSequence): string {
 }
 
 export function validateShortcutBindings(bindings: readonly ShortcutBinding[]): readonly ShortcutBinding[] {
-  const canonical = canonicalShortcutBindings(bindings as unknown as readonly Record<string, unknown>[])
-  return canonical.map(binding => ({
-    command: binding.command,
-    scope: binding.scope,
-    ...(binding.sequences.length === 1
-      ? { key: toShortcutStroke(binding.sequences[0]![0]!) }
-      : { key: toShortcutStroke(binding.sequences[0]![0]!), sequences: binding.sequences.map(sequence => sequence.map(toShortcutStroke)) }),
-  }))
-}
-
-function toShortcutStroke(stroke: { readonly key: string; readonly modifiers: readonly ShortcutModifier[] }): ShortcutStroke {
-  return { key: stroke.key, modifiers: stroke.modifiers }
+  const result = normalizePersistedShortcutResult(bindings as unknown as readonly Record<string, unknown>[])
+  return result.bindings as unknown as readonly ShortcutBinding[]
 }
 
 export function createBuiltinProfileRegistry(persistedId?: string): ShortcutProfileRegistry {
@@ -129,7 +119,8 @@ export function createProfileRegistry(
     },
 
     replaceCustom(bindings) {
-      const custom = validateAndNormalizeProfile({ id: 'custom', label: 'custom', description: 'custom', bindings }, new Set(snapshot.filter(profile => profile.id !== 'custom').map(profile => profile.id)))
+      const result = normalizePersistedShortcutResult(bindings as unknown as readonly Record<string, unknown>[])
+      const custom = validateAndNormalizeProfile({ id: 'custom', label: 'custom', description: 'custom', bindings: result.bindings as unknown as readonly ShortcutBinding[] }, new Set(snapshot.filter(profile => profile.id !== 'custom').map(profile => profile.id)))
       snapshot = Object.freeze([...snapshot.filter(profile => profile.id !== 'custom'), custom])
       notify()
     },

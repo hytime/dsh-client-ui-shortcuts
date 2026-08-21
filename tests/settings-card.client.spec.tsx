@@ -105,6 +105,28 @@ describe('shortcut settings controller custom profile', () => {
     controller.dispose()
   })
 
+  it('preserves every physical stroke shape when replacing custom sequences', () => {
+    const registry = createProfileRegistry([standardProfile, vimProfile])
+
+    registry.replaceCustom([{
+      command: 'openSettings',
+      scope: 'global',
+      sequence: [
+        { key: 'g', alt: true, ctrl: false, meta: false, shift: false },
+        { key: 's', alt: false, ctrl: true, meta: false, shift: true },
+      ],
+    }])
+
+    expect(registry.get('custom')?.bindings[0]).toEqual({
+      command: 'openSettings',
+      scope: 'global',
+      sequence: [
+        { key: 'g', alt: true, ctrl: false, meta: false, shift: false },
+        { key: 's', alt: false, ctrl: true, meta: false, shift: true },
+      ],
+    })
+  })
+
   it('matches Host alias and modifier acceptance rules', async () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     expect(() => registry.replaceCustom([
@@ -143,6 +165,7 @@ describe('shortcut settings controller custom profile', () => {
     await expect(first).resolves.toBeUndefined()
     await expect(second).resolves.toBeUndefined()
     expect(scope.set).toHaveBeenCalledTimes(1)
+    expect((scope.set.mock.calls[0]?.[1] as { command: string }[])[0]?.command).toBe('openSettings')
   })
 
   it('keeps the active profile and old custom bindings when persistence fails', async () => {

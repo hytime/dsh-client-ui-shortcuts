@@ -52,12 +52,38 @@ export function normalizePersistedShortcutBindings(bindings: readonly PersistedS
   return normalized
 }
 
-export function canonicalShortcutBindings(bindings: readonly PersistedShortcutBinding[]): readonly CanonicalShortcutBinding[] {
-  return normalizePersistedShortcutBindings(bindings)
+export interface NormalizedPersistedShortcutResult {
+  readonly canonical: readonly CanonicalShortcutBinding[]
+  readonly bindings: readonly PersistedShortcutBinding[]
+}
+
+export function normalizePersistedShortcutResult(bindings: readonly PersistedShortcutBinding[]): NormalizedPersistedShortcutResult {
+  const canonical = normalizePersistedShortcutBindings(bindings)
+  return { canonical, bindings: canonical.map((binding, index) => preserveBindingShape(bindings[index]!, binding)) }
 }
 
 export function validatePersistedShortcutBindings(bindings: readonly PersistedShortcutBinding[]): void {
   normalizePersistedShortcutBindings(bindings)
+}
+
+function preserveBindingShape(source: PersistedShortcutBinding, canonical: CanonicalShortcutBinding): PersistedShortcutBinding {
+  const sourceSequences = source.key !== undefined
+    ? [[source.key]]
+    : source.sequence !== undefined
+      ? [source.sequence as readonly unknown[]]
+      : source.sequences as readonly (readonly unknown[])[]
+  const normalizeStroke = (original: unknown, stroke: CanonicalShortcutStroke): Record<string, unknown> => {
+    const physical = typeof original === 'object' && original !== null && 'alt' in original
+    return physical
+      ? { key: stroke.key, alt: stroke.modifiers.includes('Alt'), ctrl: stroke.modifiers.includes('Ctrl'), meta: stroke.modifiers.includes('Meta'), shift: stroke.modifiers.includes('Shift') }
+      : { key: stroke.key, modifiers: stroke.modifiers }
+  }
+  const normalizedSequences = canonical.sequences.map((sequence, sequenceIndex) => sequence.map((stroke, strokeIndex) => (
+    normalizeStroke(sourceSequences[sequenceIndex]![strokeIndex], stroke)
+  )))
+  if (source.key !== undefined) return { ...source, key: normalizedSequences[0]![0] }
+  if (source.sequence !== undefined) return { ...source, sequence: normalizedSequences[0] }
+  return { ...source, sequences: normalizedSequences }
 }
 
 function sequencesOf(binding: Record<string, unknown>): readonly (readonly unknown[])[] {
