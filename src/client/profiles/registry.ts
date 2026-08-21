@@ -1,5 +1,5 @@
 import type {
-  KeyStroke, ShortcutBinding, ShortcutCommand, ShortcutModifier, ShortcutProfile, ShortcutScope,
+  KeyStroke, ShortcutBinding, ShortcutCommand, ShortcutModifier, ShortcutProfile, ShortcutScope, ShortcutStroke,
 } from '../contract/profile.js'
 import { DEFAULT_SHORTCUT_PROFILE_ID } from '../../profile-catalog.js'
 import type { ShortcutProfileRegistry } from './types.js'
@@ -145,6 +145,7 @@ function validateAndNormalizeProfile(
 }
 
 function normalizeBinding(binding: ShortcutBinding): NormalizedSequence[] {
+  const legacyModifier = (binding as ShortcutBinding & { readonly modifier?: ShortcutModifier }).modifier
   const shapeCount = Number(binding.sequence !== undefined)
     + Number(binding.sequences !== undefined)
   if (shapeCount > 0 && binding.key !== undefined) {
@@ -159,16 +160,16 @@ function normalizeBinding(binding: ShortcutBinding): NormalizedSequence[] {
   if (!SCOPES.includes(binding.scope)) {
     throw new Error(`invalid shortcut scope: ${String(binding.scope)}`)
   }
-  if (binding.modifier !== undefined && !MODIFIERS.includes(binding.modifier)) {
-    throw new Error(`invalid shortcut modifier: ${String(binding.modifier)}`)
+  if (legacyModifier !== undefined && !MODIFIERS.includes(legacyModifier)) {
+    throw new Error(`invalid shortcut modifier: ${String(legacyModifier)}`)
   }
-
   const rawSequences = binding.sequences ?? (binding.sequence ? [binding.sequence] : binding.key ? [[binding.key]] : [])
+
   if (rawSequences.length === 0 || rawSequences.some(sequence => sequence.length < 1 || sequence.length > 2)) {
     throw new Error(`invalid shortcut key in profile: ${binding.scope}`)
   }
   return rawSequences.map(sequence => ({
-    strokes: sequence.map(stroke => normalizeStroke(stroke, binding.modifier)),
+    strokes: sequence.map(stroke => normalizeStroke(stroke, legacyModifier)),
   }))
 }
 
@@ -176,7 +177,7 @@ function normalizeProfileBindings(
   source: readonly ShortcutBinding[],
   normalized: readonly NormalizedSequence[][],
 ): ShortcutBinding[] {
-  return source.map((binding, index) => {
+  const normalizedBindings = source.map((binding, index) => {
     const bindingSequences = normalizeBinding(binding)
     const first = bindingSequences[0]!.strokes[0]!
     const normalizedKey = {
@@ -188,14 +189,37 @@ function normalizeProfileBindings(
     }
     return {
       ...binding,
-      ...(binding.key ? { key: normalizedKey } : {}),
+      ...(binding.key && isShortcutStroke(binding.key) ? { key: { key: first.key, modifiers: symbolicModifiers(first) } } : {}),
+      ...(binding.key && !isShortcutStroke(binding.key) ? { key: normalizedKey } : {}),
       ...(binding.sequence ? { sequence: bindingSequences[0]!.strokes } : {}),
       ...(binding.sequences ? { sequences: bindingSequences.map(sequence => sequence.strokes) } : {}),
     }
   })
+  return normalizedBindings
 }
 
-function normalizeStroke(stroke: KeyStroke, modifier?: ShortcutModifier): NormalizedStroke {
+function symbolicModifiers(stroke: NormalizedStroke): ShortcutModifier[] {
+  return [
+    ...(stroke.modifier === 'Mod' ? ['Mod' as const] : []),
+    ...(stroke.ctrl && !stroke.modifier ? ['Ctrl' as const] : []),
+    ...(stroke.meta && !stroke.modifier ? ['Meta' as const] : []),
+    ...(stroke.alt ? ['Alt' as const] : []),
+    ...(stroke.shift ? ['Shift' as const] : []),
+  ]
+}
+
+function normalizeStroke(stroke: KeyStroke | ShortcutStroke, modifier?: ShortcutModifier): NormalizedStroke {
+  if (isShortcutStroke(stroke)) {
+    const modifiers = normalizeModifiers(stroke.modifiers)
+    return {
+      key: normalizeKey(stroke.key),
+      alt: modifiers.includes('Alt'),
+      ctrl: modifiers.includes('Ctrl'),
+      meta: modifiers.includes('Meta'),
+      shift: modifiers.includes('Shift'),
+      ...(modifiers.includes('Mod') ? { modifier: 'Mod' as const } : {}),
+    }
+  }
   if (!isKeyStroke(stroke)) {
     throw new Error('invalid shortcut key')
   }
@@ -211,9 +235,26 @@ function normalizeStroke(stroke: KeyStroke, modifier?: ShortcutModifier): Normal
   }
   return {
     ...stroke,
-    key: stroke.key === 'Esc' ? 'Escape' : stroke.key,
+    key: normalizeKey(stroke.key),
     ...(modifier ? { modifier } : {}),
   }
+}
+
+function normalizeModifiers(modifiers: readonly ShortcutModifier[]): ShortcutModifier[] {
+  if (!Array.isArray(modifiers) || modifiers.length === 0) throw new Error('invalid shortcut modifier')
+  const normalized = [...modifiers]
+  if (normalized.some(modifier => !MODIFIERS.includes(modifier))) throw new Error('invalid shortcut modifier')
+  if (new Set(normalized).size !== normalized.length) throw new Error('invalid shortcut modifier')
+  if (normalized.includes('Ctrl') && normalized.includes('Meta')) throw new Error('invalid shortcut modifier')
+  return normalized
+}
+
+function normalizeKey(key: string): string {
+  return key === 'Esc' ? 'Escape' : key
+}
+
+function isShortcutStroke(value: unknown): value is ShortcutStroke {
+  return typeof value === 'object' && value !== null && 'modifiers' in value
 }
 
 function validateConflicts(bindings: readonly ShortcutBinding[]): void {

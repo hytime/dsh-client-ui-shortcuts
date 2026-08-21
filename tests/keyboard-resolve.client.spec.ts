@@ -5,7 +5,7 @@ import { normalizeKeyboardEvent } from '../src/client/keyboard/normalize.js'
 import { createKeyResolver, resolveKey } from '../src/client/keyboard/resolve.js'
 import { createBuiltinProfileRegistry, canonicalBindingKey, canonicalSequenceKey } from '../src/client/profiles/registry.js'
 import type { KeyInput } from '../src/client/contract/keyboard.js'
-import type { ShortcutProfile } from '../src/client/contract/profile.js'
+import type { ShortcutProfile, ShortcutStroke } from '../src/client/contract/profile.js'
 
 const input = (key: string, options: Partial<KeyInput> = {}): KeyInput => ({
   key, alt: false, ctrl: false, meta: false, shift: false, ...options,
@@ -64,6 +64,18 @@ describe('profile-aware keyboard resolver', () => {
     expect(resolveKey(profile, 'global', input('p', { ctrl: true }))).toEqual({ kind: 'command', command: 'openCommandPalette' })
   })
 
+  it('resolves declarative Mod and Alt combinations', () => {
+    const stroke: ShortcutStroke = { key: 'p', modifiers: ['Mod', 'Alt'] }
+    const profile: ShortcutProfile = {
+      ...standardProfile,
+      id: 'declarative-mod',
+      bindings: [{ command: 'openSettings', scope: 'global', key: stroke }],
+    }
+
+    expect(resolveKey(profile, 'global', input('p', { ctrl: true, alt: true }))).toEqual({ kind: 'command', command: 'openSettings' })
+    expect(resolveKey(profile, 'global', input('p', { meta: true, alt: true }))).toEqual({ kind: 'command', command: 'openSettings' })
+    expect(resolveKey(profile, 'global', input('p', { ctrl: true, meta: true, alt: true }))).toEqual({ kind: 'pass' })
+  })
   it('resolves two-stroke sequences and alternative sequences', () => {
     const profile: ShortcutProfile = {
       ...standardProfile,
@@ -78,6 +90,7 @@ describe('profile-aware keyboard resolver', () => {
     expect(resolveKey(profile, 'global', input('g'))).toEqual({ kind: 'pass' })
     expect(resolveKey(profile, 'global', input('s'))).toEqual({ kind: 'command', command: 'openSettings' })
   })
+
 
   it('does not share partial sequence state between resolver instances', () => {
     const profile: ShortcutProfile = {

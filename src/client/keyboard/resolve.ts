@@ -1,5 +1,5 @@
 import type { KeyInput, ShortcutDecision } from '../contract/keyboard.js'
-import type { KeyStroke, ShortcutBinding, ShortcutProfile, ShortcutScope, ShortcutModifier } from '../contract/profile.js'
+import type { KeyStroke, ShortcutBinding, ShortcutProfile, ShortcutScope, ShortcutModifier, ShortcutStroke } from '../contract/profile.js'
 
 type ResolverState = { profile: ShortcutProfile; scope: ShortcutScope; strokes: KeyInput[] } | undefined
 
@@ -46,7 +46,7 @@ function resolveWithState(
     .filter(entry => entry.scope === scope)
     .flatMap(entry => sequencesFor(entry).map(sequence => ({
       entry,
-      sequence: sequence.map(stroke => ({ ...stroke, modifier: entry.modifier })),
+       sequence: sequence.map(stroke => ({ ...stroke, modifier: ('modifier' in stroke ? stroke.modifier : undefined) })),
     })))
   const exact = candidates.find(candidate => sameSequence(candidate.sequence, next))
   if (exact) return { decision: { kind: 'command', command: exact.entry.command }, state: undefined }
@@ -59,9 +59,24 @@ function resolveWithState(
 }
 
 function sequencesFor(binding: ShortcutBinding): readonly (readonly KeyStroke[])[] {
-  if (binding.sequences) return binding.sequences
-  if (binding.sequence) return [binding.sequence]
-  return [[binding.key]]
+  const legacyModifier = (binding as ShortcutBinding & { readonly modifier?: ShortcutModifier }).modifier
+  const convert = (stroke: KeyStroke | ShortcutStroke): KeyStroke & { readonly modifier?: ShortcutModifier } => {
+    if ('modifiers' in stroke) {
+      const modifiers = stroke.modifiers
+      return {
+        key: normalizeKey(stroke.key),
+        alt: modifiers.includes('Alt'),
+        ctrl: modifiers.includes('Ctrl'),
+        meta: modifiers.includes('Meta'),
+        shift: modifiers.includes('Shift'),
+        modifier: modifiers.includes('Mod') ? 'Mod' : undefined,
+      }
+    }
+    return { ...stroke, modifier: legacyModifier }
+  }
+  if (binding.sequences) return binding.sequences.map(sequence => sequence.map(convert))
+  if (binding.sequence) return [binding.sequence.map(convert)]
+  return [[convert(binding.key)]]
 }
 
 function normalizeInput(input: KeyInput): KeyInput {
@@ -96,5 +111,6 @@ function sameStroke(left: KeyStroke | KeyInput, right: KeyStroke | KeyInput): bo
 }
 
 export function modifierForStroke(binding: ShortcutBinding): ShortcutModifier | undefined {
-  return binding.modifier
+  const stroke = binding.key
+  return 'modifiers' in stroke ? stroke.modifiers.find(modifier => modifier === 'Mod') : undefined
 }

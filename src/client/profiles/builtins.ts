@@ -1,4 +1,4 @@
-import type { ShortcutProfile } from '../contract/profile.js'
+import type { ShortcutProfile, ShortcutStroke } from '../contract/profile.js'
 
 const stroke = (key: string, modifiers: Partial<ReturnType<typeof makeStroke>> = {}) => makeStroke(key, modifiers)
 const makeStroke = (key: string, modifiers: Partial<{ alt: boolean; ctrl: boolean; meta: boolean; shift: boolean }> = {}) => ({
@@ -6,8 +6,8 @@ const makeStroke = (key: string, modifiers: Partial<{ alt: boolean; ctrl: boolea
 })
 
 const globalBindings = [
-  { command: 'openCommandPalette' as const, scope: 'global' as const, key: stroke('p', { meta: true }) },
-  { command: 'openSettings' as const, scope: 'global' as const, key: stroke(',', { meta: true }) },
+  { command: 'openCommandPalette' as const, scope: 'global' as const, key: { key: 'p', modifiers: ['Mod'] } satisfies ShortcutStroke },
+  { command: 'openSettings' as const, scope: 'global' as const, key: { key: ',', modifiers: ['Mod'] } satisfies ShortcutStroke },
 ]
 
 export const standardProfile: ShortcutProfile = {

@@ -24,15 +24,21 @@ export interface KeyStroke {
 /** Symbolic modifier accepted by profile declarations. */
 export type ShortcutModifier = 'Mod' | 'Alt' | 'Ctrl' | 'Meta' | 'Shift'
 
-/** One command binding in a named shortcut profile. */
+/** Declarative shortcut stroke with symbolic modifiers. */
+export interface ShortcutStroke {
+  readonly key: string
+  readonly modifiers: readonly ShortcutModifier[]
+}
+
+
 export interface ShortcutBinding {
   readonly command: ShortcutCommand
   readonly scope: ShortcutScope
-  readonly key: KeyStroke
-  readonly sequence?: readonly KeyStroke[]
-  readonly sequences?: readonly (readonly KeyStroke[])[]
-  readonly modifier?: ShortcutModifier
+  readonly key: KeyStroke | ShortcutStroke
+  readonly sequence?: readonly (KeyStroke | ShortcutStroke)[]
+  readonly sequences?: readonly (readonly (KeyStroke | ShortcutStroke)[])[]
 }
+
 
 /** User-visible profile metadata and its keyboard bindings. */
 export interface ShortcutProfile {

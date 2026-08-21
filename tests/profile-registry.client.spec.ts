@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createBuiltinProfileRegistry, createProfileRegistry } from '../src/client/profiles/registry.js'
-import type { ShortcutProfile } from '../src/client/contract/profile.js'
+import type { ShortcutProfile, ShortcutStroke } from '../src/client/contract/profile.js'
 
 const stroke = (key: string, modifiers: Partial<ShortcutProfile['bindings'][number]['key']> = {}) => ({
   key,
@@ -160,7 +160,7 @@ describe('shortcut profile registry', () => {
     expect(standard.bindings).toEqual(expect.arrayContaining([
       { command: 'activate', scope: 'question', key: stroke('Enter') },
       { command: 'activate', scope: 'approval', key: stroke('Enter') },
-      { command: 'openCommandPalette', scope: 'global', key: stroke('p', { meta: true }) },
+      { command: 'openCommandPalette', scope: 'global', key: { key: 'p', modifiers: ['Mod'] } },
     ]))
   })
 
@@ -177,6 +177,22 @@ describe('shortcut profile registry', () => {
     expect(registry.get('custom')).toBeUndefined()
   })
 
+  it('normalizes declarative symbolic strokes and rejects contradictory shapes', () => {
+    const declarative: ShortcutStroke = { key: 'p', modifiers: ['Mod', 'Alt'] }
+    const registry = createProfileRegistry([{
+      ...alphaProfile,
+      id: 'declarative',
+      bindings: [{ command: 'openCommandPalette', scope: 'global', key: declarative }],
+    }])
+
+    expect(registry.get('declarative')?.bindings[0]?.key).toEqual(declarative)
+    expect(Object.isFrozen(registry.get('declarative')?.bindings[0]?.key)).toBe(true)
+    expect(() => createProfileRegistry([{
+      ...alphaProfile,
+      id: 'unknown-modifier',
+      bindings: [{ command: 'openSettings', scope: 'global', key: { key: 's', modifiers: ['Nope' as never] } }],
+    }])).toThrow('modifier')
+  })
   it('rejects ambiguous binding shapes and deep-freezes normalized sequences', () => {
     expect(() => createProfileRegistry([{
       ...alphaProfile,
@@ -194,6 +210,7 @@ describe('shortcut profile registry', () => {
     expect(Object.isFrozen(binding.sequences?.[0])).toBe(true)
     expect(Object.isFrozen(binding.sequences?.[0]?.[0])).toBe(true)
   })
+
 
   it('rejects contradictory modifier declarations and dual-platform conflicts', () => {
     expect(() => createProfileRegistry([{
