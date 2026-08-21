@@ -11,6 +11,7 @@ export interface ShortcutLegendProps {
 
 function keyLabel(binding: ShortcutBinding): string[] {
   const { key } = binding
+  if (key === undefined) return []
   const modifiers = [key.ctrl && 'Ctrl', key.alt && 'Alt', key.meta && 'Meta', key.shift && 'Shift'].filter(Boolean) as string[]
   const value = key.key === ' ' ? 'Space' : key.key
   return [...modifiers, value]

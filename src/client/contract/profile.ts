@@ -31,6 +31,7 @@ export interface ShortcutBinding {
   readonly key: KeyStroke
   readonly sequence?: readonly KeyStroke[]
   readonly sequences?: readonly (readonly KeyStroke[])[]
+  readonly modifier?: ShortcutModifier
 }
 
 /** User-visible profile metadata and its keyboard bindings. */

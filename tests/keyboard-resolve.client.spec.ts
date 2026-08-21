@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { standardProfile, vimProfile } from '../src/client/profiles/builtins.js'
 import { findShortcutConflicts } from '../src/client/keyboard/conflicts.js'
 import { normalizeKeyboardEvent } from '../src/client/keyboard/normalize.js'
-import { resolveKey } from '../src/client/keyboard/resolve.js'
+import { createKeyResolver, resolveKey } from '../src/client/keyboard/resolve.js'
 import { createBuiltinProfileRegistry, canonicalBindingKey } from '../src/client/profiles/registry.js'
 import type { KeyInput } from '../src/client/contract/keyboard.js'
 import type { ShortcutProfile } from '../src/client/contract/profile.js'
@@ -57,7 +57,7 @@ describe('profile-aware keyboard resolver', () => {
     const profile: ShortcutProfile = {
       ...standardProfile,
       id: 'global',
-      bindings: [{ command: 'openCommandPalette', scope: 'global', sequence: [input('p', { meta: true })] }],
+      bindings: [{ command: 'openCommandPalette', scope: 'global', key: input('p'), modifier: 'Mod' }],
     }
 
     expect(resolveKey(profile, 'global', input('p', { meta: true }))).toEqual({ kind: 'command', command: 'openCommandPalette' })
@@ -77,6 +77,37 @@ describe('profile-aware keyboard resolver', () => {
 
     expect(resolveKey(profile, 'global', input('g'))).toEqual({ kind: 'pass' })
     expect(resolveKey(profile, 'global', input('s'))).toEqual({ kind: 'command', command: 'openSettings' })
+  })
+
+  it('does not share partial sequence state between resolver instances', () => {
+    const profile: ShortcutProfile = {
+      ...standardProfile,
+      id: 'isolated',
+      bindings: [{ command: 'openSettings', scope: 'global', sequences: [[input('g'), input('s')]] }],
+    }
+    const first = createKeyResolver()
+    const second = createKeyResolver()
+
+    expect(first.resolve(profile, 'global', input('g'))).toEqual({ kind: 'pass' })
+    expect(second.resolve(profile, 'global', input('s'))).toEqual({ kind: 'pass' })
+    expect(first.resolve(profile, 'global', input('s'))).toEqual({ kind: 'command', command: 'openSettings' })
+  })
+
+  it('matches Mod equivalence but keeps explicit Ctrl and Meta exact', () => {
+    const modProfile: ShortcutProfile = {
+      ...standardProfile,
+      id: 'mod',
+      bindings: [{ command: 'openSettings', scope: 'global', key: input('p'), modifier: 'Mod' }],
+    }
+    const ctrlProfile: ShortcutProfile = {
+      ...standardProfile,
+      id: 'ctrl',
+      bindings: [{ command: 'openSettings', scope: 'global', key: input('p', { ctrl: true }) }],
+    }
+
+    expect(resolveKey(modProfile, 'global', input('p', { ctrl: true }))).toEqual({ kind: 'command', command: 'openSettings' })
+    expect(resolveKey(modProfile, 'global', input('p', { meta: true }))).toEqual({ kind: 'command', command: 'openSettings' })
+    expect(resolveKey(ctrlProfile, 'global', input('p', { meta: true }))).toEqual({ kind: 'pass' })
   })
 
   it('selects persisted built-in profiles and falls back when missing', () => {

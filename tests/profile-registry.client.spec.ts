@@ -177,13 +177,31 @@ describe('shortcut profile registry', () => {
     expect(registry.get('custom')).toBeUndefined()
   })
 
-  it('rejects duplicate and prefix-conflicting sequences in one scope', () => {
+  it('rejects ambiguous binding shapes and deep-freezes normalized sequences', () => {
     expect(() => createProfileRegistry([{
       ...alphaProfile,
-      id: 'sequence-conflict',
+      id: 'ambiguous',
+      bindings: [{ command: 'openSettings', scope: 'global', key: stroke('s'), sequence: [stroke('s')] }],
+    }])).toThrow('ambiguous')
+
+    const registry = createProfileRegistry([{
+      ...alphaProfile,
+      id: 'sequence',
+      bindings: [{ command: 'openSettings', scope: 'global', sequences: [[stroke('g'), stroke('s')]] }],
+    }])
+    const binding = registry.get('sequence')!.bindings[0]!
+    expect(Object.isFrozen(binding.sequences)).toBe(true)
+    expect(Object.isFrozen(binding.sequences?.[0])).toBe(true)
+    expect(Object.isFrozen(binding.sequences?.[0]?.[0])).toBe(true)
+  })
+
+  it('rejects Mod-equivalent conflicts while keeping explicit modifiers distinct', () => {
+    expect(() => createProfileRegistry([{
+      ...alphaProfile,
+      id: 'mod-conflict',
       bindings: [
-        { command: 'openCommandPalette', scope: 'global', sequence: [stroke('g')] },
-        { command: 'openSettings', scope: 'global', sequence: [stroke('g'), stroke('s')] },
+        { command: 'openSettings', scope: 'global', key: stroke('p'), modifier: 'Mod' },
+        { command: 'openCommandPalette', scope: 'global', key: stroke('p', { ctrl: true }) },
       ],
     }])).toThrow('conflict')
   })

@@ -1,17 +1,40 @@
 import type {
-  KeyStroke, ShortcutBinding, ShortcutCommand, ShortcutProfile, ShortcutScope,
+  KeyStroke, ShortcutBinding, ShortcutCommand, ShortcutModifier, ShortcutProfile, ShortcutScope,
 } from '../contract/profile.js'
 import { DEFAULT_SHORTCUT_PROFILE_ID } from '../../profile-catalog.js'
 import type { ShortcutProfileRegistry } from './types.js'
 import { standardProfile, vimProfile } from './builtins.js'
 
 const COMMANDS: readonly ShortcutCommand[] = [
-  'focusPrevious', 'focusNext', 'activate', 'cancelTask', 'openCommandPalette', 'openSettings',
+  'focusPrevious',
+  'focusNext',
+  'activate',
+  'cancelTask',
+  'openCommandPalette',
+  'openSettings',
 ]
+
 const SCOPES: readonly ShortcutScope[] = ['global', 'question', 'approval']
+const MODIFIERS: readonly ShortcutModifier[] = ['Mod', 'Alt', 'Ctrl', 'Meta', 'Shift']
+
+export interface NormalizedSequence {
+  readonly strokes: readonly NormalizedStroke[]
+}
+
+export interface NormalizedStroke extends KeyStroke {
+  readonly modifier?: ShortcutModifier
+}
 
 export function canonicalBindingKey(binding: ShortcutBinding): string {
-  return sequencesFor(binding).map(sequence => sequence.map(keyStrokeKey).join(' ')).join(' || ')
+  const sequence = normalizeBindingSequences(binding)[0]
+  return sequence.strokes.length === 1 ? canonicalStrokeKey(sequence.strokes[0]!) : canonicalSequenceKey(sequence)
+}
+
+export function normalizeBindingSequences(binding: ShortcutBinding): NormalizedSequence[] {
+  return normalizeBinding(binding)
+}
+export function canonicalSequenceKey(sequence: NormalizedSequence): string {
+  return sequence.strokes.map(stroke => canonicalStrokeKey(stroke)).join(' ')
 }
 
 export function createBuiltinProfileRegistry(persistedId?: string): ShortcutProfileRegistry {
@@ -19,101 +42,214 @@ export function createBuiltinProfileRegistry(persistedId?: string): ShortcutProf
 }
 
 export function createProfileRegistry(
-  initialProfiles: readonly ShortcutProfile[], defaultId?: string, persistedId?: string,
+  initialProfiles: readonly ShortcutProfile[],
+  defaultId?: string,
+  persistedId?: string,
 ): ShortcutProfileRegistry {
-  if (initialProfiles.length === 0) throw new Error('shortcut profile registry requires at least one profile')
+  if (initialProfiles.length === 0) {
+    throw new Error('shortcut profile registry requires at least one profile')
+  }
+
   const initialIds = new Set<string>()
   const profiles = initialProfiles.map(profile => {
-    validateProfile(profile, initialIds)
+    const normalized = validateAndNormalizeProfile(profile, initialIds)
     initialIds.add(profile.id)
-    return freezeProfile(profile)
+    return normalized
   })
   const defaultProfileId = defaultId ?? profiles[0]!.id
-  if (!initialIds.has(defaultProfileId)) throw new Error(`unknown default shortcut profile: ${defaultProfileId}`)
+  if (!initialIds.has(defaultProfileId)) {
+    throw new Error(`unknown default shortcut profile: ${defaultProfileId}`)
+  }
+
   let snapshot: readonly ShortcutProfile[] = Object.freeze(profiles)
-  let activeId = persistedId !== undefined && initialIds.has(persistedId) ? persistedId : defaultProfileId
+  let activeId = persistedId !== undefined && initialIds.has(persistedId)
+    ? persistedId
+    : defaultProfileId
   const listeners = new Set<() => void>()
-  const notify = (): void => { for (const listener of [...listeners]) listener() }
+  const notify = (): void => {
+    for (const listener of [...listeners]) listener()
+  }
+
   const registry: ShortcutProfileRegistry = {
     register(profile) {
-      validateProfile(profile, new Set(snapshot.map(entry => entry.id)))
-      const frozen = freezeProfile(profile)
-      snapshot = Object.freeze([...snapshot, frozen]); notify()
+      const normalized = validateAndNormalizeProfile(profile, new Set(snapshot.map(entry => entry.id)))
+      snapshot = Object.freeze([...snapshot, normalized])
+      notify()
       let disposed = false
       return () => {
         if (disposed) return
         disposed = true
-        const index = snapshot.findIndex(entry => entry.id === profile.id)
-        if (index < 0) return
+        if (!snapshot.some(entry => entry.id === profile.id)) return
         snapshot = Object.freeze(snapshot.filter(entry => entry.id !== profile.id))
         if (activeId === profile.id) activeId = defaultProfileId
         notify()
       }
     },
-    list: () => snapshot,
-    get: id => snapshot.find(profile => profile.id === id),
-    active: () => {
+
+    list() {
+      return snapshot
+    },
+
+    get(id) {
+      return snapshot.find(profile => profile.id === id)
+    },
+
+    active() {
       const active = snapshot.find(profile => profile.id === activeId)
-      if (active === undefined) throw new Error(`active shortcut profile is unavailable: ${activeId}`)
+      if (active === undefined) {
+        throw new Error(`active shortcut profile is unavailable: ${activeId}`)
+      }
       return active
     },
+
     setActive(id) {
-      if (snapshot.every(profile => profile.id !== id)) throw new Error(`unknown shortcut profile: ${id}`)
+      if (snapshot.every(profile => profile.id !== id)) {
+        throw new Error(`unknown shortcut profile: ${id}`)
+      }
       if (activeId === id) return
-      activeId = id; notify()
+      activeId = id
+      notify()
     },
+
     subscribe(listener) {
       listeners.add(listener)
       let disposed = false
-      return () => { if (disposed) return; disposed = true; listeners.delete(listener) }
+      return () => {
+        if (disposed) return
+        disposed = true
+        listeners.delete(listener)
+      }
     },
   }
+
   return registry
 }
 
-function validateProfile(profile: ShortcutProfile, existingIds: ReadonlySet<string>): void {
-  if (typeof profile.id !== 'string' || profile.id.length === 0 || profile.id.trim() !== profile.id) throw new Error('shortcut profile id must be a non-empty string')
-  if (existingIds.has(profile.id)) throw new Error(`duplicate shortcut profile: ${profile.id}`)
-  if (!Array.isArray(profile.bindings) || profile.bindings.length === 0) throw new Error(`shortcut profile ${profile.id} must define bindings`)
-  const keys = new Set<string>()
-  for (const binding of profile.bindings) {
-    if (!COMMANDS.includes(binding.command)) throw new Error(`invalid shortcut command: ${String(binding.command)}`)
-    if (!SCOPES.includes(binding.scope)) throw new Error(`invalid shortcut scope: ${String(binding.scope)}`)
-    const sequences = sequencesFor(binding)
-    if (sequences.length === 0 || sequences.some(sequence => sequence.length < 1 || sequence.length > 2 || sequence.some(key => !isKeyStroke(key)))) throw new Error(`invalid shortcut key in profile: ${profile.id}`)
-    for (const sequence of sequences) {
-      const canonical = `${binding.scope}|${sequence.map(keyStrokeKey).join(' ')}`
-      for (const prior of keys) {
-        if (prior === canonical || prior.startsWith(`${canonical} `) || canonical.startsWith(`${prior} `)) throw new Error(`shortcut binding conflict: ${canonical}`)
+function validateAndNormalizeProfile(
+  profile: ShortcutProfile,
+  existingIds: ReadonlySet<string>,
+): ShortcutProfile {
+  if (typeof profile.id !== 'string' || profile.id.length === 0 || profile.id.trim() !== profile.id) {
+    throw new Error('shortcut profile id must be a non-empty string')
+  }
+  if (existingIds.has(profile.id)) {
+    throw new Error(`duplicate shortcut profile: ${profile.id}`)
+  }
+  if (!Array.isArray(profile.bindings) || profile.bindings.length === 0) {
+    throw new Error(`shortcut profile ${profile.id} must define bindings`)
+  }
+
+  const bindings = profile.bindings.map(normalizeBinding)
+  validateConflicts(profile.bindings)
+  return freezeProfile({ ...profile, bindings: profile.bindings })
+}
+
+function normalizeBinding(binding: ShortcutBinding): NormalizedSequence[] {
+  const shapeCount = Number(binding.sequence !== undefined)
+    + Number(binding.sequences !== undefined)
+  if (shapeCount > 0 && binding.key !== undefined) {
+    throw new Error('ambiguous shortcut binding shape')
+  }
+  if (binding.sequence !== undefined && binding.sequences !== undefined) {
+    throw new Error('ambiguous shortcut binding shape')
+  }
+  if (!COMMANDS.includes(binding.command)) {
+    throw new Error(`invalid shortcut command: ${String(binding.command)}`)
+  }
+  if (!SCOPES.includes(binding.scope)) {
+    throw new Error(`invalid shortcut scope: ${String(binding.scope)}`)
+  }
+  if (binding.modifier !== undefined && !MODIFIERS.includes(binding.modifier)) {
+    throw new Error(`invalid shortcut modifier: ${String(binding.modifier)}`)
+  }
+
+  const rawSequences = binding.sequences ?? (binding.sequence ? [binding.sequence] : binding.key ? [[binding.key]] : [])
+  if (rawSequences.length === 0 || rawSequences.some(sequence => sequence.length < 1 || sequence.length > 2)) {
+    throw new Error(`invalid shortcut key in profile: ${binding.scope}`)
+  }
+  return rawSequences.map(sequence => ({
+    strokes: sequence.map(stroke => normalizeStroke(stroke, binding.modifier)),
+  }))
+}
+
+function normalizeStroke(stroke: KeyStroke, modifier?: ShortcutModifier): NormalizedStroke {
+  if (!isKeyStroke(stroke)) {
+    throw new Error('invalid shortcut key')
+  }
+  return {
+    ...stroke,
+    key: stroke.key === 'Esc' ? 'Escape' : stroke.key,
+    ...(modifier ? { modifier } : {}),
+  }
+}
+
+function validateConflicts(bindings: readonly ShortcutBinding[]): void {
+  const entries = bindings.flatMap(binding => normalizeBinding(binding).map(sequence => ({ binding, sequence })))
+  for (let index = 0; index < entries.length; index += 1) {
+    for (let otherIndex = index + 1; otherIndex < entries.length; otherIndex += 1) {
+      const first = entries[index]!
+      const second = entries[otherIndex]!
+      if (first.binding.scope !== second.binding.scope) continue
+      if (isPrefixConflict(first.sequence, second.sequence)) {
+        throw new Error(`shortcut binding conflict: ${canonicalSequenceKey(first.sequence)}`)
       }
-      keys.add(canonical)
     }
   }
 }
 
-function sequencesFor(binding: ShortcutBinding): readonly (readonly KeyStroke[])[] {
-  if (binding.sequences) return binding.sequences
-  if (binding.sequence) return [binding.sequence]
-  if (binding.key) return [[binding.key]]
-  return []
+function isPrefixConflict(first: NormalizedSequence, second: NormalizedSequence): boolean {
+  const shorter = first.strokes.length <= second.strokes.length ? first : second
+  const longer = shorter === first ? second : first
+  return shorter.strokes.every((stroke, index) => equivalentStroke(stroke, longer.strokes[index]!))
 }
 
-function keyStrokeKey(key: KeyStroke): string {
-  return [key.alt ? 'alt' : '', key.ctrl ? 'ctrl' : '', key.meta ? 'meta' : '', key.shift ? 'shift' : '', key.key === 'Esc' ? 'Escape' : key.key].join('|')
+function equivalentStroke(first: NormalizedStroke, second: NormalizedStroke): boolean {
+  return first.key === second.key
+    && first.alt === second.alt
+    && first.shift === second.shift
+    && equivalentModifier(first, second)
+}
+
+function equivalentModifier(first: NormalizedStroke, second: NormalizedStroke): boolean {
+  if (first.modifier === 'Mod' || second.modifier === 'Mod') {
+    return (first.modifier === 'Mod' && second.modifier === 'Mod')
+      || (first.modifier === 'Mod' && second.ctrl && !second.meta)
+      || (second.modifier === 'Mod' && first.ctrl && !first.meta)
+      || (first.modifier === 'Mod' && second.meta && !second.ctrl)
+      || (second.modifier === 'Mod' && first.meta && !first.ctrl)
+  }
+  return first.ctrl === second.ctrl && first.meta === second.meta
+}
+
+function canonicalStrokeKey(stroke: NormalizedStroke): string {
+  const modifier = stroke.modifier
+    ?? [stroke.ctrl ? 'ctrl' : '', stroke.meta ? 'meta' : ''].filter(Boolean).join('|')
+  return [stroke.alt ? 'alt' : '', modifier, stroke.shift ? 'shift' : '', stroke.key].join('|')
 }
 
 function isKeyStroke(value: unknown): value is KeyStroke {
   if (typeof value !== 'object' || value === null) return false
-  const key = value as Partial<KeyStroke>
-  return typeof key.key === 'string' && key.key.length > 0 && typeof key.alt === 'boolean' && typeof key.ctrl === 'boolean' && typeof key.meta === 'boolean' && typeof key.shift === 'boolean'
+  const stroke = value as Partial<KeyStroke>
+  return typeof stroke.key === 'string'
+    && stroke.key.length > 0
+    && typeof stroke.alt === 'boolean'
+    && typeof stroke.ctrl === 'boolean'
+    && typeof stroke.meta === 'boolean'
+    && typeof stroke.shift === 'boolean'
 }
 
 function freezeProfile(profile: ShortcutProfile): ShortcutProfile {
   const bindings = profile.bindings.map(binding => Object.freeze({
     ...binding,
     ...(binding.key ? { key: Object.freeze({ ...binding.key }) } : {}),
-    ...(binding.sequence ? { sequence: Object.freeze(binding.sequence.map(key => Object.freeze({ ...key }))) } : {}),
-    ...(binding.sequences ? { sequences: Object.freeze(binding.sequences.map(sequence => Object.freeze(sequence.map(key => Object.freeze({ ...key }))))) } : {}),
+    ...(binding.sequence ? {
+      sequence: Object.freeze(binding.sequence.map(stroke => Object.freeze({ ...stroke }))),
+    } : {}),
+    ...(binding.sequences ? {
+      sequences: Object.freeze(binding.sequences.map(sequence => Object.freeze(
+        sequence.map(stroke => Object.freeze({ ...stroke })),
+      ))),
+    } : {}),
   }))
   return Object.freeze({ ...profile, bindings: Object.freeze(bindings) })
 }
