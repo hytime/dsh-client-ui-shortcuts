@@ -3,6 +3,8 @@ import type { ApprovalWait } from '../contract/slots.js'
 import type { ShortcutProfile } from '../contract/profile.js'
 import { resolveKey } from '../keyboard/resolve.js'
 import type { KeyInput } from '../contract/keyboard.js'
+import { InteractionSurface } from './InteractionSurface.js'
+import styles from '../styles/InteractionSurface.module.css'
 
 const composing = (event: React.KeyboardEvent<HTMLElement>): boolean => event.nativeEvent.isComposing || (event.nativeEvent as KeyboardEvent).isComposing
 
@@ -49,12 +51,19 @@ export function ApprovalFlow({ matched, activeProfile, t, cancelTask }: Approval
       moveFocus(delta)
     }
   }
-  return <section data-approval-key={matched.key} onKeyDown={onKeyDown} aria-busy={busy}>
-    <div data-approval-scroll tabIndex={0}>{matched.payload.reason ?? matched.payload.toolName}</div>
-    <div role="group" aria-label="Approval actions">
-      <button ref={node => { actionRefs.current[0] = node }} autoFocus type="button" disabled={busy} aria-pressed={choice === 'allowed-once'} onClick={() => { setFocusIndex(0); void answer('allowed-once') }}>Allow once</button>
-      <button ref={node => { actionRefs.current[1] = node }} type="button" disabled={busy} aria-pressed={choice === 'rejected'} onClick={() => { setFocusIndex(1); void answer('rejected') }}>Reject</button>
+  return <InteractionSurface kind="approval" data-approval-key={matched.key} onKeyDown={onKeyDown} aria-busy={busy}>
+    <div className={styles.card}>
+      <header className={styles.header}>
+        <strong>{matched.payload.reason ?? matched.payload.toolName}</strong>
+      </header>
+      <div className={styles.body} data-testid="approval-scroll" data-approval-scroll tabIndex={0} role="group" aria-label="Approval details">
+        <p className={styles.detail}>{matched.payload.reason ?? matched.payload.toolName}</p>
+      </div>
+      <div className={styles.actions} data-testid="approval-actions" role="group" aria-label="Approval actions">
+        <button className={styles.approvalReject} ref={node => { actionRefs.current[1] = node }} type="button" disabled={busy} aria-pressed={choice === 'rejected'} onClick={() => { setFocusIndex(1); void answer('rejected') }}>Reject</button>
+        <button className={styles.approvalAllow} ref={node => { actionRefs.current[0] = node }} autoFocus type="button" disabled={busy} aria-pressed={choice === 'allowed-once'} onClick={() => { setFocusIndex(0); void answer('allowed-once') }}>Allow once</button>
+      </div>
+      {error ? <p className={styles.error} role="alert">{error}</p> : null}
     </div>
-    {error ? <p role="alert">{error}</p> : null}
-  </section>
+  </InteractionSurface>
 }
