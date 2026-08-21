@@ -2,7 +2,18 @@
 
 All notable changes to `@hytime/dsh-client-ui-shortcuts` are documented here.
 
-## 0.1.3 - Composer ordering fix
+## 0.1.4 - Interaction card and shortcut list fixes
+
+### Fixed
+
+- Fixed question and approval interaction cards to stay in the DSH conversation composer with bounded scrolling and visible action rows.
+- Fixed question skip labels and skip submission for click and keyboard activation.
+- Added semantic approval warning styling and responsive card geometry.
+
+### Changed
+
+- Restyled question and approval shortcut summaries as grouped DSH-style lists.
+
 
 ### Fixed
 

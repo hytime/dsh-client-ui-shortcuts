@@ -2,7 +2,18 @@
 
 `@hytime/dsh-client-ui-shortcuts` 的重要变更记录如下。
 
-## 0.1.3 - Composer 顺序修复
+## 0.1.4 - 交互卡片与快捷键列表修复
+
+### 修复
+
+- 修复 question/approval 交互卡片脱离 DSH 对话 composer 的问题，增加限高滚动和始终可见的操作区。
+- 修复 question 跳过文案，以及点击和键盘激活后的跳过提交行为。
+- 新增 approval semantic warning 样式和响应式卡片布局。
+
+### 变更
+
+- 将 question/approval 快捷键摘要改为 DSH 风格的分组列表。
+
 
 ### 修复
 
