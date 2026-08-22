@@ -1,5 +1,5 @@
 import React from 'react'
-import { Icon } from '@iconify/react/offline'
+import { Icon, type IconifyIcon } from '@iconify/react/offline'
 import arrowDown from '@iconify-icons/lucide/arrow-down.js'
 import arrowLeft from '@iconify-icons/lucide/arrow-left.js'
 import arrowRight from '@iconify-icons/lucide/arrow-right.js'
@@ -12,11 +12,7 @@ import command from '@iconify-icons/lucide/command.js'
 import { ShortcutKeyIcon, type ShortcutKeyVisual } from '../contract/keyboard-visual.js'
 import styles from '../styles/Shortcuts.module.css'
 
-interface LocalIcon {
-  readonly body: string
-  readonly width?: number | string
-  readonly height?: number | string
-}
+type LocalIcon = IconifyIcon
 
 type KeyRenderer = (visual: ShortcutKeyVisual) => React.ReactElement
 

@@ -23,3 +23,8 @@ Fixed local Iconify keycap rendering and kept shortcut combinations on one line.
 - `CI=true pnpm run typecheck`: passed.
 - `git diff --check`: passed.
 - `CI=true pnpm run bundle`: passed.
+
+## Follow-up Type Fix
+
+- Replaced the local icon shape with `IconifyIcon`, imported from `@iconify/react/offline`, so width and height match the offline Icon contract exactly. Rendering behavior is unchanged.
+- Follow-up validation: focused 7 tests, full 167 tests, typecheck, `git diff --check`, and bundle all passed.
