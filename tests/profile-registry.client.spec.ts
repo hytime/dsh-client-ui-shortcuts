@@ -165,6 +165,20 @@ describe('shortcut profile registry', () => {
     ]))
   })
 
+  it('includes every capability-backed global action in built-in profiles', () => {
+    const registry = createBuiltinProfileRegistry()
+    const standard = registry.get('standard')!
+    expect(standard.bindings).toEqual(expect.arrayContaining([
+      { command: 'startSession', scope: 'global', key: { key: 'n', modifiers: ['Mod'] } },
+      { command: 'previousSession', scope: 'global', key: { key: 'ArrowUp', modifiers: ['Mod', 'Alt'] } },
+      { command: 'nextSession', scope: 'global', key: { key: 'ArrowDown', modifiers: ['Mod', 'Alt'] } },
+      { command: 'previousWorkspace', scope: 'global', key: { key: 'ArrowLeft', modifiers: ['Mod', 'Shift'] } },
+      { command: 'nextWorkspace', scope: 'global', key: { key: 'ArrowRight', modifiers: ['Mod', 'Shift'] } },
+      { command: 'forkSession', scope: 'global', key: { key: 'b', modifiers: ['Mod', 'Shift'] } },
+      { command: 'toggleTheme', scope: 'global', key: { key: 'l', modifiers: ['Mod', 'Shift'] } },
+    ]))
+  })
+
   it('replaces a custom profile while keeping the registry snapshot isolated', () => {
     const registry = createBuiltinProfileRegistry()
     const dispose = registry.register({

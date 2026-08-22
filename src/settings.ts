@@ -19,6 +19,13 @@ const jsonArray = z.array(z.any())
 const defaultCustomBindings: PersistedShortcutBinding[] = [
   { command: 'openCommandPalette', scope: 'global', key: { key: 'p', modifiers: ['Mod'] } },
   { command: 'openSettings', scope: 'global', key: { key: ',', modifiers: ['Mod'] } },
+  { command: 'startSession', scope: 'global', key: { key: 'n', modifiers: ['Mod'] } },
+  { command: 'previousSession', scope: 'global', key: { key: 'ArrowUp', modifiers: ['Mod', 'Alt'] } },
+  { command: 'nextSession', scope: 'global', key: { key: 'ArrowDown', modifiers: ['Mod', 'Alt'] } },
+  { command: 'previousWorkspace', scope: 'global', key: { key: 'ArrowLeft', modifiers: ['Mod', 'Shift'] } },
+  { command: 'nextWorkspace', scope: 'global', key: { key: 'ArrowRight', modifiers: ['Mod', 'Shift'] } },
+  { command: 'forkSession', scope: 'global', key: { key: 'b', modifiers: ['Mod', 'Shift'] } },
+  { command: 'toggleTheme', scope: 'global', key: { key: 'l', modifiers: ['Mod', 'Shift'] } },
   { command: 'focusPrevious', scope: 'question', key: { key: 'ArrowUp', modifiers: [] } },
   { command: 'focusNext', scope: 'question', key: { key: 'ArrowDown', modifiers: [] } },
   { command: 'activate', scope: 'question', key: { key: 'Enter', modifiers: [] } },

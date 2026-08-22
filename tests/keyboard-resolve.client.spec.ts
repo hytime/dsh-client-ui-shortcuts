@@ -64,6 +64,11 @@ describe('profile-aware keyboard resolver', () => {
     expect(resolveKey(profile, 'global', input('p', { ctrl: true }))).toEqual({ kind: 'command', command: 'openCommandPalette' })
   })
 
+  it('resolves shifted global defaults with browser key casing', () => {
+    expect(resolveKey(standardProfile, 'global', input('B', { ctrl: true, shift: true }))).toEqual({ kind: 'command', command: 'forkSession' })
+    expect(resolveKey(standardProfile, 'global', input('L', { meta: true, shift: true }))).toEqual({ kind: 'command', command: 'toggleTheme' })
+  })
+
   it('resolves declarative Mod and Alt combinations', () => {
     const stroke: ShortcutStroke = { key: 'p', modifiers: ['Mod', 'Alt'] }
     const profile: ShortcutProfile = {

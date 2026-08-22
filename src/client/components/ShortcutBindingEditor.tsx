@@ -34,9 +34,9 @@ export function ShortcutBindingEditor({ bindings, availableGlobalActions, t, onS
   const [error, setError] = useState<string>()
   const [saving, setSaving] = useState(false)
   useEffect(() => { setDraft(bindings); setError(undefined) }, [bindings])
-  const visible = useMemo(() => draft.filter(binding => binding.scope !== 'global' || availableGlobalActions === undefined || availableGlobalActions.includes(binding.command as GlobalShortcutCommand)), [draft, availableGlobalActions])
+  const visible = useMemo(() => draft.map((binding, index) => ({ binding, index })).filter(({ binding }) => binding.scope !== 'global' || availableGlobalActions === undefined || availableGlobalActions.includes(binding.command as GlobalShortcutCommand)), [draft, availableGlobalActions])
   const conflict = useMemo(() => {
-    try { validateShortcutBindings(visible); return undefined } catch (reason) { return reason instanceof Error ? reason.message : String(reason) }
+    try { validateShortcutBindings(visible.map(entry => entry.binding)); return undefined } catch (reason) { return reason instanceof Error ? reason.message : String(reason) }
   }, [visible])
   const update = (index: number, stroke: ShortcutStroke): void => setDraft(current => current.map((binding, position) => position === index ? { ...binding, key: stroke, ...(binding.sequence !== undefined ? { sequence: undefined } : {}), ...(binding.sequences !== undefined ? { sequences: undefined } : {}) } : binding))
   const capture = (event: React.KeyboardEvent, index: number): void => {
@@ -54,11 +54,11 @@ export function ShortcutBindingEditor({ bindings, availableGlobalActions, t, onS
   const save = async (): Promise<void> => {
     if (conflict !== undefined) return
     setSaving(true); setError(undefined)
-    try { await onSave(visible) } catch (reason) { setError(reason instanceof Error ? reason.message : String(reason)) } finally { setSaving(false) }
+    try { await onSave(visible.map(entry => entry.binding)) } catch (reason) { setError(reason instanceof Error ? reason.message : String(reason)) } finally { setSaving(false) }
   }
   return <div className={styles.editor}>
     {scopes.map(scope => {
-      const entries = visible.map((binding, index) => ({ binding, index })).filter(entry => entry.binding.scope === scope)
+      const entries = visible.filter(entry => entry.binding.scope === scope)
       if (entries.length === 0) return null
       return <section className={styles.editorGroup} key={scope} aria-labelledby={`shortcut-editor-${scope}`}>
         <h3 id={`shortcut-editor-${scope}`}>{t(`legend.scope.${scope}`)}</h3>

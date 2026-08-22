@@ -13,6 +13,13 @@ const COMMANDS: readonly ShortcutCommand[] = [
   'cancelTask',
   'openCommandPalette',
   'openSettings',
+  'startSession',
+  'previousSession',
+  'nextSession',
+  'previousWorkspace',
+  'nextWorkspace',
+  'forkSession',
+  'toggleTheme',
 ]
 
 const SCOPES: readonly ShortcutScope[] = ['global', 'question', 'approval']
@@ -278,7 +285,8 @@ function normalizeModifiers(modifiers: readonly ShortcutModifier[]): ShortcutMod
 }
 
 function normalizeKey(key: string): string {
-  return key === 'Esc' ? 'Escape' : key
+  if (key === 'Esc') return 'Escape'
+  return key.length === 1 ? key.toLowerCase() : key
 }
 
 function isShortcutStroke(value: unknown): value is ShortcutStroke {

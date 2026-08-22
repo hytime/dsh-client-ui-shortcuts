@@ -105,6 +105,7 @@ describe('shortcut Host settings', () => {
     const settings = ctx.settings.get(SHORTCUTS_SETTINGS_NAMESPACE) as ShortcutSettings | undefined
     expect(settings?.customBindings).toEqual(expect.arrayContaining([
       expect.objectContaining({ command: 'openCommandPalette', scope: 'global' }),
+      expect.objectContaining({ command: 'startSession', scope: 'global' }),
     ]))
     expect(settings.customBindings.length).toBeGreaterThan(0)
 

@@ -118,7 +118,10 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
 
   private loadCustom(snapshot: SettingsScopeSnapshot<ShortcutSettings>): void {
     const persisted = snapshot.value?.customBindings
-    if (persisted === undefined) return
+    if (persisted === undefined) {
+      if (this.registry.get('custom') === undefined) this.registry.replaceCustom(this.registry.custom())
+      return
+    }
     try {
       this.registry.replaceCustom(persisted as unknown as readonly ShortcutBinding[])
     } catch {

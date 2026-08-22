@@ -348,6 +348,36 @@ describe('shortcut settings card', () => {
     expect(screen.getByRole('button', { name: 'Save' })).toBeTruthy()
   })
 
+  it('shows capability-backed global shortcuts and exposes them in Custom editing', async () => {
+    const registry = createProfileRegistry([standardProfile, vimProfile])
+    const settings = settingsFace()
+    settings.customBindings = () => registry.custom()
+    settings.setCustomBindings = vi.fn(async bindings => { registry.replaceCustom(bindings); settings.emit() })
+    const availableGlobalActions = [
+      'startSession', 'previousSession', 'nextSession', 'previousWorkspace', 'nextWorkspace', 'forkSession', 'toggleTheme',
+    ] as const
+
+    render(<ShortcutProfileCard settings={settings} profiles={registry.list()} availableGlobalActions={availableGlobalActions} t={t} />)
+    openCard()
+    expect(screen.getByRole('heading', { name: 'Global' })).toBeTruthy()
+    expect(screen.getByText('New session')).toBeTruthy()
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Profile' }), { target: { value: 'custom' } })
+    await waitFor(() => expect(screen.getByText('New session')).toBeTruthy())
+    const command = screen.getByText('New session')
+    const row = command.parentElement?.parentElement
+    expect(row).toBeTruthy()
+    const record = row?.querySelector('button')
+    expect(record).toBeTruthy()
+    fireEvent.click(record!)
+    fireEvent.keyDown(record!, { key: 'x', ctrlKey: true })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(settings.setCustomBindings).toHaveBeenCalled())
+    expect(settings.setCustomBindings).toHaveBeenCalledWith(expect.arrayContaining([
+      expect.objectContaining({ command: 'startSession', scope: 'global', key: { key: 'x', modifiers: ['Ctrl'] } }),
+    ]))
+  })
+
   it('keeps standard and Vim profiles read-only', () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     const settings = settingsFace()
@@ -365,7 +395,7 @@ describe('shortcut settings card', () => {
     const { rerender } = render(<ShortcutProfileCard settings={settings} profiles={registry.list()} t={zh} />)
     openCard()
     expect((screen.getByRole('combobox', { name: 'Profile' }) as HTMLSelectElement).value).toBe('standard')
-    expect(standardProfile.bindings).toHaveLength(10)
+    expect(standardProfile.bindings).toHaveLength(17)
     rerender(<ShortcutProfileCard settings={settings} profiles={registry.list()} t={t} />)
     expect((screen.getByRole('combobox', { name: 'Profile' }) as HTMLSelectElement).value).toBe('standard')
   })

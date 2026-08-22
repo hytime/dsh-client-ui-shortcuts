@@ -84,7 +84,8 @@ function normalizeInput(input: KeyInput): KeyInput {
 }
 
 function normalizeKey(key: string): string {
-  return key === 'Esc' ? 'Escape' : key
+  if (key === 'Esc') return 'Escape'
+  return key.length === 1 ? key.toLowerCase() : key
 }
 
 function sameSequence(left: readonly KeyStroke[] | readonly KeyInput[], right: readonly KeyStroke[] | readonly KeyInput[]): boolean {

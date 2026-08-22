@@ -2,7 +2,7 @@ import type { KeyInput } from '../contract/keyboard.js'
 
 export function normalizeKeyboardEvent(event: Pick<KeyboardEvent, 'key' | 'altKey' | 'ctrlKey' | 'metaKey' | 'shiftKey' | 'isComposing' | 'repeat' | 'keyCode'>): KeyInput {
   return {
-    key: event.key === 'Esc' ? 'Escape' : event.key,
+    key: normalizeKey(event.key),
     alt: event.altKey,
     ctrl: event.ctrlKey,
     meta: event.metaKey,
@@ -11,4 +11,9 @@ export function normalizeKeyboardEvent(event: Pick<KeyboardEvent, 'key' | 'altKe
     repeat: event.repeat,
     keyCode: event.keyCode,
   }
+}
+
+function normalizeKey(key: string): string {
+  if (key === 'Esc') return 'Escape'
+  return key.length === 1 ? key.toLowerCase() : key
 }
