@@ -34,7 +34,11 @@ export function findNewShortcutConflicts(baseline: readonly ShortcutBinding[], d
 }
 
 function bindingPlatformCompatible(binding: ShortcutBinding, platform: ShortcutPlatform): boolean {
-  const strokes = binding.key !== undefined ? [binding.key] : binding.sequence !== undefined ? binding.sequence : binding.sequences?.flat() ?? []
+  const strokes = binding.sequence !== undefined
+    ? binding.sequence
+    : binding.sequences !== undefined
+      ? binding.sequences.flat()
+      : [binding.key]
   return strokes.every(stroke => isBindingPlatformCompatible(stroke, platform))
 }
 

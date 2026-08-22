@@ -44,7 +44,7 @@ describe('ShortcutBindingEditor', () => {
 
   it('shows conflict and disables save', () => {
     const onSave = vi.fn()
-    render(<ShortcutBindingEditor bindings={[
+    render(<ShortcutBindingEditor platform="linux" bindings={[
       bindings[0]!,
       { command: 'openSettings', scope: 'global', key: { key: 'p', modifiers: ['Mod'] } },
     ]} t={t} onSave={onSave} />)
@@ -55,7 +55,7 @@ describe('ShortcutBindingEditor', () => {
 
   it('saves a captured binding and retains draft after failed save', async () => {
     const onSave = vi.fn().mockRejectedValue(new Error('nope'))
-    render(<ShortcutBindingEditor bindings={[{ ...bindings[0]!, key: { key: 'p', modifiers: ['Mod'] as const } }, { command: 'openSettings' as const, scope: 'global' as const, key: { key: ',', modifiers: ['Mod'] as const } }]} t={t} onSave={onSave} />)
+    render(<ShortcutBindingEditor platform="linux" bindings={[{ ...bindings[0]!, key: { key: 'p', modifiers: ['Mod'] as const } }, { command: 'openSettings' as const, scope: 'global' as const, key: { key: ',', modifiers: ['Mod'] as const } }]} t={t} onSave={onSave} />)
     const record = screen.getAllByRole('button')[0]!
     fireEvent.click(record)
     fireEvent.keyDown(record, { key: 'b', ctrlKey: true, shiftKey: true })
