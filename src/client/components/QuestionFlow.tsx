@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import type { QuestionWait } from '../contract/slots.js'
+import type { QuestionWait, FocusCoordinator } from '../contract/slots.js'
 import type { ShortcutProfile } from '../contract/profile.js'
 import { resolveKey } from '../keyboard/resolve.js'
 import type { KeyInput } from '../contract/keyboard.js'
@@ -13,6 +13,7 @@ export interface QuestionFlowProps {
   readonly activeProfile: ShortcutProfile
   readonly t: (key: string) => string
   readonly cancelTask: () => Promise<void>
+  readonly focusCoordinator?: FocusCoordinator
 }
 
 type Question = QuestionWait['payload']['questions'][number]
@@ -28,7 +29,7 @@ type FocusItem =
 const composing = (event: React.KeyboardEvent<HTMLElement>): boolean => event.nativeEvent.isComposing || (event.nativeEvent as KeyboardEvent).isComposing
 function initialDraft(): Draft { return { selected: [], custom: '', skipped: false } }
 
-export function QuestionFlow({ matched, activeProfile, t, cancelTask }: QuestionFlowProps): React.ReactElement {
+export function QuestionFlow({ matched, activeProfile, t, cancelTask, focusCoordinator }: QuestionFlowProps): React.ReactElement {
   const questions = matched.payload.questions
   const [drafts, setDrafts] = useState<Draft[]>(() => questions.map(() => initialDraft()))
   const [index, setIndex] = useState(0)
@@ -52,12 +53,20 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask }: Question
   ]
   const moveFocus = (delta: number) => setFocusIndex(current => focusList.length === 0 ? 0 : (current + delta + focusList.length) % focusList.length)
 
-  useEffect(() => { focusItems.current[focusIndex]?.focus() }, [focusIndex, index, matched.key])
   useEffect(() => {
-    if (document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement) return
-    const first = focusItems.current.find(element => element !== null && !(element as HTMLButtonElement | HTMLInputElement | HTMLTextAreaElement).disabled)
-    first?.focus()
-  }, [matched.key])
+    if (focusCoordinator !== undefined && focusIndex === 0 && index === 0) return
+    focusItems.current[focusIndex]?.focus()
+  }, [focusCoordinator, focusIndex, index, matched.key])
+  useEffect(() => {
+    focusCoordinator?.requestPendingFocus({
+      transition: { sessionId: String(matched.sessionId), key: matched.key },
+      kind: 'question',
+      focus: () => {
+        const first = focusItems.current.find(element => element !== null && !(element as HTMLButtonElement | HTMLInputElement | HTMLTextAreaElement).disabled)
+        first?.focus()
+      },
+    })
+  }, [focusCoordinator, matched.key, matched.sessionId])
   const updateDraft = (patch: Partial<Draft>) => setDrafts(current => current.map((item, i) => i === index ? { ...item, ...patch } : item))
   const answerFor = (items: Draft[]): Answer[] => questions.map((item, i) => {
     const value = items[i]
