@@ -250,7 +250,7 @@ describe('shortcut settings card', () => {
       { command: 'openSettings', scope: 'global', key: { key: 'p', modifiers: ['Ctrl'] } },
       { command: 'openCommandPalette', scope: 'global', key: { key: 'p', modifiers: ['Mod'] } },
     ]} availableGlobalActions={['openSettings', 'openCommandPalette']} t={t} />)
-    expect(screen.getAllByRole('img', { name: 'Command' }).length).toBeGreaterThan(0)
+    expect(screen.queryByText('Settings')).toBeNull()
     expect(screen.getByText('Command palette', { exact: true })).toBeTruthy()
     expect(screen.getAllByRole('img', { name: 'Command' }).length).toBeGreaterThan(0)
   })
@@ -261,8 +261,18 @@ describe('shortcut settings card', () => {
       { command: 'activate' as const, scope: 'approval' as const, key: { key: 'Enter', alt: false, ctrl: false, meta: false, shift: false } },
     ]
     expect(findNewShortcutConflicts(baseline, baseline.map((binding, index) => ({ binding, index })), 'linux')).toEqual([])
-    expect(findNewShortcutConflicts(baseline, [...baseline.map((binding, index) => ({ binding, index })), { binding: { command: 'focusNext' as const, scope: 'global' as const, key: { key: 'Enter', alt: false, ctrl: false, meta: false, shift: false } }, index: 2 }], 'linux')).toHaveLength(2)
-    expect(findNewShortcutConflicts(baseline, [...baseline.map((binding, index) => ({ binding, index })), { binding: { command: 'focusNext' as const, scope: 'global' as const, key: { key: 'Enter', alt: false, ctrl: false, meta: false, shift: false } }, index: 2 }, { binding: { command: 'focusNext' as const, scope: 'global' as const, key: { key: 'Enter', alt: false, ctrl: false, meta: false, shift: false } }, index: 3 }], 'linux')).toHaveLength(4)
+    expect(findNewShortcutConflicts(baseline, [...baseline.map((binding, index) => ({ binding, index })), { binding: { command: 'focusNext' as const, scope: 'global' as const, key: { key: 'Enter', alt: false, ctrl: false, meta: false, shift: false } }, index: 2 }], 'linux')).toHaveLength(1)
+    expect(findNewShortcutConflicts(baseline, [...baseline.map((binding, index) => ({ binding, index })), { binding: { command: 'focusNext' as const, scope: 'global' as const, key: { key: 'Enter', alt: false, ctrl: false, meta: false, shift: false } }, index: 2 }, { binding: { command: 'focusNext' as const, scope: 'global' as const, key: { key: 'Enter', alt: false, ctrl: false, meta: false, shift: false } }, index: 3 }], 'linux')).toHaveLength(2)
+    expect(findNewShortcutConflicts(baseline, [
+      ...baseline.map((binding, index) => ({ binding, index })),
+      { binding: { command: 'focusNext' as const, scope: 'global' as const, key: { key: 'Enter', alt: false, ctrl: false, meta: false, shift: false } }, index: 2 },
+      { binding: { command: 'focusPrevious' as const, scope: 'global' as const, key: { key: 'Enter', alt: false, ctrl: false, meta: false, shift: false } }, index: 3 },
+    ], 'linux')).toHaveLength(2)
+    expect(findNewShortcutConflicts(baseline, [
+      ...baseline.map((binding, index) => ({ binding, index })),
+      { binding: { command: 'focusNext' as const, scope: 'question' as const, sequence: [{ key: 'Enter', modifiers: ['Shift'] as const }, { key: 'x', modifiers: ['Shift'] as const }] }, index: 2 },
+      { binding: { command: 'focusPrevious' as const, scope: 'approval' as const, sequence: [{ key: 'Enter', modifiers: ['Shift'] as const }, { key: 'y', modifiers: ['Shift'] as const }] }, index: 3 },
+    ], 'linux')).toHaveLength(0)
     expect(findNewShortcutConflicts(baseline, [
       { binding: { ...baseline[0]!, command: 'focusNext' }, index: 0 },
       { binding: baseline[1]!, index: 1 },

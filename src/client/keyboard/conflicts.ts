@@ -23,9 +23,9 @@ export function findNewShortcutConflicts(baseline: readonly ShortcutBinding[], d
     const second = entries[otherIndex]!
     if (first.binding.scope === second.binding.scope || !isPrefix(first.sequence, second.sequence)) continue
     if (isInheritedConflict(baseline, baselineEntries, first, second, platform)) continue
-    const firstSequences = platformSequences(first.binding, platform).map(canonicalSequenceKey).join('~')
-    const secondSequences = platformSequences(second.binding, platform).map(canonicalSequenceKey).join('~')
-    const key = [first.index, first.binding.command, first.binding.scope, firstSequences, second.index, second.binding.command, second.binding.scope, secondSequences].join('|')
+    const sequenceKey = canonicalSequenceKey(first.sequence)
+    const newEntry = first.index >= baseline.length ? first : second.index >= baseline.length ? second : first
+    const key = [newEntry.index, newEntry.binding.command, newEntry.binding.scope, sequenceKey].join('|')
     if (reported.has(key)) continue
     reported.add(key)
     conflicts.push({ scope: first.binding.scope, key: canonicalSequenceKey(first.sequence), first: first.binding, second: second.binding })

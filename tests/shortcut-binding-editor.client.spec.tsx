@@ -30,6 +30,18 @@ describe('ShortcutBindingEditor', () => {
     expect((screen.getByRole('button', { name: 'editor.save' }) as HTMLButtonElement).disabled).toBe(true)
   })
 
+  it('preserves hidden sequence payloads when a visible binding changes', async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined)
+    const hidden = { command: 'openSettings' as const, scope: 'global' as const, key: { key: 's', modifiers: ['Meta'] as const }, sequence: [{ key: 'x', modifiers: ['Ctrl'] as const }] }
+    render(<ShortcutBindingEditor platform="linux" bindings={[bindings[0]!, hidden as never]} availableGlobalActions={['openCommandPalette', 'openSettings']} t={t} onSave={onSave} />)
+    const record = screen.getAllByRole('button')[0]!
+    fireEvent.click(record)
+    expect((screen.getByText('editor.save').closest('button') as HTMLButtonElement).disabled).toBe(true)
+    fireEvent.click(screen.getByText('editor.save').closest('button')!)
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(onSave).not.toHaveBeenCalled()
+    expect(hidden).toEqual({ command: 'openSettings', scope: 'global', key: { key: 's', modifiers: ['Meta'] }, sequence: [{ key: 'x', modifiers: ['Ctrl'] }] })
+  })
   it('captures modifiers and cancels recording with Escape', () => {
     render(<ShortcutBindingEditor platform="linux" bindings={bindings} t={t} onSave={vi.fn()} />)
     const record = screen.getAllByRole('button')[0]!
@@ -41,7 +53,6 @@ describe('ShortcutBindingEditor', () => {
     fireEvent.keyDown(record, { key: 'Escape' })
     expect(record.textContent).not.toContain('recording')
   })
-
   it('shows conflict and disables save', () => {
     const onSave = vi.fn()
     render(<ShortcutBindingEditor platform="linux" bindings={[
@@ -52,7 +63,6 @@ describe('ShortcutBindingEditor', () => {
     expect((screen.getByRole('button', { name: 'editor.save' }) as HTMLButtonElement).disabled).toBe(true)
     expect(onSave).not.toHaveBeenCalled()
   })
-
   it('saves a captured binding and retains draft after failed save', async () => {
     const onSave = vi.fn().mockRejectedValue(new Error('nope'))
     render(<ShortcutBindingEditor platform="linux" bindings={[{ ...bindings[0]!, key: { key: 'p', modifiers: ['Mod'] as const } }, { command: 'openSettings' as const, scope: 'global' as const, key: { key: ',', modifiers: ['Mod'] as const } }]} t={t} onSave={onSave} />)
