@@ -56,7 +56,7 @@
 .legendItem { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; min-width: 0; padding: 7px 8px; border-top: 1px solid var(--dsw-alias-border-subtle); transition: background .16s; }
 .legendItem:hover, .legendItem:focus-within { background: var(--dsw-alias-bg-module-platform); }
 .legendCommand { display: inline-flex; align-items: center; gap: 8px; min-width: 0; overflow-wrap: anywhere; color: var(--dsw-alias-text-secondary); }
-.legendKeys { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 4px; min-width: 0; color: var(--dsw-alias-text-secondary); }
+.legendKeys { display: flex; flex-wrap: nowrap; align-items: center; justify-content: flex-end; gap: 4px; min-width: 0; overflow-x: auto; color: var(--dsw-alias-text-secondary); white-space: nowrap; }
 .keycap {
   display: inline-flex;
   align-items: center;
@@ -89,7 +89,7 @@
 .editorRow { display: grid; grid-template-columns: minmax(120px, 1fr) minmax(0, 2fr) auto; gap: 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--dsw-alias-border-subtle); }
 .modifierToggles { display: flex; flex-wrap: wrap; gap: 5px; }
 .modifierToggles label { display: inline-flex; align-items: center; gap: 3px; color: var(--dsw-alias-text-secondary); font-size: 12px; }
-.recordButton, .editorActions button { border: 1px solid var(--dsw-alias-border-subtle); border-radius: 6px; padding: 5px 8px; background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-text-primary); font: inherit; cursor: pointer; }
+.recordButton, .editorActions button { display: inline-flex; flex-wrap: nowrap; align-items: center; white-space: nowrap; border: 1px solid var(--dsw-alias-border-subtle); border-radius: 6px; padding: 5px 8px; background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-text-primary); font: inherit; cursor: pointer; }
 .recordButton:focus-visible, .editorActions button:focus-visible { outline: 2px solid var(--dsw-alias-border-focus); outline-offset: 2px; }
 .editorActions { display: flex; justify-content: flex-end; gap: 8px; }
 .editorActions button:last-child { background: var(--dsw-alias-action-primary); color: var(--dsw-alias-text-on-primary); }

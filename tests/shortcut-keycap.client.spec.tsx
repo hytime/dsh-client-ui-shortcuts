@@ -4,6 +4,7 @@ import { render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import { ShortcutKeycap, ShortcutKeycapPlus, shortcutKeyIconRenderers } from '../src/client/components/ShortcutKeycap.js'
 import { ShortcutKeyIcon } from '../src/client/contract/keyboard-visual.js'
+import styles from '../src/client/styles/Shortcuts.module.css'
 
 afterEach(() => document.body.replaceChildren())
 
@@ -15,6 +16,13 @@ describe('ShortcutKeycap', () => {
     expect(screen.queryByText('Mod')).toBeNull()
   })
 
+  it('renders Iconify path data without embedding path markup in d attributes', () => {
+    const { container } = render(<ShortcutKeycap visual={{ icon: ShortcutKeyIcon.Command, label: '⌘', ariaLabel: 'Command' }} />)
+    const commandPath = container.querySelector('kbd path')
+    expect(commandPath).toBeTruthy()
+    expect(commandPath?.getAttribute('d')).not.toContain('<path')
+    expect(container.querySelector('path[d^="<path"]')).toBeNull()
+  })
   it('declares an explicit renderer for every visual icon', () => {
     expect(Object.keys(shortcutKeyIconRenderers).sort()).toEqual(Object.values(ShortcutKeyIcon).sort())
   })
@@ -35,7 +43,17 @@ describe('ShortcutKeycap', () => {
     expect(plus).toBeTruthy()
     expect(plus?.getAttribute('aria-hidden')).toBe('true')
     expect(plus?.querySelector('path')).toBeTruthy()
+    expect(plus?.querySelector('path')?.getAttribute('d')).not.toContain('<path')
+    expect(container.querySelector('path[d^="<path"]')).toBeNull()
     expect(container.querySelector('use')).toBeNull()
+  })
+  it('keeps visual keycaps in one non-wrapping combination row', () => {
+    const container = document.createElement('div')
+    container.className = styles.legendKeys
+    container.append(<ShortcutKeycap visual={{ icon: ShortcutKeyIcon.Command, label: '⌘', ariaLabel: 'Command' }} />, <ShortcutKeycapPlus />, <ShortcutKeycap visual={{ icon: ShortcutKeyIcon.Character, label: 'N', ariaLabel: 'N' }} />)
+    document.body.append(container)
+    expect(container.classList.contains(styles.legendKeys)).toBe(true)
+    expect(getComputedStyle(container).flexWrap).toBe('nowrap')
   })
   it('renders character keys as SVG text inside a stable keycap', () => {
     render(<ShortcutKeycap visual={{ icon: ShortcutKeyIcon.Character, label: 'N', ariaLabel: 'N' }} />)

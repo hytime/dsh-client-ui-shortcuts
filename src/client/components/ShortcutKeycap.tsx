@@ -1,4 +1,5 @@
 import React from 'react'
+import { Icon } from '@iconify/react/offline'
 import arrowDown from '@iconify-icons/lucide/arrow-down.js'
 import arrowLeft from '@iconify-icons/lucide/arrow-left.js'
 import arrowRight from '@iconify-icons/lucide/arrow-right.js'
@@ -24,7 +25,7 @@ export interface ShortcutKeycapProps {
 }
 
 function IconSvg({ icon, label }: { readonly icon: LocalIcon; readonly label: string }): React.ReactElement {
-  return <svg className={styles.keycapSvg} role="img" aria-label={label} viewBox={`0 0 ${icon.width ?? 24} ${icon.height ?? 24}`} focusable="false"><path d={icon.body} /></svg>
+  return <Icon className={styles.keycapSvg} icon={icon} role="img" aria-label={label} aria-hidden={false} focusable="false" />
 }
 
 function PathSvg({ visual, path }: { readonly visual: ShortcutKeyVisual; readonly path: string }): React.ReactElement {
@@ -58,5 +59,5 @@ export function ShortcutKeycap({ visual }: ShortcutKeycapProps): React.ReactElem
 }
 
 export function ShortcutKeycapPlus(): React.ReactElement {
-  return <svg className={styles.keycapPlus} role="presentation" aria-hidden="true" viewBox={`0 0 ${plus.width ?? 24} ${plus.height ?? 24}`} focusable="false"><path d={plus.body} /></svg>
+  return <Icon className={styles.keycapPlus} icon={plus} role="presentation" aria-hidden="true" focusable="false" />
 }
