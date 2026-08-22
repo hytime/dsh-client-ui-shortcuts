@@ -53,6 +53,11 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask }: Question
   const moveFocus = (delta: number) => setFocusIndex(current => focusList.length === 0 ? 0 : (current + delta + focusList.length) % focusList.length)
 
   useEffect(() => { focusItems.current[focusIndex]?.focus() }, [focusIndex, index, matched.key])
+  useEffect(() => {
+    if (document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement) return
+    const first = focusItems.current.find(element => element !== null && !(element as HTMLButtonElement | HTMLInputElement | HTMLTextAreaElement).disabled)
+    first?.focus()
+  }, [matched.key])
   const updateDraft = (patch: Partial<Draft>) => setDrafts(current => current.map((item, i) => i === index ? { ...item, ...patch } : item))
   const answerFor = (items: Draft[]): Answer[] => questions.map((item, i) => {
     const value = items[i]

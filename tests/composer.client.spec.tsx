@@ -62,6 +62,43 @@ function approvalSurface(): HTMLElement {
 afterEach(cleanup)
 
 describe('shortcut composer flows', () => {
+  it('focuses the first actionable control after a question session transition', async () => {
+    const first = question(vi.fn<Response>(() => receipt()))
+    const second = { ...question(vi.fn<Response>(() => receipt())), sessionId: 's2' as never, key: 'q:q2' }
+    const { rerender } = render(<QuestionFlow matched={first} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} />)
+    const existingInput = screen.getByRole('textbox')
+    existingInput.focus()
+    expect(document.activeElement).toBe(existingInput)
+    rerender(<QuestionFlow matched={second} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} />)
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('radio', { name: 'A' })))
+  })
+
+  it('focuses custom input after a question session transition without options', async () => {
+    const first = question()
+    const second = { ...question(), sessionId: 's2' as never, key: 'q:q2', payload: { questions: [{ id: 'q', question: 'Pick', options: [] }] } }
+    const { rerender } = render(<QuestionFlow matched={first} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} />)
+    rerender(<QuestionFlow matched={second} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} />)
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('textbox')))
+  })
+
+  it('focuses allow-once after an approval session transition', async () => {
+    const first = approval()
+    const second = { ...approval(), sessionId: 's2' as never, key: 'a:a2' }
+    const { rerender } = render(<ApprovalFlow matched={first} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} />)
+    rerender(<ApprovalFlow matched={second} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} />)
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: '允许一次' })))
+  })
+
+  it('does not retain focus when the pending interaction is removed and re-entered', async () => {
+    const pending = question()
+    const { rerender } = render(<QuestionFlow matched={pending} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} />)
+    const option = screen.getByRole('radio', { name: 'A' })
+    option.focus()
+    rerender(<div />)
+    expect(document.activeElement).not.toBe(option)
+    rerender(<QuestionFlow matched={{ ...pending, key: 'q:q3' }} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} />)
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('radio', { name: 'A' })))
+  })
   it('focuses the first option and keeps keyboard focus roving after open', async () => {
     const respond = vi.fn<Response>(() => receipt())
     render(<QuestionFlow matched={question(respond)} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} />)

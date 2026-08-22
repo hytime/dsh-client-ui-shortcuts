@@ -22,6 +22,11 @@ export function ApprovalFlow({ matched, activeProfile, t, cancelTask }: Approval
   const [focusIndex, setFocusIndex] = useState(0)
   const actionRefs = useRef<Array<HTMLButtonElement | null>>([])
   useEffect(() => { actionRefs.current[focusIndex]?.focus() }, [focusIndex, matched.key])
+  useEffect(() => {
+    if (document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement) return
+    const first = actionRefs.current.find(element => element !== null && !element.disabled)
+    first?.focus()
+  }, [matched.key])
   const moveFocus = (delta: number) => setFocusIndex(current => (current + delta + 2) % 2)
   const answer = async (outcome: 'allowed-once' | 'rejected'): Promise<void> => {
     if (busy) return
