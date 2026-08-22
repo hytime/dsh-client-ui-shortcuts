@@ -31,7 +31,7 @@ For upgrades, removal, local tarballs, profile inspection, and troubleshooting, 
 | Vim profile | Available | `j`/`k`, `Enter`, and `Escape` for question and approval interactions. |
 | Settings card | Available | Switch the active profile through the `dsh-ui-shortcuts` settings namespace. |
 | Custom profile | Available | Edit question, approval, and capability-backed global bindings, including modifiers, alternatives, and two-stroke chords. |
-| Global actions | Available | Route capability-aware session, Workspace, session-branch, command-palette, and theme actions through the DSH public faces. |
+| Global actions | Available | Route capability-aware session, Workspace, session-branch, and theme actions through the DSH public faces. |
 | Capability filtering | Available | Register and render each global action only when the current DSH composition exposes its required public action face. |
 
 The current release contains interaction takeover, the `standard`/`vim` profiles, the editable `Custom` profile, and the capability-aware global router. The settings opener remains hidden because DSH does not expose a public opener; the plugin does not simulate it through private DOM clicks or guessed routes.
@@ -59,7 +59,6 @@ The global router is available in the active profile. Its built-in global bindin
 
 | Action | Default binding | Capability requirement |
 | --- | --- | --- |
-| Open command palette | `Mod+P` | DSH command-palette opener |
 | Create a session | `Mod+N` | `workspaces.startSession()` |
 | Previous session | `Mod+Alt+ArrowUp` | session list and `sessions.open()` |
 | Next session | `Mod+Alt+ArrowDown` | session list and `sessions.open()` |
@@ -106,7 +105,7 @@ The plugin is an out-of-tree DSH Web Client extension. It uses public compositio
 - `dsh-shortcuts` for Client locale dictionaries;
 - fiber-owned effects for slot, settings, locale, and future keyboard registrations.
 
-The plugin injects the session, Workspace, theme, and command-palette faces needed by the active global actions. It extracts only plain action callbacks before passing data to React; DSH live services do not cross into React props or persisted settings.
+The plugin injects the session, Workspace, and theme faces needed by the active global actions. It extracts only plain action callbacks before passing data to React; DSH live services do not cross into React props or persisted settings.
 
 ## Roadmap
 
@@ -125,7 +124,7 @@ The plugin injects the session, Workspace, theme, and command-palette faces need
 ### Waiting for a DSH public face
 
 - Open the settings panel directly; the existing settings binding stays hidden.
-- Open a session switcher or command palette when no public opener is available.
+- Open a session switcher or command palette when DSH exposes a public opener.
 - Switch transcript/trajectory views.
 - Open model, permission-mode, Plan Mode, or background-job pickers.
 - Expose queue steering, undo/redo, clipboard, and other InputBar-private operations to extension packages.
@@ -183,7 +182,7 @@ No. The browser artifact is a DSH lazy-CJS loader factory and depends on DSH boo
 - [中文 README](README.zh.md)
 - [Changelog](CHANGELOG.md)
 - [中文变更日志](CHANGELOG.zh.md)
-- [Global shortcuts and Custom profile plan](docs/superpowers/plans/2026-08-21-global-shortcuts-custom-profile-plan.md)
+- [DeepSeek Harness extension documentation](https://github.com/deepseek-ai/deepseek-harness/tree/main/docs)
 - [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)
 
 ## License

@@ -15,7 +15,7 @@ DSH CLI 负责 profile 的插件安装和依赖协调。本包声明的 pnpm 版
 使用 DSH plugin command 安装到 Web profile：
 
 ```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.4
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.10
 ```
 
 该命令会把包安装到 profile，并根据包中声明的 `dsh.bundle.patch` 将它加入 `dsh.profile.bundles`。
@@ -37,7 +37,7 @@ pnpm pack --pack-destination /tmp/dsh-client-ui-shortcuts-pack
 export DSH_HOME="$(mktemp -d)"
 
 dsh plugin --profile web add \\
-  /tmp/dsh-client-ui-shortcuts-pack/hytime-dsh-client-ui-shortcuts-0.1.4.tgz
+  /tmp/dsh-client-ui-shortcuts-pack/hytime-dsh-client-ui-shortcuts-0.1.10.tgz
 ```
 
 如果希望 profile 在 shell 退出后继续存在，请将 `mktemp -d` 换成持久目录。发布 tarball 必须包含 `lib/client.js`、`lib/index.js`、`lib/invariant.js`、类型声明和 `cordis.patch.yml`。
@@ -68,7 +68,7 @@ profile manifest 也应在 `dependencies` 和 `dsh.profile.bundles` 中列出该
 dsh --profile web
 ```
 
-快捷键设置卡片会出现在已组合的 settings plugin surface 中。持久化 settings namespace 是 `dsh-ui-shortcuts`，`activeProfile` 可设为 `standard` 或 `vim`。
+快捷键设置卡片会出现在已组合的 settings plugin surface 中。持久化 settings namespace 是 `dsh-ui-shortcuts`，包含 `activeProfile` 和 `customBindings` 字段；内置 profile 为 `standard` 和 `vim`，`customBindings` 保存可编辑的 Custom profile。
 
 不要直接打开 `apps/web`。该 Web entry 需要 DSH boot 注入和真实 composition 提供的 Client module table。
 

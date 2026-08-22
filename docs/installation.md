@@ -15,7 +15,7 @@ The DSH CLI owns profile installation and package reconciliation. The package's 
 Use the DSH plugin command with the Web profile:
 
 ```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.4
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.10
 ```
 
 The command forwards the package installation to the profile and reconciles packages that declare `dsh.bundle.patch` into `dsh.profile.bundles`.
@@ -37,7 +37,7 @@ Then install the generated tarball into the DSH Web profile:
 export DSH_HOME="$(mktemp -d)"
 
 dsh plugin --profile web add \\
-  /tmp/dsh-client-ui-shortcuts-pack/hytime-dsh-client-ui-shortcuts-0.1.4.tgz
+  /tmp/dsh-client-ui-shortcuts-pack/hytime-dsh-client-ui-shortcuts-0.1.10.tgz
 ```
 
 Use a persistent `DSH_HOME` instead of `mktemp -d` when the profile should survive the shell session. The package tarball must contain `lib/client.js`, `lib/index.js`, `lib/invariant.js`, type declarations, and `cordis.patch.yml`.
@@ -68,7 +68,7 @@ After the profile is installed, start the Web surface through DSH:
 dsh --profile web
 ```
 
-The shortcuts settings card is available under the composed settings plugin surface. The persisted settings namespace is `dsh-ui-shortcuts`, with `activeProfile` set to `standard` or `vim`.
+The shortcuts settings card is available under the composed settings plugin surface. The persisted settings namespace is `dsh-ui-shortcuts`, with `activeProfile` and `customBindings` fields; the built-in profiles are `standard` and `vim`, and `customBindings` stores the editable Custom profile.
 
 Do not open `apps/web` directly. The Web entry needs DSH boot injection and the Client module table that the real DSH composition provides.
 

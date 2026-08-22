@@ -31,7 +31,7 @@ dsh --profile web
 | Vim profile | 已发布 | 使用 `j`/`k`、`Enter` 和 `Escape` 操作 question/approval。 |
 | 设置卡片 | 已发布 | 通过 `dsh-ui-shortcuts` settings namespace 切换 active profile。 |
 | Custom profile | 已发布 | 编辑 question、approval 和具备 capability 的全局绑定，包括修饰键、候选绑定和两段 chord。 |
-| 全局动作 | 已发布 | 通过 DSH public face 路由会话、Workspace、会话分支、命令面板和主题动作。 |
+| 全局动作 | 已发布 | 通过 DSH public face 路由会话、Workspace、会话分支和主题动作。 |
 | 能力过滤 | 已发布 | 只有当前 DSH composition 提供所需 public action face 时，才注册并显示对应全局动作。 |
 
 当前版本包含 interaction takeover、`standard`/`vim` profile、可编辑的 `Custom` profile 和 capability-aware global router。由于 DSH 尚未提供公开的设置 opener，设置快捷键仍保持隐藏且不会激活；插件不会通过私有 DOM 点击或猜测路由来模拟它。
@@ -59,7 +59,6 @@ active profile 现在提供 global router。内置全局绑定如下：
 
 | 动作 | 默认键位 | 能力要求 |
 | --- | --- | --- |
-| 打开命令面板 | `Mod+P` | DSH command-palette opener |
 | 新建会话 | `Mod+N` | `workspaces.startSession()` |
 | 上一个会话 | `Mod+Alt+ArrowUp` | session list 和 `sessions.open()` |
 | 下一个会话 | `Mod+Alt+ArrowDown` | session list 和 `sessions.open()` |
@@ -106,7 +105,7 @@ global router 会让位于文本输入框、textarea、contenteditable、IME com
 - `dsh-shortcuts`：注册 Client locale 文案；
 - fiber-owned effects：管理 slot、settings、locale 以及未来 keyboard registration 的生命周期。
 
-当前版本会注入 active global actions 所需的 session、Workspace、theme 和 command-palette faces。传给 React 的只有提取后的普通 action callbacks；DSH live service 不会进入 React props 或持久化 settings。
+当前版本会注入 active global actions 所需的 session、Workspace 和 theme faces。传给 React 的只有提取后的普通 action callbacks；DSH live service 不会进入 React props 或持久化 settings。
 
 ## 路线图
 
@@ -125,7 +124,7 @@ global router 会让位于文本输入框、textarea、contenteditable、IME com
 ### 等待 DSH 公开能力
 
 - 直接打开设置面板；现有设置绑定保持隐藏。
-- 在没有公开 opener 时打开 session switcher 或 command palette。
+- 在 DSH 提供公开 opener 后打开 session switcher 或 command palette。
 - 切换 transcript/trajectory view。
 - 打开 model、permission mode、Plan Mode 或后台任务选择器。
 - 向第三方 extension package 暴露 queue steering、undo/redo、clipboard 和其他 InputBar 私有操作。
@@ -183,7 +182,7 @@ DSH 需要重新加载 Web composition，浏览器才会加载新的 Client bund
 - [English README](README.md)
 - [变更日志](CHANGELOG.zh.md)
 - [English changelog](CHANGELOG.md)
-- [全局快捷键与 Custom profile 计划](docs/superpowers/plans/2026-08-21-global-shortcuts-custom-profile-plan.md)
+- [DeepSeek Harness extension 文档](https://github.com/deepseek-ai/deepseek-harness/tree/main/docs)
 - [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)
 
 ## License
