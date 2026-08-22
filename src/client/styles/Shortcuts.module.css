@@ -57,7 +57,27 @@
 .legendItem:hover, .legendItem:focus-within { background: var(--dsw-alias-bg-module-platform); }
 .legendCommand { display: inline-flex; align-items: center; gap: 8px; min-width: 0; overflow-wrap: anywhere; color: var(--dsw-alias-text-secondary); }
 .legendKeys { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 4px; min-width: 0; color: var(--dsw-alias-text-secondary); }
-.keycap { display: inline-block; min-width: 24px; padding: 2px 6px; border: 1px solid var(--dsw-alias-border-subtle); background: var(--dsw-alias-bg-layer-2); text-align: center; font-size: 0.875rem; }
+.keycap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 32px;
+  height: 28px;
+  min-width: 32px;
+  padding: 2px 6px;
+  border: 1px solid var(--dsw-alias-border-subtle);
+  border-radius: 4px;
+  background: var(--dsw-alias-bg-layer-2);
+  color: var(--dsw-alias-text-secondary);
+  text-align: center;
+  font-size: 0.875rem;
+  line-height: 1;
+  font-family: inherit;
+}
+.keycapSvg { display: block; width: 18px; height: 18px; overflow: visible; }
+.keycapSvg text { fill: currentColor; font-family: inherit; font-size: 12px; font-weight: 600; }
+.keycapPlus { flex: none; color: var(--dsw-alias-label-tertiary); }
 .error { color: var(--dsw-alias-text-danger); }
 .empty { color: var(--dsw-alias-text-secondary); }
 .summary { margin: 0; color: var(--dsw-alias-text-secondary); }
