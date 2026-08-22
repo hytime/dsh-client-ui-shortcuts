@@ -4,7 +4,7 @@ export type GlobalActionId = 'startSession' | 'previousSession' | 'nextSession' 
 export type GlobalAction = () => void
 export type GlobalActions = Partial<Record<GlobalActionId, GlobalAction>>
 
-export interface SessionActionFace { readonly list: { getSnapshot(): { ids: readonly SessionId[]; current: SessionId | undefined } }; open(id: SessionId): void; fork(opts: { sessionId: SessionId; increaseTitle?: boolean }): Promise<SessionId> }
+export interface SessionActionFace { readonly list: { getSnapshot(): { items: readonly { sessionId: SessionId }[]; current: SessionId | undefined } }; open(id: SessionId): void; fork(opts: { sessionId: SessionId; increaseTitle?: boolean }): Promise<SessionId> }
 export interface WorkspaceActionFace { readonly list: { getSnapshot(): { items: readonly { workspaceId: WorkspaceId; sessionIds: readonly SessionId[] }[] } }; startSession(workspaceId?: WorkspaceId): void; connectWorkspace(workspaceId: WorkspaceId): Promise<SessionId> }
 export interface ThemeActionFace { getTheme(): { preference: string; active?: { colorScheme: 'light' | 'dark' } }; setTheme(id: string): void }
 export interface GlobalActionCapabilities { readonly sessions?: SessionActionFace; readonly workspaces?: WorkspaceActionFace; readonly theme?: ThemeActionFace }
@@ -19,7 +19,7 @@ export function createGlobalActions({ sessions, workspaces, theme }: GlobalActio
   const actions: GlobalActions = {}
   if (workspaces?.startSession !== undefined) actions.startSession = () => { workspaces.startSession() }
   if (sessions !== undefined && sessions.open !== undefined) {
-    const navigate = (delta: number) => { const target = adjacent(sessions.list.getSnapshot().ids, sessions.list.getSnapshot().current, delta); if (target !== undefined) sessions.open(target) }
+    const navigate = (delta: number) => { const snapshot = sessions.list.getSnapshot(); const ids = snapshot.items.map(item => item.sessionId); const target = adjacent(ids, snapshot.current, delta); if (target !== undefined) sessions.open(target) }
     actions.previousSession = () => { navigate(-1) }; actions.nextSession = () => { navigate(1) }
   }
   if (sessions !== undefined && sessions.open !== undefined && workspaces?.list !== undefined && workspaces.connectWorkspace !== undefined) {

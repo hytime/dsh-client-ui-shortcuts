@@ -112,7 +112,14 @@ async function bench() {
   ctx.provide('locale', locale)
   const settings = makeScope()
   ctx.provide('settingsScope', { bind: vi.fn(() => settings.scope) })
-  ctx.provide('sessions', { scope: vi.fn(() => undefined) })
+  ctx.provide('sessions', {
+    scope: vi.fn(() => undefined),
+    list: { getSnapshot: () => ({ items: [{ sessionId: 's1' }], current: 's1' }) },
+    open: vi.fn(),
+    fork: vi.fn().mockResolvedValue('child'),
+  })
+  ctx.provide('workspaces', { startSession: vi.fn() })
+  ctx.provide('theme', { getTheme: () => ({ preference: 'light' }), setTheme: vi.fn() })
   const feature = ctx.plugin({ inject: [...inject], apply })
   await feature.await()
   return { ctx, feature, slots, locale, settings }
@@ -174,6 +181,7 @@ describe('shortcut client slot wiring', () => {
     })()
     const face = injected.settings
     expect(injected.profiles.map(profile => (profile as { id: string }).id)).toEqual(['standard', 'vim', 'custom'])
+    expect(injected.availableGlobalActions).toEqual(expect.arrayContaining(['startSession', 'forkSession', 'toggleTheme']))
     const off = face.subscribe(listener)
     await face.setActiveProfile('vim')
     expect(face.activeProfileId()).toBe('vim')

@@ -3,7 +3,7 @@ import { createGlobalActions } from '../src/client/actions/global-actions.js'
 
 function services(overrides: Record<string, unknown> = {}) {
   const sessions = {
-    list: { getSnapshot: () => ({ ids: ['s1', 's2'], byId: { s1: { id: 's1' }, s2: { id: 's2' } }, current: 's1' }) },
+    list: { getSnapshot: () => ({ items: [{ sessionId: 's1' }, { sessionId: 's2' }], current: 's1' }) },
     open: vi.fn(), fork: vi.fn().mockResolvedValue('child'),
   }
   const workspaces = {
@@ -89,7 +89,7 @@ describe('capability-aware global actions', () => {
   it('uses dynamic session snapshots and resolves system theme from active scheme', () => {
     const d = services()
     let current = 's1'
-    d.sessions.list.getSnapshot = () => ({ ids: current === 's1' ? ['s1', 's2'] : ['s2', 's3'], current })
+    d.sessions.list.getSnapshot = () => ({ items: (current === 's1' ? ['s1', 's2'] : ['s2', 's3']).map(sessionId => ({ sessionId })), current })
     const actions = createGlobalActions(d)
     current = 's2'
     actions.nextSession?.()

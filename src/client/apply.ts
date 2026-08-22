@@ -27,15 +27,16 @@ export function apply(ctx: ClientContext): void {
   const controller = createShortcutSettingsController(scope, registry)
   ctx.effect(() => () => controller.dispose(), 'dsh-shortcuts: settings controller')
   const t = ctx.locale.bind(NS)
-  const sessions = ctx.get('sessions') as GlobalActionCapabilities['sessions']
-  const workspaces = ctx.get('workspaces') as GlobalActionCapabilities['workspaces']
-  const theme = ctx.get('theme') as GlobalActionCapabilities['theme']
-  const actions = createGlobalActions({ sessions, workspaces, theme })
+  const getGlobalActions = () => createGlobalActions({
+    sessions: ctx.get('sessions') as GlobalActionCapabilities['sessions'],
+    workspaces: ctx.get('workspaces') as GlobalActionCapabilities['workspaces'],
+    theme: ctx.get('theme') as GlobalActionCapabilities['theme'],
+  })
   const platform = detectShortcutPlatform(window.navigator)
   const pending = ctx.get('interactions') as { readonly current?: () => unknown } | undefined
   ctx.effect(() => createGlobalKeyboardRouter(window, {
     getProfile: () => registry.active(),
-    getActions: () => actions,
+    getActions: () => getGlobalActions(),
     isInteractionPending: () => pending?.current?.() !== undefined,
   }), 'dsh-shortcuts: global keyboard router')
   ctx.effect(() => ctx.slots.inject('conversation.composer', () => ctx.slots.register({
@@ -60,6 +61,6 @@ export function apply(ctx: ClientContext): void {
   }, ShortcutComposer)), 'dsh-shortcuts: composer slot')
   ctx.effect(() => ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
     name: 'settings.plugin.item', key: SHORTCUTS_SETTINGS_NAMESPACE, locale: NS,
-    inject: (): { settings: ShortcutSettingsFace; profiles: readonly ShortcutProfile[]; availableGlobalActions: readonly string[]; platform: ReturnType<typeof detectShortcutPlatform>; t: (key: string) => string } => ({ settings: controller, profiles: registry.list(), availableGlobalActions: Object.keys(actions) as GlobalShortcutCommand[], platform, t: (key: string) => t(key as never) }),
+    inject: (): { settings: ShortcutSettingsFace; profiles: readonly ShortcutProfile[]; availableGlobalActions: readonly string[]; platform: ReturnType<typeof detectShortcutPlatform>; t: (key: string) => string } => ({ settings: controller, profiles: registry.list(), availableGlobalActions: Object.keys(getGlobalActions()) as GlobalShortcutCommand[], platform, t: (key: string) => t(key as never) }),
   }, ShortcutProfileCard)), 'dsh-shortcuts: settings card slot')
 }

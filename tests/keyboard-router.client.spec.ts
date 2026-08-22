@@ -17,6 +17,31 @@ type RouterEvent = {
 }
 
 describe('global keyboard router', () => {
+  it('dispatches a default Mod global binding and consumes the event', () => {
+    let listener: (event: RouterEvent) => void = () => {}
+    const target = {
+      addEventListener: (_type: string, callback: EventListener) => { listener = callback as unknown as (event: RouterEvent) => void },
+      removeEventListener: vi.fn(),
+      setTimeout: vi.fn(),
+      clearTimeout: vi.fn(),
+    }
+    const callback = vi.fn()
+    const profile = {
+      id: 'standard', label: 'standard', description: 'standard',
+      bindings: [{ command: 'nextSession', scope: 'global', sequences: [[{ key: 'ArrowRight', modifiers: ['Mod'] }]] }],
+    } as unknown as ShortcutProfile
+    const preventDefault = vi.fn()
+    const stopPropagation = vi.fn()
+    const dispose = createGlobalKeyboardRouter(target, { getProfile: () => profile, getActions: () => ({ nextSession: callback }) })
+
+    listener({ key: 'ArrowRight', altKey: false, ctrlKey: true, metaKey: false, shiftKey: false, isComposing: false, repeat: false, keyCode: 39, target: null, preventDefault, stopPropagation })
+
+    expect(callback).toHaveBeenCalledOnce()
+    expect(preventDefault).toHaveBeenCalledOnce()
+    expect(stopPropagation).toHaveBeenCalledOnce()
+    dispose()
+  })
+
   it('starts the timeout for a shifted uppercase chord prefix', () => {
     let listener: (event: RouterEvent) => void = () => {}
     const setTimeout = vi.fn(() => 1)
