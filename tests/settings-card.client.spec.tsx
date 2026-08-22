@@ -249,7 +249,7 @@ describe('shortcut settings card', () => {
     render(<ShortcutLegend platform="mac" bindings={[
       { command: 'openSettings', scope: 'global', key: { key: 'p', modifiers: ['Ctrl'] } },
       { command: 'openCommandPalette', scope: 'global', key: { key: 'p', modifiers: ['Mod'] } },
-    ]} availableGlobalActions={['openSettings', 'openCommandPalette']} platform="mac" t={t} />)
+    ]} availableGlobalActions={['openSettings', 'openCommandPalette']} t={t} />)
     expect(screen.getAllByRole('img', { name: 'Command' }).length).toBeGreaterThan(0)
     expect(screen.getByText('Command palette', { exact: true })).toBeTruthy()
     expect(screen.getAllByRole('img', { name: 'Command' }).length).toBeGreaterThan(0)

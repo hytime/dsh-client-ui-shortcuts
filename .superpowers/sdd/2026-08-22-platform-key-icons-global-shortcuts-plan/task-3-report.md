@@ -68,3 +68,13 @@
 - `CI=true pnpm run typecheck`：PASS，`tsc --noEmit`。
 - `git diff --check`：PASS。
 - 重复属性静态检查：PASS；工作树测试文件无重复 JSX `platform` 属性。
+
+### 追加复核修复
+- 文件：`tests/settings-card.client.spec.tsx`。
+- 删除第 252 行 `ShortcutLegend` 调用中重复的 `platform="mac"` 属性；未修改其他功能。
+
+#### 追加验证命令
+- `git show HEAD:tests/settings-card.client.spec.tsx | grep -n 'platform='`：PASS，调用点平台属性无重复。
+- `CI=true pnpm exec vitest run --dir tests settings-card.client.spec.tsx`：PASS。
+- `CI=true pnpm run typecheck`：PASS。
+- `git diff --check`：PASS。
