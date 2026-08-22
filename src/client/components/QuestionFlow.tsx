@@ -132,7 +132,7 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask }: Question
         <div className={surfaceStyles.optionGroup} role="group" aria-label={question.question}>
           {options.map((option, optionIndex) => <button
             key={option.label}
-            ref={node => { focusItems.current[optionIndex] = node; if (focusIndex === optionIndex) node?.focus() }}
+            ref={node => { focusItems.current[optionIndex] = node }}
             className={clsx(surfaceStyles.option, draft.selected.includes(option.label) && surfaceStyles.optionSelected)}
             tabIndex={focusIndex === optionIndex ? 0 : -1}
             type="button"

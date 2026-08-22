@@ -122,6 +122,34 @@ describe('shortcut composer flows', () => {
     expect(second.getAttribute('tabindex')).toBe('0')
   })
 
+  it('preserves custom input focus while updating text with options', () => {
+    render(<QuestionFlow matched={question()} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} />)
+    const input = screen.getByRole('textbox')
+
+    input.focus()
+    fireEvent.change(input, { target: { value: 'a' } })
+    expect(document.activeElement).toBe(input)
+    expect(input.value).toBe('a')
+    fireEvent.change(input, { target: { value: 'ab' } })
+
+    expect(document.activeElement).toBe(input)
+    expect(input.value).toBe('ab')
+  })
+
+  it('preserves custom textarea focus while updating text without options', () => {
+    render(<QuestionFlow matched={question(vi.fn(() => receipt()), [], false)} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} />)
+    const textarea = screen.getByRole('textbox')
+
+    textarea.focus()
+    fireEvent.change(textarea, { target: { value: 'a' } })
+    expect(document.activeElement).toBe(textarea)
+    expect(textarea.value).toBe('a')
+    fireEvent.change(textarea, { target: { value: 'ab' } })
+
+    expect(document.activeElement).toBe(textarea)
+    expect(textarea.value).toBe('ab')
+  })
+
   it('submits the DSH question selected/custom envelope', async () => {
     const respond = vi.fn<Response>(() => receipt())
     render(<QuestionFlow matched={question(respond)} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} />)
