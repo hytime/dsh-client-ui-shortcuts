@@ -76,7 +76,7 @@ function sequencesFor(binding: ShortcutBinding): readonly (readonly KeyStroke[])
   }
   if (binding.sequences) return binding.sequences.map(sequence => sequence.map(convert))
   if (binding.sequence) return [binding.sequence.map(convert)]
-  return [[convert(binding.key)]]
+  return binding.key === undefined ? [] : [[convert(binding.key)]]
 }
 
 function normalizeInput(input: KeyInput): KeyInput {
@@ -113,5 +113,5 @@ function sameStroke(left: KeyStroke | KeyInput, right: KeyStroke | KeyInput): bo
 
 export function modifierForStroke(binding: ShortcutBinding): ShortcutModifier | undefined {
   const stroke = binding.key
-  return 'modifiers' in stroke ? stroke.modifiers.find(modifier => modifier === 'Mod') : undefined
+  return stroke !== undefined && 'modifiers' in stroke ? stroke.modifiers.find(modifier => modifier === 'Mod') : undefined
 }

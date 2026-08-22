@@ -255,6 +255,15 @@ describe('shortcut settings card', () => {
     expect(screen.getAllByRole('img', { name: 'Command' }).length).toBeGreaterThan(0)
   })
 
+  it('renders every compatible alternative sequence and filters incompatible strokes', () => {
+    render(<ShortcutLegend platform="mac" bindings={[{ command: 'openSettings', scope: 'global', sequences: [[{ key: 'g', modifiers: ['Mod'] }, { key: 's', modifiers: ['Mod'] }], [{ key: 'p', modifiers: ['Mod'] }, { key: 'o', modifiers: ['Mod'] }]] }, { command: 'openCommandPalette', scope: 'global', sequence: [{ key: 'x', modifiers: ['Mod'] }, { key: 'y', modifiers: ['Ctrl'] }] }]} availableGlobalActions={['openSettings', 'openCommandPalette']} t={t} />)
+    expect(screen.getAllByText('Settings')).toHaveLength(2)
+    expect(screen.getAllByRole('img', { name: 'Command' })).toHaveLength(4)
+    expect(screen.getAllByRole('img', { name: 'S' })).toHaveLength(1)
+    expect(screen.getAllByRole('img', { name: 'O' })).toHaveLength(1)
+    expect(screen.queryByText('Command palette')).toBeNull()
+  })
+
   it('allows inherited cross-scope defaults but rejects a new global duplicate', () => {
     const baseline = [
       { command: 'activate' as const, scope: 'question' as const, key: { key: 'Enter', alt: false, ctrl: false, meta: false, shift: false } },

@@ -42,7 +42,7 @@ export interface ShortcutStroke {
 export interface ShortcutBinding {
   readonly command: ShortcutCommand
   readonly scope: ShortcutScope
-  readonly key: KeyStroke | ShortcutStroke
+  readonly key?: KeyStroke | ShortcutStroke
   readonly sequence?: readonly (KeyStroke | ShortcutStroke)[]
   readonly sequences?: readonly (readonly (KeyStroke | ShortcutStroke)[])[]
 }

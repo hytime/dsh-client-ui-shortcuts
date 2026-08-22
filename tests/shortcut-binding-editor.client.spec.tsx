@@ -42,6 +42,44 @@ describe('ShortcutBindingEditor', () => {
     expect(onSave).not.toHaveBeenCalled()
     expect(hidden).toEqual({ command: 'openSettings', scope: 'global', key: { key: 's', modifiers: ['Meta'] }, sequence: [{ key: 'x', modifiers: ['Ctrl'] }] })
   })
+  it('edits the first sequence stroke without dropping later strokes or alternatives', () => {
+    const onSave = vi.fn().mockResolvedValue(undefined)
+    const sequenceBinding = {
+      command: 'openCommandPalette' as const,
+      scope: 'global' as const,
+      sequences: [
+        [{ key: 'g', modifiers: ['Mod'] as const }, { key: 's', modifiers: ['Shift'] as const }],
+        [{ key: 'p', modifiers: ['Mod'] as const }, { key: 'x', modifiers: ['Alt'] as const }],
+      ],
+    }
+    render(<ShortcutBindingEditor platform="linux" bindings={[sequenceBinding]} availableGlobalActions={['openCommandPalette']} t={t} onSave={onSave} />)
+    const record = screen.getAllByRole('button')[0]!
+    fireEvent.click(record)
+    fireEvent.keyDown(record, { key: 'b', ctrlKey: true })
+    fireEvent.click(screen.getByRole('button', { name: 'editor.save' }))
+    expect(onSave).toHaveBeenCalledWith([{
+      command: 'openCommandPalette',
+      scope: 'global',
+      sequences: [
+        [{ key: 'b', modifiers: ['Ctrl'] }, { key: 's', modifiers: ['Shift'] }],
+        [{ key: 'p', modifiers: ['Mod'] }, { key: 'x', modifiers: ['Alt'] }],
+      ],
+    }])
+  })
+
+  it('keeps malformed and ambiguous sequence bindings unsaveable', () => {
+    for (const binding of [
+      { command: 'openCommandPalette', scope: 'global', sequence: [] },
+      { command: 'openCommandPalette', scope: 'global', key: { key: 'p', modifiers: ['Mod'] }, sequence: [{ key: 'x', modifiers: [] }] },
+    ] as never[]) {
+      const onSave = vi.fn()
+      render(<ShortcutBindingEditor platform="linux" bindings={[binding]} availableGlobalActions={['openCommandPalette']} t={t} onSave={onSave} />)
+      expect(screen.getByRole('alert')).toBeTruthy()
+      expect((screen.getByRole('button', { name: 'editor.save' }) as HTMLButtonElement).disabled).toBe(true)
+      cleanup()
+    }
+  })
+
   it('captures modifiers and cancels recording with Escape', () => {
     render(<ShortcutBindingEditor platform="linux" bindings={bindings} t={t} onSave={vi.fn()} />)
     const record = screen.getAllByRole('button')[0]!

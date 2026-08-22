@@ -39,7 +39,7 @@ function bindingPlatformCompatible(binding: ShortcutBinding, platform: ShortcutP
     : binding.sequences !== undefined
       ? binding.sequences.flat()
       : [binding.key]
-  return strokes.every(stroke => isBindingPlatformCompatible(stroke, platform))
+  return strokes.every(stroke => stroke !== undefined && isBindingPlatformCompatible(stroke, platform))
 }
 
 function platformSequences(binding: ShortcutBinding, platform: ShortcutPlatform): NormalizedSequence[] {

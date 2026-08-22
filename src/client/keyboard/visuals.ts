@@ -1,4 +1,4 @@
-import type { KeyStroke, ShortcutModifier, ShortcutStroke } from '../contract/profile.js'
+import type { KeyStroke, ShortcutBinding, ShortcutModifier, ShortcutStroke } from '../contract/profile.js'
 import { ShortcutKeyIcon, type ShortcutKeyVisual, type ShortcutPlatform } from '../contract/keyboard-visual.js'
 
 const modifierOrder: readonly ShortcutModifier[] = ['Ctrl', 'Mod', 'Alt', 'Shift', 'Meta']
@@ -44,6 +44,15 @@ export function isBindingPlatformCompatible(stroke: KeyStroke | ShortcutStroke, 
   return true
 }
 
+export function bindingSequenceCandidates(binding: ShortcutBinding): readonly (readonly (KeyStroke | ShortcutStroke)[])[] {
+  if (binding.sequences !== undefined) return binding.sequences
+  if (binding.sequence !== undefined) return [binding.sequence]
+  return binding.key === undefined ? [] : [[binding.key]]
+}
+
+export function compatibleBindingSequences(binding: ShortcutBinding, platform: ShortcutPlatform): readonly (readonly (KeyStroke | ShortcutStroke)[])[] {
+  return bindingSequenceCandidates(binding).filter(sequence => sequence.length > 0 && sequence.every(stroke => isBindingPlatformCompatible(stroke, platform)))
+}
 export function detectShortcutPlatform(navigatorLike: Pick<Navigator, 'platform' | 'userAgent'>): ShortcutPlatform {
   const platform = typeof navigatorLike.platform === 'string' ? navigatorLike.platform.toLowerCase() : ''
   if (platform === 'macintel' || platform.includes('mac')) return 'mac'
