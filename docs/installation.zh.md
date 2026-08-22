@@ -84,7 +84,7 @@ dsh --profile web
 dsh plugin --profile web update @hytime/dsh-client-ui-shortcuts
 ```
 
-移除时使用对应的 package-manager operation：
+移除时使用 DSH plugin command：
 
 ```bash
 dsh plugin --profile web remove @hytime/dsh-client-ui-shortcuts
