@@ -85,7 +85,7 @@ describe('shortcut settings controller custom profile', () => {
     controller.dispose()
   })
 
-  it('falls back to standard when persisted custom sequences are malformed', async () => {
+  it('falls back to a selectable custom profile when persisted custom sequences are malformed', async () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     const scope = controllerScope({
       activeProfile: 'standard',
@@ -95,7 +95,9 @@ describe('shortcut settings controller custom profile', () => {
     const controller = createShortcutSettingsController(scope, registry)
 
     expect(controller.customBindings()).toEqual(standardProfile.bindings)
-    expect(registry.get('custom')).toBeUndefined()
+    expect(registry.get('custom')?.bindings).toEqual(standardProfile.bindings)
+    await expect(controller.setActiveProfile('custom')).resolves.toBeUndefined()
+    expect(controller.activeProfileId()).toBe('custom')
     controller.dispose()
   })
 

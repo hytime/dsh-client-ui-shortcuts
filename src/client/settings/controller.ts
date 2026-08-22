@@ -125,7 +125,8 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
     try {
       this.registry.replaceCustom(persisted as unknown as readonly ShortcutBinding[])
     } catch {
-      // Invalid persisted JSON remains visible to Host validation but falls back to standard bindings here.
+      // Keep Custom selectable even when an older persisted payload is malformed.
+      if (this.registry.get('custom') === undefined) this.registry.replaceCustom(this.registry.custom())
     }
   }
 
