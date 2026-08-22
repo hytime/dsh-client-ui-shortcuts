@@ -13,7 +13,7 @@ Use it when DSH asks you a question, requests approval, or needs a predictable k
 Install the plugin through the DSH CLI, then restart or reload the Web composition:
 
 ```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.10
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.11
 dsh --profile web
 ```
 
@@ -149,7 +149,7 @@ For the full DSH composition workflow, use the [installation guide](docs/install
 | Item | Value |
 | --- | --- |
 | Package | `@hytime/dsh-client-ui-shortcuts` |
-| Current version | `0.1.10` |
+| Current version | `0.1.11` |
 | Bundle row | `dsh-ui-shortcuts` |
 | Settings namespace | `dsh-ui-shortcuts` |
 | Persisted fields | `activeProfile`, `customBindings` |

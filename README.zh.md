@@ -13,7 +13,7 @@
 通过 DSH CLI 安装插件，然后重启或重新加载 Web composition：
 
 ```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.10
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.11
 dsh --profile web
 ```
 
@@ -149,7 +149,7 @@ pnpm exec vitest run tests
 | 项目 | 值 |
 | --- | --- |
 | Package | `@hytime/dsh-client-ui-shortcuts` |
-| 当前版本 | `0.1.10` |
+| 当前版本 | `0.1.11` |
 | Bundle row | `dsh-ui-shortcuts` |
 | Settings namespace | `dsh-ui-shortcuts` |
 | 持久化字段 | `activeProfile`、`customBindings` |

@@ -2,18 +2,26 @@
 
 `@hytime/dsh-client-ui-shortcuts` 的重要变更记录如下。
 
+## 0.1.11 - 全局快捷键与 Custom profile
+
 ### 新增
 
 - 新增可编辑的 `Custom` profile，支持持久化 binding、显式修饰键、`Mod` 平台映射、候选绑定和有界两段 chord。
-- 新增 capability-aware 全局动作，支持打开命令面板、session 和 Workspace 导航、新建及分支会话，以及主题切换。
+- 新增 capability-aware 全局动作，支持 session/Workspace 导航、新建及分支会话，以及主题切换。
 - 新增由 Client fiber 管理的全局 keyboard router，并保护可编辑控件、IME composition、重复事件、pending question/approval takeover 和宿主 popup。
 - 新增按 global scope 分组的快捷键行；当前 DSH composition 不具备能力时会隐藏对应动作。
+
+### 修复
+
+- 进入带有 pending interaction 的 session 时，自动聚焦 question/approval 的首个可操作控件；当前版本优先保证键盘可立即操作，不保留外部编辑器或 popup 焦点。
+- 修复 question 自定义输入框和无选项 textarea 在受控文本更新时丢失焦点的问题。
 
 ### 变更
 
 - 由于 DSH 没有公开的设置 opener，设置绑定保持隐藏且不激活；插件不会使用私有 DOM 路由。
 - 文档明确 DSH CLI 安装和真实 composition 验证是受支持的集成路径。
 
+## 之前的版本
 
 ### 修复
 
