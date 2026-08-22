@@ -311,6 +311,8 @@ describe('shortcut composer flows', () => {
   it('uses theme-aware contrast for selected multi-select marks', () => {
     const css = readFileSync('src/client/styles/InteractionSurface.module.css', 'utf8')
     const selectedMark = css.match(/\.optionMarkSelected\s*\{([^}]*)\}/)?.[1] ?? ''
+    const baseMark = css.match(/\.optionMark\s*\{([^}]*)\}/)?.[1] ?? ''
+    expect(baseMark).toContain('border: 1px solid transparent')
     expect(selectedMark).toContain('var(--dsw-alias-label-primary)')
     expect(selectedMark).toContain('var(--dsw-alias-label-primary-foreground)')
   })
