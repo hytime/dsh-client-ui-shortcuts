@@ -59,6 +59,11 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask }: Question
     first?.focus()
   }, [matched.key])
   const updateDraft = (patch: Partial<Draft>) => setDrafts(current => current.map((item, i) => i === index ? { ...item, ...patch } : item))
+  const updateCustom = (value: string) => updateDraft({
+    custom: value,
+    skipped: false,
+    ...(multi ? {} : { selected: [] }),
+  })
   const answerFor = (items: Draft[]): Answer[] => questions.map((item, i) => {
     const value = items[i]
     const selected = value.skipped ? [] : [...value.selected]
@@ -90,7 +95,7 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask }: Question
     if (submitting) return
     if (multi) updateDraft({ selected: draft.selected.includes(label) ? draft.selected.filter(x => x !== label) : [...draft.selected, label], skipped: false })
     else {
-      const next = drafts.map((item, i) => i === index ? { ...item, selected: [label], skipped: false } : item)
+      const next = drafts.map((item, i) => i === index ? { ...item, selected: [label], custom: '', skipped: false } : item)
       setDrafts(next)
       if (index < questions.length - 1) setIndex(index + 1)
     }
@@ -150,7 +155,7 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask }: Question
             placeholder={t('question.custom')}
             value={draft.custom}
             disabled={submitting}
-            onChange={event => updateDraft({ custom: event.target.value })}
+            onChange={event => updateCustom(event.target.value)}
             onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey && !composing(event) && event.keyCode !== 229 && !event.repeat && !submitting) { event.preventDefault(); event.stopPropagation(); advance() } }}
           /> : <textarea
             ref={node => { focusItems.current[options.length] = node }}
@@ -161,7 +166,7 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask }: Question
             rows={2}
             value={draft.custom}
             disabled={submitting}
-            onChange={event => updateDraft({ custom: event.target.value })}
+            onChange={event => updateCustom(event.target.value)}
             onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey && !composing(event) && event.keyCode !== 229 && !event.repeat && !submitting) { event.preventDefault(); event.stopPropagation(); advance() } }}
           />}
         </div>

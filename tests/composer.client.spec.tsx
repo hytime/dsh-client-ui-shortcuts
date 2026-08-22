@@ -186,6 +186,35 @@ describe('shortcut composer flows', () => {
     expect(respond.mock.calls[0]?.[0]).toMatchObject({ value: { answer: { answers: [{ id: 'q', selected: ['A'] }] } } })
   })
 
+  it('clears a single option when a custom answer is entered', async () => {
+    const respond = vi.fn<Response>(() => receipt())
+    render(<QuestionFlow matched={question(respond)} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} />)
+
+    fireEvent.click(screen.getByRole('radio', { name: 'A' }))
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'custom answer' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }))
+
+    await waitFor(() => expect(respond).toHaveBeenCalledTimes(1))
+    expect(respond.mock.calls[0]?.[0]).toMatchObject({
+      value: { answer: { answers: [{ id: 'q', selected: [], custom: 'custom answer' }] } },
+    })
+  })
+
+  it('clears a custom answer when a single option is selected', async () => {
+    const respond = vi.fn<Response>(() => receipt())
+    render(<QuestionFlow matched={question(respond)} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} />)
+
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'custom answer' } })
+    fireEvent.click(screen.getByRole('radio', { name: 'A' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }))
+
+    await waitFor(() => expect(respond).toHaveBeenCalledTimes(1))
+    expect(respond.mock.calls[0]?.[0]).toEqual({
+      ok: true,
+      value: { sessionId: 's1', answer: { answers: [{ id: 'q', selected: ['A'] }] } },
+    })
+  })
+
   it('submits a skipped final question from click with an empty selection', async () => {
     const respond = vi.fn<Response>(() => receipt())
     render(<QuestionFlow matched={question(respond, [], false)} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} />)
