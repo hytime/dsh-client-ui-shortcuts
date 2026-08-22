@@ -3,6 +3,8 @@ import React from 'react'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ShortcutProfileCard } from '../src/client/components/ShortcutProfileCard.js'
+import { ShortcutLegend } from '../src/client/components/ShortcutLegend.js'
+import { findNewShortcutConflicts } from '../src/client/keyboard/conflicts.js'
 import { ShortcutIcon } from '../src/client/components/ShortcutIcon.js'
 import { createProfileRegistry } from '../src/client/profiles/registry.js'
 import { standardProfile, vimProfile } from '../src/client/profiles/builtins.js'
@@ -243,6 +245,29 @@ describe('shortcut settings controller custom profile', () => {
 })
 
 describe('shortcut settings card', () => {
+  it('renders platform keycaps and hides incompatible explicit modifiers', () => {
+    render(<ShortcutLegend platform="mac" bindings={[
+      { command: 'openSettings', scope: 'global', key: { key: 'p', modifiers: ['Ctrl'] } },
+      { command: 'openCommandPalette', scope: 'global', key: { key: 'p', modifiers: ['Mod'] } },
+    ]} availableGlobalActions={['openSettings', 'openCommandPalette']} t={t} />)
+    expect(screen.queryByText('Settings')).toBeNull()
+    expect(screen.getByText('Command palette')).toBeTruthy()
+    expect(screen.getByRole('img', { name: 'Command' })).toBeTruthy()
+  })
+
+  it('allows inherited cross-scope defaults but rejects a new global duplicate', () => {
+    const baseline = [
+      { command: 'activate' as const, scope: 'question' as const, key: { key: 'Enter', modifiers: [] as const } },
+      { command: 'activate' as const, scope: 'approval' as const, key: { key: 'Enter', modifiers: [] as const } },
+    ]
+    expect(findNewShortcutConflicts(baseline, baseline.map((binding, index) => ({ binding, index })), 'linux')).toEqual([])
+    expect(findNewShortcutConflicts(baseline, [...baseline.map((binding, index) => ({ binding, index })), { binding: { command: 'focusNext' as const, scope: 'global' as const, key: { key: 'Enter', modifiers: [] as const } }, index: 2 }], 'linux')).toHaveLength(1)
+    expect(findNewShortcutConflicts(baseline, [
+      { binding: { ...baseline[0]!, command: 'focusNext' }, index: 0 },
+      { binding: baseline[1]!, index: 1 },
+    ], 'linux')).toHaveLength(1)
+  })
+
   it('starts collapsed and toggles profile details with an accessible disclosure header', () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     const settings = settingsFace()

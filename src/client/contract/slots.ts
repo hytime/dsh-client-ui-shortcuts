@@ -5,6 +5,7 @@ import type { SettingsPluginItemOwnerProps } from '@deepseek-ai/dsh-client-ui-se
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import type { ShortcutProfile } from './profile.js'
+import type { ShortcutPlatform } from './keyboard-visual.js'
 import type { ShortcutSettingsFace } from '../settings/controller.js'
 
 /** DSH question carrier narrowed for shortcut consumers. */
@@ -30,6 +31,7 @@ export type ShortcutProfileCardProps = SettingsPluginItemOwnerProps & {
   readonly profiles: readonly ShortcutProfile[]
   readonly t: (key: string) => string
   readonly availableGlobalActions: readonly string[]
+  readonly platform: ShortcutPlatform
 }
 
 /** Select the highest-priority shortcut interaction from the owner currency. */

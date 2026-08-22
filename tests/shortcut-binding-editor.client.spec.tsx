@@ -13,13 +13,23 @@ const t = (key: string) => key
 afterEach(cleanup)
 
 describe('ShortcutBindingEditor', () => {
+  it('renders Mod as Control on non-mac platforms and preserves hidden bindings on save', async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined)
+    const hidden = { command: 'openSettings' as const, scope: 'global' as const, key: { key: 's', modifiers: ['Meta'] as const } }
+    render(<ShortcutBindingEditor platform="linux" bindings={[bindings[0]!, hidden]} availableGlobalActions={['openCommandPalette', 'openSettings']} t={t} onSave={onSave} />)
+    expect(screen.getByRole('img', { name: 'Control' })).toBeTruthy()
+    expect(screen.queryByText('openSettings')).toBeNull()
+    fireEvent.click(screen.getByText('editor.save').closest('button')!)
+    expect(onSave).toHaveBeenCalledWith([bindings[0], hidden])
+  })
+
   it('captures modifiers and cancels recording with Escape', () => {
     render(<ShortcutBindingEditor bindings={bindings} t={t} onSave={vi.fn()} />)
     const record = screen.getAllByRole('button')[0]!
     fireEvent.click(record)
     fireEvent.keyDown(record, { key: 'b', ctrlKey: true, shiftKey: true })
-    expect(record.textContent).toContain('Ctrl')
-    expect(record.textContent).toContain('Shift')
+    expect(screen.getAllByRole('img', { name: 'Control' }).length).toBeGreaterThan(0)
+    expect(screen.getByRole('img', { name: 'B' })).toBeTruthy()
     fireEvent.click(record)
     fireEvent.keyDown(record, { key: 'Escape' })
     expect(record.textContent).not.toContain('recording')
@@ -42,12 +52,12 @@ describe('ShortcutBindingEditor', () => {
     const record = screen.getAllByRole('button')[0]!
     fireEvent.click(record)
     fireEvent.keyDown(record, { key: 'b', ctrlKey: true, shiftKey: true })
-    expect(record.textContent).toContain('b')
+    expect(screen.getByRole('img', { name: 'B' })).toBeTruthy()
     expect((screen.getByText('editor.save').closest('button') as HTMLButtonElement).disabled).toBe(false)
     fireEvent.click(screen.getByText('editor.save').closest('button')!)
     expect(onSave).toHaveBeenCalled()
     await new Promise(resolve => setTimeout(resolve, 0))
     expect(screen.getByText(/editor.saveFailed/)).toBeTruthy()
-    expect(record.textContent).toContain('b')
+    expect(screen.getByRole('img', { name: 'B' })).toBeTruthy()
   })
 })

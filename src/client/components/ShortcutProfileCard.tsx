@@ -2,6 +2,7 @@ import React, { useEffect, useId, useRef, useState } from 'react'
 import clsx from 'clsx'
 import type { ShortcutLocaleKey } from '../locales.js'
 import type { ShortcutProfile, GlobalShortcutCommand } from '../contract/profile.js'
+import type { ShortcutPlatform } from '../contract/keyboard-visual.js'
 import type { ShortcutProfileCardProps as SlotShortcutProfileCardProps } from '../contract/slots.js'
 import { ShortcutIcon } from './ShortcutIcon.js'
 import { ShortcutBindingEditor } from './ShortcutBindingEditor.js'
@@ -15,7 +16,7 @@ export type ShortcutProfileCardProps = Omit<SlotShortcutProfileCardProps, keyof 
 const fallbackT = (key: string): string => key
 
 /** Settings UI uses the latest runtime snapshot as authoritative after every save attempt. */
-export function ShortcutProfileCard({ settings, profiles, availableGlobalActions, t = fallbackT }: ShortcutProfileCardProps): React.ReactElement {
+export function ShortcutProfileCard({ settings, profiles, availableGlobalActions, platform = 'linux', t = fallbackT }: ShortcutProfileCardProps): React.ReactElement {
   const [, refresh] = useState(0)
   const [open, setOpen] = useState(false)
   const [pending, setPending] = useState<string>()
@@ -71,9 +72,9 @@ export function ShortcutProfileCard({ settings, profiles, availableGlobalActions
           </label>
         </fieldset>
         {error !== undefined || settings.error() !== undefined ? <p role="alert" className={styles.error}>{t('settings.error').replace('{message}', error ?? settings.error() ?? '')}</p> : null}
-        {currentProfile === undefined ? <p role="status" className={styles.empty}>{t('settings.conflict')}</p> : currentProfile.id === 'custom' ? <ShortcutBindingEditor bindings={settings.customBindings()} availableGlobalActions={availableGlobalActions as readonly GlobalShortcutCommand[]} t={t} onSave={settings.setCustomBindings} /> : <>
+        {currentProfile === undefined ? <p role="status" className={styles.empty}>{t('settings.conflict')}</p> : currentProfile.id === 'custom' ? <ShortcutBindingEditor bindings={settings.customBindings()} availableGlobalActions={availableGlobalActions as readonly GlobalShortcutCommand[]} platform={platform} t={t} onSave={settings.setCustomBindings} /> : <>
           <p className={styles.summary}>{currentProfile.description ? t(currentProfile.description) : ''}</p>
-          <ShortcutLegend bindings={currentProfile.bindings} availableGlobalActions={availableGlobalActions as readonly GlobalShortcutCommand[]} t={t} />
+          <ShortcutLegend bindings={currentProfile.bindings} availableGlobalActions={availableGlobalActions as readonly GlobalShortcutCommand[]} platform={platform} t={t} />
         </>}
       </>
     )

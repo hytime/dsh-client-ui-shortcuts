@@ -37,8 +37,11 @@ export function visualizeStroke(stroke: KeyStroke | ShortcutStroke, platform: Sh
   return [...modifiers.map(modifier => modifierVisual(modifier, platform)), keyVisual(stroke.key)]
 }
 
-export function isBindingPlatformCompatible(stroke: ShortcutStroke, platform: ShortcutPlatform): boolean {
-  return !stroke.modifiers.some(modifier => (modifier === 'Ctrl' && platform === 'mac') || (modifier === 'Meta' && platform !== 'mac'))
+export function isBindingPlatformCompatible(stroke: KeyStroke | ShortcutStroke, platform: ShortcutPlatform): boolean {
+  if ('modifiers' in stroke) return !stroke.modifiers.some(modifier => (modifier === 'Ctrl' && platform === 'mac') || (modifier === 'Meta' && platform !== 'mac'))
+  if (stroke.ctrl && platform === 'mac') return false
+  if (stroke.meta && platform !== 'mac') return false
+  return true
 }
 
 export function detectShortcutPlatform(navigatorLike: Pick<Navigator, 'platform' | 'userAgent'>): ShortcutPlatform {
