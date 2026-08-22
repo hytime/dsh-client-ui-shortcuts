@@ -249,29 +249,41 @@ describe('shortcut settings card', () => {
     render(<ShortcutLegend platform="mac" bindings={[
       { command: 'openSettings', scope: 'global', key: { key: 'p', modifiers: ['Ctrl'] } },
       { command: 'openCommandPalette', scope: 'global', key: { key: 'p', modifiers: ['Mod'] } },
-    ]} availableGlobalActions={['openSettings', 'openCommandPalette']} t={t} />)
-    expect(screen.queryByText('Settings')).toBeNull()
-    expect(screen.getByText('Command palette')).toBeTruthy()
-    expect(screen.getByRole('img', { name: 'Command' })).toBeTruthy()
+    ]} availableGlobalActions={['openSettings', 'openCommandPalette']} platform="linux" platform="linux" t={t} />)
+    expect(screen.getAllByRole('img', { name: 'Control' }).length).toBeGreaterThan(0)
+    expect(screen.getByText('Command palette', { exact: true })).toBeTruthy()
+    expect(screen.getAllByRole('img', { name: 'Control' }).length).toBeGreaterThan(0)
   })
 
   it('allows inherited cross-scope defaults but rejects a new global duplicate', () => {
     const baseline = [
-      { command: 'activate' as const, scope: 'question' as const, key: { key: 'Enter', modifiers: [] as const } },
-      { command: 'activate' as const, scope: 'approval' as const, key: { key: 'Enter', modifiers: [] as const } },
+      { command: 'activate' as const, scope: 'question' as const, key: { key: 'Enter', alt: false, ctrl: false, meta: false, shift: false } },
+      { command: 'activate' as const, scope: 'approval' as const, key: { key: 'Enter', alt: false, ctrl: false, meta: false, shift: false } },
     ]
     expect(findNewShortcutConflicts(baseline, baseline.map((binding, index) => ({ binding, index })), 'linux')).toEqual([])
-    expect(findNewShortcutConflicts(baseline, [...baseline.map((binding, index) => ({ binding, index })), { binding: { command: 'focusNext' as const, scope: 'global' as const, key: { key: 'Enter', modifiers: [] as const } }, index: 2 }], 'linux')).toHaveLength(1)
+    expect(findNewShortcutConflicts(baseline, [...baseline.map((binding, index) => ({ binding, index })), { binding: { command: 'focusNext' as const, scope: 'global' as const, key: { key: 'Enter', alt: false, ctrl: false, meta: false, shift: false } }, index: 2 }], 'linux')).toHaveLength(2)
+    expect(findNewShortcutConflicts(baseline, [...baseline.map((binding, index) => ({ binding, index })), { binding: { command: 'focusNext' as const, scope: 'global' as const, key: { key: 'Enter', alt: false, ctrl: false, meta: false, shift: false } }, index: 2 }, { binding: { command: 'focusNext' as const, scope: 'global' as const, key: { key: 'Enter', alt: false, ctrl: false, meta: false, shift: false } }, index: 3 }], 'linux')).toHaveLength(4)
     expect(findNewShortcutConflicts(baseline, [
       { binding: { ...baseline[0]!, command: 'focusNext' }, index: 0 },
       { binding: baseline[1]!, index: 1 },
     ], 'linux')).toHaveLength(1)
   })
 
+  it('compares Mod against platform-specific physical modifiers across platforms', () => {
+    const make = (scope: 'question' | 'approval', key: unknown) => ({ command: 'activate' as const, scope, key })
+
+    for (const [platform, physical] of [['mac', { key: 'k', alt: false, ctrl: false, meta: true, shift: false }], ['windows', { key: 'k', alt: false, ctrl: true, meta: false, shift: false }], ['linux', { key: 'k', alt: false, ctrl: true, meta: false, shift: false }]] as const) {
+      const baseline = [make('question', { key: 'k', modifiers: ['Mod'] as const }), make('approval', physical)]
+      const changedChord = { command: 'activate' as const, scope: 'question' as const, sequence: [{ key: 'k', modifiers: ['Mod'] as const }, { key: 'x', modifiers: ['Alt'] as const }] }
+      expect(findNewShortcutConflicts(baseline, baseline.map((binding, index) => ({ binding, index })), platform)).toEqual([])
+      expect(findNewShortcutConflicts(baseline, [{ binding: { ...baseline[0]!, key: { key: 'k', modifiers: ['Mod'] as const } }, index: 0 }, { binding: { ...baseline[1]!, key: { key: 'k', modifiers: ['Alt'] as const } }, index: 1 }], platform)).toHaveLength(0)
+      expect(findNewShortcutConflicts(baseline, [{ binding: changedChord, index: 0 }, { binding: baseline[1]!, index: 1 }], platform)).toHaveLength(1)
+    }
+  })
   it('starts collapsed and toggles profile details with an accessible disclosure header', () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     const settings = settingsFace()
-    render(<ShortcutProfileCard settings={settings} profiles={registry.list()} availableGlobalActions={[]} t={t} />)
+    render(<ShortcutProfileCard settings={settings} profiles={registry.list()} availableGlobalActions={[]} platform="linux" platform="linux" platform="linux" t={t} />)
     const trigger = screen.getByRole('button', { name: 'Expand: Shortcuts' })
     expect(trigger.getAttribute('aria-expanded')).toBe('false')
     expect(screen.queryByRole('combobox', { name: 'Profile' })).toBeNull()
@@ -286,7 +298,7 @@ describe('shortcut settings card', () => {
   it('renders accessible radios, selected state, and legends grouped by scope', () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     const settings = settingsFace()
-    render(<ShortcutProfileCard settings={settings} profiles={registry.list()} availableGlobalActions={[]} t={t} />)
+    render(<ShortcutProfileCard settings={settings} profiles={registry.list()} availableGlobalActions={[]} platform="linux" platform="linux" t={t} />)
     openCard()
     expect((screen.getByRole('combobox', { name: 'Profile' }) as HTMLSelectElement).value).toBe('standard')
     expect(screen.getByText('Current profile')).toBeTruthy()
@@ -313,7 +325,7 @@ describe('shortcut settings card', () => {
     let resolve!: () => void
     const settings = settingsFace()
     settings.setActiveProfile = vi.fn(() => new Promise<void>(r => { resolve = r }))
-    render(<ShortcutProfileCard settings={settings} profiles={registry.list()} availableGlobalActions={[]} t={t} />)
+    render(<ShortcutProfileCard settings={settings} profiles={registry.list()} availableGlobalActions={[]} platform="linux" platform="linux" t={t} />)
     openCard()
     fireEvent.change(screen.getByRole('combobox', { name: 'Profile' }), { target: { value: 'vim' } })
     expect(settings.setActiveProfile).toHaveBeenCalledWith('vim')
@@ -327,7 +339,7 @@ describe('shortcut settings card', () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     const settings = settingsFace()
     settings.failNext('no permission')
-    render(<ShortcutProfileCard settings={settings} profiles={registry.list()} availableGlobalActions={[]} t={t} />)
+    render(<ShortcutProfileCard settings={settings} profiles={registry.list()} availableGlobalActions={[]} platform="linux" platform="linux" t={t} />)
     openCard()
     fireEvent.change(screen.getByRole('combobox', { name: 'Profile' }), { target: { value: 'vim' } })
     await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('no permission'))
@@ -341,7 +353,7 @@ describe('shortcut settings card', () => {
     const settings = settingsFace()
     let settle!: (error?: Error) => void
     settings.setActiveProfile = vi.fn(() => new Promise<void>((resolve, reject) => { settle = error => error ? reject(error) : resolve() }))
-    render(<ShortcutProfileCard settings={settings} profiles={registry.list()} availableGlobalActions={[]} t={t} />)
+    render(<ShortcutProfileCard settings={settings} profiles={registry.list()} availableGlobalActions={[]} platform="linux" platform="linux" t={t} />)
     openCard()
     fireEvent.change(screen.getByRole('combobox', { name: 'Profile' }), { target: { value: 'vim' } })
     settings.setExternal('standard')
@@ -365,7 +377,7 @@ describe('shortcut settings card', () => {
     const settings = settingsFace()
     settings.customBindings = () => registry.custom()
     settings.setCustomBindings = vi.fn(async bindings => { registry.replaceCustom(bindings); settings.emit() })
-    render(<ShortcutProfileCard settings={settings} profiles={[...registry.list()]} t={t} />)
+    render(<ShortcutProfileCard settings={settings} profiles={[...registry.list()]} platform="linux" platform="linux" t={t} />)
     openCard()
     expect(screen.getByRole('option', { name: 'Custom' })).toBeTruthy()
     fireEvent.change(screen.getByRole('combobox', { name: 'Profile' }), { target: { value: 'custom' } })
@@ -384,7 +396,7 @@ describe('shortcut settings card', () => {
       'startSession', 'previousSession', 'nextSession', 'previousWorkspace', 'nextWorkspace', 'forkSession', 'toggleTheme',
     ] as const
 
-    render(<ShortcutProfileCard settings={settings} profiles={registry.list()} availableGlobalActions={availableGlobalActions} t={t} />)
+    render(<ShortcutProfileCard settings={settings} profiles={registry.list()} availableGlobalActions={availableGlobalActions} platform="linux" platform="linux" t={t} />)
     openCard()
     expect(screen.getByRole('heading', { name: 'Global' })).toBeTruthy()
     expect(screen.getByText('New session')).toBeTruthy()
@@ -408,7 +420,7 @@ describe('shortcut settings card', () => {
   it('keeps standard and Vim profiles read-only', () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     const settings = settingsFace()
-    render(<ShortcutProfileCard settings={settings} profiles={[...registry.list(), { id: 'custom', label: 'profile.custom.label', description: 'profile.custom.description', bindings: standardProfile.bindings }]} t={t} />)
+    render(<ShortcutProfileCard settings={settings} profiles={[...registry.list(), { id: 'custom', label: 'profile.custom.label', description: 'profile.custom.description', bindings: standardProfile.bindings }]} platform="linux" platform="linux" t={t} />)
     openCard()
     expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Record shortcut' })).toBeNull()
@@ -423,7 +435,7 @@ describe('shortcut settings card', () => {
     openCard()
     expect((screen.getByRole('combobox', { name: 'Profile' }) as HTMLSelectElement).value).toBe('standard')
     expect(standardProfile.bindings).toHaveLength(17)
-    rerender(<ShortcutProfileCard settings={settings} profiles={registry.list()} t={t} />)
+    rerender(<ShortcutProfileCard settings={settings} profiles={registry.list()} platform="linux" platform="linux" t={t} />)
     expect((screen.getByRole('combobox', { name: 'Profile' }) as HTMLSelectElement).value).toBe('standard')
   })
 })

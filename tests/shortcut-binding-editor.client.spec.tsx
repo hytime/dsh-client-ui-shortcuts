@@ -23,8 +23,15 @@ describe('ShortcutBindingEditor', () => {
     expect(onSave).toHaveBeenCalledWith([bindings[0], hidden])
   })
 
+  it('validates hidden platform bindings while preserving them in the draft', () => {
+    const onSave = vi.fn()
+    render(<ShortcutBindingEditor platform="linux" bindings={[bindings[0]!, { command: 'openSettings', scope: 'global', key: { key: 's', modifiers: ['Meta'] }, sequence: [] } as never]} availableGlobalActions={['openCommandPalette', 'openSettings']} t={t} onSave={onSave} />)
+    expect(screen.getByRole('alert')).toBeTruthy()
+    expect((screen.getByRole('button', { name: 'editor.save' }) as HTMLButtonElement).disabled).toBe(true)
+  })
+
   it('captures modifiers and cancels recording with Escape', () => {
-    render(<ShortcutBindingEditor bindings={bindings} t={t} onSave={vi.fn()} />)
+    render(<ShortcutBindingEditor platform="linux" bindings={bindings} t={t} onSave={vi.fn()} />)
     const record = screen.getAllByRole('button')[0]!
     fireEvent.click(record)
     fireEvent.keyDown(record, { key: 'b', ctrlKey: true, shiftKey: true })

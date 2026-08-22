@@ -11,12 +11,13 @@ import styles from '../styles/Shortcuts.module.css'
 
 export type ShortcutProfileCardProps = Omit<SlotShortcutProfileCardProps, keyof import('@deepseek-ai/dsh-client-ui-settings-plugins/client').SettingsPluginItemOwnerProps> & {
   readonly t?: (key: ShortcutLocaleKey | string) => string
+  readonly platform: ShortcutPlatform
 }
 
 const fallbackT = (key: string): string => key
 
 /** Settings UI uses the latest runtime snapshot as authoritative after every save attempt. */
-export function ShortcutProfileCard({ settings, profiles, availableGlobalActions, platform = 'linux', t = fallbackT }: ShortcutProfileCardProps): React.ReactElement {
+export function ShortcutProfileCard({ settings, profiles, availableGlobalActions, platform, t = fallbackT }: ShortcutProfileCardProps): React.ReactElement {
   const [, refresh] = useState(0)
   const [open, setOpen] = useState(false)
   const [pending, setPending] = useState<string>()
