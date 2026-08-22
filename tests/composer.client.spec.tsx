@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import React from 'react'
+import { readFileSync } from 'node:fs'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ApprovalWait, QuestionWait } from '../src/client/contract/slots.js'
@@ -307,6 +308,13 @@ describe('shortcut composer flows', () => {
     await waitFor(() => expect(respond).toHaveBeenCalledTimes(1))
     expect(respond.mock.calls[0]?.[0]).toMatchObject({ value: { answer: { answers: [{ id: 'q', selected: [] }] } } })
   })
+  it('uses theme-aware contrast for selected multi-select marks', () => {
+    const css = readFileSync('src/client/styles/InteractionSurface.module.css', 'utf8')
+    const selectedMark = css.match(/\.optionMarkSelected\s*\{([^}]*)\}/)?.[1] ?? ''
+    expect(selectedMark).toContain('var(--dsw-alias-label-primary)')
+    expect(selectedMark).toContain('var(--dsw-alias-label-primary-foreground)')
+  })
+
   it('supports multi-select, custom text, and profile navigation', async () => {
     const respond = vi.fn<Response>(() => receipt())
     render(<QuestionFlow matched={question(respond, [{ label: 'A' }, { label: 'B' }], true)} activeProfile={vimProfile} t={t} cancelTask={vi.fn(async () => {})} />)
