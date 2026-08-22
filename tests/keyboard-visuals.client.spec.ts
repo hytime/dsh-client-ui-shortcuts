@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ShortcutKeyIcon } from '../src/client/contract/keyboard-visual.js'
-import { isBindingPlatformCompatible, visualizeStroke } from '../src/client/keyboard/visuals.js'
+import { detectShortcutPlatform, isBindingPlatformCompatible, visualizeStroke } from '../src/client/keyboard/visuals.js'
 
 describe('keyboard visuals', () => {
   it('maps Mod to Command on macOS and Control elsewhere', () => {
@@ -31,13 +31,26 @@ describe('keyboard visuals', () => {
     )
   })
 
-  it('maps physical modifier flags and aliases without changing input', () => {
-    const stroke = { key: 'Esc', alt: true, ctrl: false, meta: false, shift: true }
-    expect(visualizeStroke(stroke, 'linux')).toEqual([
-      { icon: ShortcutKeyIcon.Option, label: 'Alt', ariaLabel: 'Option' },
-      { icon: ShortcutKeyIcon.Shift, label: 'Shift', ariaLabel: 'Shift' },
-      { icon: ShortcutKeyIcon.Escape, label: 'Esc', ariaLabel: 'Escape' },
+  it('does not visualize incompatible explicit modifiers', () => {
+    expect(visualizeStroke({ key: 'p', modifiers: ['Ctrl'] }, 'mac')).toEqual([
+      { icon: ShortcutKeyIcon.Character, label: 'P', ariaLabel: 'P' },
     ])
-    expect(stroke).toEqual({ key: 'Esc', alt: true, ctrl: false, meta: false, shift: true })
+    expect(visualizeStroke({ key: 'p', modifiers: ['Meta'] }, 'linux')).toEqual([
+      { icon: ShortcutKeyIcon.Character, label: 'P', ariaLabel: 'P' },
+    ])
+  })
+
+  it('normalizes short arrow aliases in all four directions', () => {
+    expect(visualizeStroke({ key: 'Up', modifiers: [] }, 'linux')[0].icon).toBe(ShortcutKeyIcon.ArrowUp)
+    expect(visualizeStroke({ key: 'Down', modifiers: [] }, 'linux')[0].icon).toBe(ShortcutKeyIcon.ArrowDown)
+    expect(visualizeStroke({ key: 'Left', modifiers: [] }, 'linux')[0].icon).toBe(ShortcutKeyIcon.ArrowLeft)
+    expect(visualizeStroke({ key: 'Right', modifiers: [] }, 'linux')[0].icon).toBe(ShortcutKeyIcon.ArrowRight)
+  })
+
+  it('detects explicit platform strings and defaults unknown values to linux', () => {
+    expect(detectShortcutPlatform({ platform: 'MacIntel', userAgent: '' })).toBe('mac')
+    expect(detectShortcutPlatform({ platform: 'Win32', userAgent: '' })).toBe('windows')
+    expect(detectShortcutPlatform({ platform: '', userAgent: '' })).toBe('linux')
+    expect(detectShortcutPlatform({ platform: 'Other', userAgent: 'Unknown' })).toBe('linux')
   })
 })

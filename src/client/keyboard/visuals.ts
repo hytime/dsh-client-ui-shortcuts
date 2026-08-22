@@ -4,7 +4,7 @@ import { ShortcutKeyIcon, type ShortcutKeyVisual, type ShortcutPlatform } from '
 const modifierOrder: readonly ShortcutModifier[] = ['Ctrl', 'Mod', 'Alt', 'Shift', 'Meta']
 
 function keyVisual(key: string): ShortcutKeyVisual {
-  const normalized = key === 'Esc' ? 'Escape' : key === ' ' ? 'Space' : key
+  const normalized = key === 'Esc' ? 'Escape' : key === ' ' ? 'Space' : ({ Up: 'ArrowUp', Down: 'ArrowDown', Left: 'ArrowLeft', Right: 'ArrowRight' } as Record<string, string>)[key] ?? key
   const controls: Record<string, [ShortcutKeyIcon, string, string]> = {
     Escape: [ShortcutKeyIcon.Escape, 'Esc', 'Escape'],
     Enter: [ShortcutKeyIcon.Enter, 'Enter', 'Enter'],
@@ -32,7 +32,7 @@ function modifierVisual(modifier: ShortcutModifier, platform: ShortcutPlatform):
 
 export function visualizeStroke(stroke: KeyStroke | ShortcutStroke, platform: ShortcutPlatform): readonly ShortcutKeyVisual[] {
   const modifiers: ShortcutModifier[] = 'modifiers' in stroke
-    ? [...stroke.modifiers].sort((a, b) => modifierOrder.indexOf(a) - modifierOrder.indexOf(b))
+    ? [...stroke.modifiers].filter(modifier => !(modifier === 'Ctrl' && platform === 'mac') && !(modifier === 'Meta' && platform !== 'mac')).sort((a, b) => modifierOrder.indexOf(a) - modifierOrder.indexOf(b))
     : [stroke.ctrl && 'Ctrl', stroke.meta && 'Meta', stroke.alt && 'Alt', stroke.shift && 'Shift'].filter(Boolean) as ShortcutModifier[]
   return [...modifiers.map(modifier => modifierVisual(modifier, platform)), keyVisual(stroke.key)]
 }
@@ -42,6 +42,8 @@ export function isBindingPlatformCompatible(stroke: ShortcutStroke, platform: Sh
 }
 
 export function detectShortcutPlatform(navigatorLike: Pick<Navigator, 'platform' | 'userAgent'>): ShortcutPlatform {
-  const value = `${navigatorLike.platform} ${navigatorLike.userAgent}`.toLowerCase()
-  return value.includes('mac') ? 'mac' : value.includes('win') ? 'windows' : 'linux'
+  const platform = typeof navigatorLike.platform === 'string' ? navigatorLike.platform.toLowerCase() : ''
+  if (platform === 'macintel' || platform.includes('mac')) return 'mac'
+  if (platform === 'win32' || platform.includes('win')) return 'windows'
+  return 'linux'
 }
