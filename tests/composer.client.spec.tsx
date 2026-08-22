@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ApprovalWait, QuestionWait } from '../src/client/contract/slots.js'
 import { ApprovalFlow } from '../src/client/components/ApprovalFlow.js'
 import { QuestionFlow } from '../src/client/components/QuestionFlow.js'
+import { createFocusCoordinator } from '../src/client/focus-coordinator.js'
 import { standardProfile, vimProfile } from '../src/client/profiles/builtins.js'
 
 const t = (key: string) => ({
@@ -62,6 +63,58 @@ function approvalSurface(): HTMLElement {
 afterEach(cleanup)
 
 describe('shortcut composer flows', () => {
+  it('preserves external ownership for textarea, contenteditable, and popup descendants', () => {
+    const coordinator = createFocusCoordinator()
+    for (const element of [
+      Object.assign(document.createElement('textarea'), { id: 'textarea' }),
+      Object.assign(document.createElement('div'), { id: 'editable', tabIndex: 0, role: 'textbox' }),
+      Object.assign(document.createElement('span'), { id: 'popup-child', tabIndex: 0 }),
+    ]) {
+      if (element.id === 'popup-child') {
+        const popup = document.createElement('div')
+        popup.dataset.popup = 'true'
+        popup.append(element)
+        document.body.append(popup)
+      } else document.body.append(element)
+      if (element.id === 'editable') element.setAttribute('contenteditable', 'true')
+      element.focus()
+      coordinator.begin({ sessionId: 's1', key: element.id })
+      expect(coordinator.ownsExternalFocus()).toBe(true)
+      element.remove()
+      element.closest('[data-popup]')?.remove()
+    }
+    coordinator.dispose()
+  })
+
+  it('focuses pending question controls and approval action when coordinator owns focus', async () => {
+    const coordinator = createFocusCoordinator()
+    const questionValue = question()
+    coordinator.begin({ sessionId: String(questionValue.sessionId), key: questionValue.key })
+    render(<QuestionFlow matched={questionValue} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} focusCoordinator={coordinator} />)
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('radio', { name: 'A' })))
+    cleanup()
+    const approvalValue = approval()
+    coordinator.begin({ sessionId: String(approvalValue.sessionId), key: approvalValue.key })
+    render(<ApprovalFlow matched={approvalValue} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} focusCoordinator={coordinator} />)
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: '允许一次' })))
+    coordinator.dispose()
+  })
+
+  it('invalidates stale focus requests when session or key changes and on dispose', async () => {
+    const coordinator = createFocusCoordinator()
+    const focus = vi.fn()
+    coordinator.begin({ sessionId: 's1', key: 'q:1' })
+    coordinator.requestPendingFocus({ transition: { sessionId: 's1', key: 'q:1' }, kind: 'question', focus })
+    coordinator.begin({ sessionId: 's2', key: 'q:2' })
+    await Promise.resolve()
+    expect(focus).not.toHaveBeenCalled()
+    coordinator.requestPendingFocus({ transition: { sessionId: 's1', key: 'q:1' }, kind: 'question', focus })
+    coordinator.dispose()
+    coordinator.requestPendingFocus({ transition: { sessionId: 's2', key: 'q:2' }, kind: 'question', focus })
+    await Promise.resolve()
+    expect(focus).not.toHaveBeenCalled()
+  })
+
   it('focuses the first actionable control after a question session transition', async () => {
     const first = question(vi.fn<Response>(() => receipt()))
     const second = { ...question(vi.fn<Response>(() => receipt())), sessionId: 's2' as never, key: 'q:q2' }

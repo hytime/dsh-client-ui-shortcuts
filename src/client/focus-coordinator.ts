@@ -2,34 +2,39 @@ import type { FocusCoordinator, FocusTransition, PendingFocusRequest } from './c
 
 const externalSelector = 'textarea, input, [contenteditable="true"], [role="dialog"], [aria-modal="true"], [data-popup], [data-popover]'
 
+type TransitionToken = {
+  readonly transition: FocusTransition
+  readonly externalOwned: boolean
+}
+
+const isExternalElement = (element: Element | null): boolean => {
+  if (element === null) return false
+  if (element.closest('[data-interaction-kind]') !== null) return false
+  return element.matches(externalSelector) || element.closest(externalSelector) !== null
+}
+
 export function createFocusCoordinator(): FocusCoordinator & { begin: (transition: FocusTransition) => void; dispose: () => void } {
-  let transition: FocusTransition | undefined
-  let externalOwned = false
+  let token: TransitionToken | undefined
   let disposed = false
-  const onFocusIn = (event: FocusEvent) => {
-    const target = event.target
-    if (!(target instanceof Element)) return
-    externalOwned = target.closest('[data-interaction-kind]') === null && target.matches(externalSelector)
-  }
+  const onFocusIn = () => {}
   document.addEventListener('focusin', onFocusIn, true)
   return {
-    begin(next) {
-      transition = next
-      const active = document.activeElement
-      externalOwned = active instanceof Element && active.closest('[data-interaction-kind]') === null && (active.matches(externalSelector) || active.closest('[data-popup], [data-popover], [role="dialog"], [aria-modal="true"], [contenteditable="true"]') !== null)
+    begin(transition) {
+      token = { transition, externalOwned: isExternalElement(document.activeElement) }
     },
-    ownsExternalFocus: () => externalOwned,
+    ownsExternalFocus: () => token?.externalOwned === true,
     requestPendingFocus(request: PendingFocusRequest) {
-      if (disposed || transition === undefined || request.transition.sessionId !== transition.sessionId || request.transition.key !== transition.key || externalOwned) return
+      const current = token
+      if (disposed || current === undefined || request.transition.sessionId !== current.transition.sessionId || request.transition.key !== current.transition.key || current.externalOwned) return
       queueMicrotask(() => {
-        if (!disposed && transition?.sessionId === request.transition.sessionId && transition.key === request.transition.key && !externalOwned) request.focus()
+        if (!disposed && token === current && !current.externalOwned) request.focus()
       })
     },
     dispose() {
       if (disposed) return
       disposed = true
+      token = undefined
       document.removeEventListener('focusin', onFocusIn, true)
-      transition = undefined
     },
   }
 }
