@@ -14,7 +14,6 @@ import { SHORTCUTS_SETTINGS_NAMESPACE } from '../settings-namespace.js'
 import type { ShortcutProfile, GlobalShortcutCommand } from './contract/profile.js'
 import { ShortcutProfileCard } from './components/ShortcutProfileCard.js'
 import { createGlobalActions, type GlobalActionCapabilities } from './actions/global-actions.js'
-import { createFocusCoordinator } from './focus-coordinator.js'
 import { createGlobalKeyboardRouter } from './keyboard/router.js'
 
 /** Required browser services. */
@@ -32,8 +31,6 @@ export function apply(ctx: ClientContext): void {
   const theme = ctx.get('theme') as GlobalActionCapabilities['theme']
   const actions = createGlobalActions({ sessions, workspaces, theme })
   const pending = ctx.get('interactions') as { readonly current?: () => unknown } | undefined
-  const focusCoordinator = createFocusCoordinator()
-  ctx.effect(() => () => focusCoordinator.dispose(), 'dsh-shortcuts: focus coordinator')
   ctx.effect(() => createGlobalKeyboardRouter(window, {
     getProfile: () => registry.active(),
     getActions: () => actions,
@@ -41,7 +38,7 @@ export function apply(ctx: ClientContext): void {
   }), 'dsh-shortcuts: global keyboard router')
   ctx.effect(() => ctx.slots.inject('conversation.composer', () => ctx.slots.register({
     name: 'conversation.composer', select: selectShortcut, priority: -1, locale: NS,
-    inject: (sessionId: SessionId): { activeProfile: ShortcutProfile; t: (key: string) => string; cancelTask: () => Promise<void>; focusCoordinator: typeof focusCoordinator } => {
+    inject: (sessionId: SessionId): { activeProfile: ShortcutProfile; t: (key: string) => string; cancelTask: () => Promise<void> } => {
       const session = ctx.sessions.scope(sessionId)
       if (session === undefined) throw new Error(`dsh-shortcuts: unknown session "${sessionId}"`)
       const conversation = session.get('conversation')
@@ -49,8 +46,7 @@ export function apply(ctx: ClientContext): void {
       return {
         activeProfile: registry.active(),
         t: (key: string) => t(key as never),
-        focusCoordinator,
-        cancelTask: async () => {
+         cancelTask: async () => {
            const currentSession = ctx.sessions.scope(sessionId)
            if (currentSession === undefined) throw new Error(`dsh-shortcuts: unknown session "${sessionId}"`)
            const currentConversation = currentSession.get('conversation')

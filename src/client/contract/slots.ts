@@ -1,38 +1,30 @@
+/** Type-only boundary between shortcut code and DSH slot carriers. */
 import type { PendingWait } from '@deepseek-ai/dsh-client-runtime/client'
 import type { ComposerChainProps } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { SettingsPluginItemOwnerProps } from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
+import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
+import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import type { ShortcutProfile } from './profile.js'
 import type { ShortcutSettingsFace } from '../settings/controller.js'
 
+/** DSH question carrier narrowed for shortcut consumers. */
 export type QuestionWait = PendingWait<'question'>
+
+/** DSH approval carrier narrowed for shortcut consumers. */
 export type ApprovalWait = PendingWait<'approval'>
+
+/** Pending interaction kinds handled by the shortcut composer. */
 export type ShortcutWait = QuestionWait | ApprovalWait
 
-export type FocusTransition = {
-  readonly sessionId: string
-  readonly key: string
-}
-
-export type PendingFocusRequest = {
-  readonly transition: FocusTransition
-  readonly kind: ShortcutWait['kind']
-  readonly focus: () => void
-}
-
-export type FocusCoordinator = {
-  readonly begin: (transition: FocusTransition) => void
-  readonly requestPendingFocus: (request: PendingFocusRequest) => void
-  readonly ownsExternalFocus: () => boolean
-}
-
+/** Props supplied by the composer slot injector and consumed by ShortcutComposer. */
 export type ShortcutComposerProps = {
   readonly matched: ShortcutWait
   readonly activeProfile: ShortcutProfile
   readonly t: (key: string) => string
   readonly cancelTask: () => Promise<void>
-  readonly focusCoordinator?: FocusCoordinator
 }
 
+/** Props consumed by the keyed settings plugin card. */
 export type ShortcutProfileCardProps = SettingsPluginItemOwnerProps & {
   readonly settings: ShortcutSettingsFace
   readonly profiles: readonly ShortcutProfile[]
@@ -40,6 +32,7 @@ export type ShortcutProfileCardProps = SettingsPluginItemOwnerProps & {
   readonly availableGlobalActions: readonly string[]
 }
 
+/** Select the highest-priority shortcut interaction from the owner currency. */
 export function selectShortcut(owner: ComposerChainProps): ShortcutWait | null {
   const question = owner.interactions.find(
     (item): item is QuestionWait => item.kind === 'question',

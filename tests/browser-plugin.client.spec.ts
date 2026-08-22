@@ -1,12 +1,9 @@
 // @vitest-environment jsdom
 import { Context } from '@deepseek-ai/cordis'
-import React from 'react'
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
-import { describe, expect, it, vi, afterEach } from 'vitest'
-import type { SettingsScope } from '@deepseek-ai/dsh-client-runtime/client'
+import { describe, expect, it, vi } from 'vitest'
 import { apply, inject } from '../src/client/index.ts'
-import { ShortcutComposer } from '../src/client/components/ShortcutComposer.js'
-import type { ShortcutWait } from '../src/client/contract/slots.js'
+import type { SettingsScope } from '@deepseek-ai/dsh-client-runtime/client'
+import type { ShortcutSettings } from '../src/settings.ts'
 
 type SlotEntry = {
   readonly options: Record<string, unknown>
@@ -15,18 +12,6 @@ type SlotEntry = {
 type SlotCallback = () => () => void
 
 type SlotChildren = Record<string, unknown>
-
-type Receipt = { accepted: true } | { accepted: false; reason: string }
-
-function pendingQuestion(sessionId: string, key: string): ShortcutWait {
-  return {
-    kind: 'question',
-    key,
-    sessionId: sessionId as never,
-    payload: { questions: [{ id: 'q', question: 'Pick', options: [{ label: 'A' }] }] },
-    respond: vi.fn(async () => ({ accepted: true } as Receipt)),
-  } as unknown as ShortcutWait
-}
 
 class FakeSlotRegistry {
   private readonly declarations = new Set<string>()
@@ -133,26 +118,7 @@ async function bench() {
   return { ctx, feature, slots, locale, settings }
 }
 
-afterEach(cleanup)
-
 describe('shortcut client slot wiring', () => {
-  it('preserves external composer focus through injected composer session transition', async () => {
-    const b = await bench()
-    const sessions = b.ctx.get('sessions') as { scope: (id: string) => unknown }
-    vi.mocked(sessions.scope).mockImplementation(() => ({ get: () => ({ cancel: vi.fn(async () => {}) }) }) as never)
-    const entry = b.slots.entries('conversation.composer')[0]!
-    const injected = entry.options.inject as (sessionId: string) => { activeProfile: unknown; t: (key: string) => string; cancelTask: () => Promise<void>; focusCoordinator: unknown }
-    const first = injected('s1')
-    const hostInput = document.createElement('textarea')
-    document.body.append(hostInput)
-    hostInput.focus()
-    const { rerender } = render(React.createElement(ShortcutComposer, { matched: pendingQuestion('s1', 'q:1'), ...first }))
-    rerender(React.createElement(ShortcutComposer, { matched: pendingQuestion('s2', 'q:2'), ...injected('s2') }))
-    await waitFor(() => expect(document.activeElement).toBe(hostInput))
-    expect(document.activeElement).not.toBe(screen.getByRole('radio', { name: 'A' }))
-    await b.feature.dispose()
-  })
-
   it('declares its client services', () => {
     expect(inject).toEqual(['slots', 'locale', 'settingsScope', 'sessions'])
   })

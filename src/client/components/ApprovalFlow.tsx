@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import type { ApprovalWait, FocusCoordinator } from '../contract/slots.js'
+import type { ApprovalWait } from '../contract/slots.js'
 import type { ShortcutProfile } from '../contract/profile.js'
 import { resolveKey } from '../keyboard/resolve.js'
 import type { KeyInput } from '../contract/keyboard.js'
@@ -13,26 +13,20 @@ interface ApprovalFlowProps {
   readonly activeProfile: ShortcutProfile
   readonly t: (key: string) => string
   readonly cancelTask: () => Promise<void>
-  readonly focusCoordinator?: FocusCoordinator
 }
 
-export function ApprovalFlow({ matched, activeProfile, t, cancelTask, focusCoordinator }: ApprovalFlowProps): React.ReactElement {
+export function ApprovalFlow({ matched, activeProfile, t, cancelTask }: ApprovalFlowProps): React.ReactElement {
   const [choice, setChoice] = useState<'allowed-once' | 'rejected'>('allowed-once')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string>()
   const [focusIndex, setFocusIndex] = useState(0)
   const actionRefs = useRef<Array<HTMLButtonElement | null>>([])
+  useEffect(() => { actionRefs.current[focusIndex]?.focus() }, [focusIndex, matched.key])
   useEffect(() => {
-    if (focusCoordinator !== undefined && focusIndex === 0) return
-    actionRefs.current[focusIndex]?.focus()
-  }, [focusCoordinator, focusIndex, matched.key])
-  useEffect(() => {
-    focusCoordinator?.requestPendingFocus({
-      transition: { sessionId: String(matched.sessionId), key: matched.key },
-      kind: 'approval',
-      focus: () => actionRefs.current.find(element => element !== null && !element.disabled)?.focus(),
-    })
-  }, [focusCoordinator, matched.key, matched.sessionId])
+    if (document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement) return
+    const first = actionRefs.current.find(element => element !== null && !element.disabled)
+    first?.focus()
+  }, [matched.key])
   const moveFocus = (delta: number) => setFocusIndex(current => (current + delta + 2) % 2)
   const answer = async (outcome: 'allowed-once' | 'rejected'): Promise<void> => {
     if (busy) return
@@ -72,7 +66,7 @@ export function ApprovalFlow({ matched, activeProfile, t, cancelTask, focusCoord
       </div>
       <div className={styles.actions} data-testid="approval-actions" role="group" aria-label={t('approval.actions')}>
         <button className={styles.approvalReject} ref={node => { actionRefs.current[1] = node }} type="button" disabled={busy} aria-pressed={choice === 'rejected'} onClick={() => { setFocusIndex(1); void answer('rejected') }}>{t('approval.reject')}</button>
-        <button className={styles.approvalAllow} ref={node => { actionRefs.current[0] = node }} type="button" disabled={busy} aria-pressed={choice === 'allowed-once'} onClick={() => { setFocusIndex(0); void answer('allowed-once') }}>{t('approval.allowOnce')}</button>
+        <button className={styles.approvalAllow} ref={node => { actionRefs.current[0] = node }} autoFocus type="button" disabled={busy} aria-pressed={choice === 'allowed-once'} onClick={() => { setFocusIndex(0); void answer('allowed-once') }}>{t('approval.allowOnce')}</button>
       </div>
       {error ? <p className={styles.error} role="alert">{error}</p> : null}
     </div>
