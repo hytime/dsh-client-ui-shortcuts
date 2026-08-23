@@ -95,6 +95,14 @@ describe('global keyboard router', () => {
 
   it('blocks real capture and bubble listeners for a matched command', () => {
     const action = vi.fn()
+    const target = document.createElement('div')
+    const order: string[] = []
+    document.body.addEventListener('keydown', () => order.push('body-capture'), { capture: true })
+    target.addEventListener('keydown', () => order.push('target-capture'), { capture: true })
+    target.addEventListener('keydown', () => order.push('target-bubble'))
+    document.body.addEventListener('keydown', () => order.push('body-bubble'))
+    document.body.append(target)
+
     const profile = {
       id: 'real-command', label: 'real-command', description: 'real-command',
       bindings: [{ command: 'startSession', scope: 'global', key: { key: 'n', modifiers: ['Ctrl'] } }],
@@ -104,36 +112,95 @@ describe('global keyboard router', () => {
       getActions: () => ({ startSession: action }),
       platform: 'linux',
     })
-    const order: string[] = []
-    window.addEventListener('keydown', () => order.push('capture-same-target'), { capture: true })
-    window.addEventListener('keydown', () => order.push('bubble-same-target'))
-    document.body.addEventListener('keydown', () => order.push('bubble-body'))
 
     const event = new KeyboardEvent('keydown', { key: 'n', code: 'KeyN', ctrlKey: true, bubbles: true, cancelable: true })
-    Object.defineProperty(event, 'target', { value: document.body })
-    window.dispatchEvent(event)
+    target.dispatchEvent(event)
 
     expect(action).toHaveBeenCalledOnce()
     expect(event.defaultPrevented).toBe(true)
     expect(order).toEqual([])
     dispose()
+    target.remove()
   })
 
   it('blocks real capture and bubble listeners for a matched chord prefix', () => {
+    const action = vi.fn()
+    const target = document.createElement('div')
+    const order: string[] = []
+    document.body.addEventListener('keydown', () => order.push('body-capture'), { capture: true })
+    target.addEventListener('keydown', () => order.push('target-capture'), { capture: true })
+    target.addEventListener('keydown', () => order.push('target-bubble'))
+    document.body.addEventListener('keydown', () => order.push('body-bubble'))
+    document.body.append(target)
+
     const profile = {
       id: 'real-prefix', label: 'real-prefix', description: 'real-prefix',
       bindings: [{ command: 'forkSession', scope: 'global', sequences: [[{ key: 'b', modifiers: ['Mod', 'Shift'] }, { key: 's', modifiers: [] }]] }],
     } as unknown as ShortcutProfile
-    const dispose = createGlobalKeyboardRouter(window, { getProfile: () => profile, getActions: () => ({ forkSession: vi.fn() }) })
-    const order: string[] = []
-    window.addEventListener('keydown', () => order.push('capture-same-target'), { capture: true })
-    window.addEventListener('keydown', () => order.push('bubble-same-target'))
-    const first = new KeyboardEvent('keydown', { key: 'B', code: 'KeyB', ctrlKey: true, shiftKey: true, bubbles: true, cancelable: true })
-    Object.defineProperty(first, 'target', { value: document.body })
-    window.dispatchEvent(first)
+    const dispose = createGlobalKeyboardRouter(window, { getProfile: () => profile, getActions: () => ({ forkSession: action }) })
 
+    const first = new KeyboardEvent('keydown', { key: 'B', code: 'KeyB', ctrlKey: true, shiftKey: true, bubbles: true, cancelable: true })
+    target.dispatchEvent(first)
+
+    expect(action).not.toHaveBeenCalled()
     expect(first.defaultPrevented).toBe(true)
     expect(order).toEqual([])
+    dispose()
+    target.remove()
+  })
+
+  it('clears a mismatched chord so the original second stroke does not execute', () => {
+    let listener: (event: RouterEvent) => void = () => {}
+    const target = {
+      addEventListener: (_type: string, callback: EventListener) => { listener = callback as unknown as (event: RouterEvent) => void },
+      removeEventListener: vi.fn(),
+      setTimeout: vi.fn(() => 1),
+      clearTimeout: vi.fn(),
+    }
+    const action = vi.fn()
+    const profile = {
+      id: 'mismatch', label: 'mismatch', description: 'mismatch',
+      bindings: [{ command: 'forkSession', scope: 'global', sequences: [[{ key: 'b', modifiers: ['Mod', 'Shift'] }, { key: 's', modifiers: [] }]] }],
+    } as unknown as ShortcutProfile
+    const dispose = createGlobalKeyboardRouter(target, { getProfile: () => profile, getActions: () => ({ forkSession: action }) })
+    const event = () => ({ key: 'b', altKey: false, ctrlKey: true, metaKey: false, shiftKey: true, isComposing: false, repeat: false, keyCode: 66, target: null, preventDefault: vi.fn(), stopPropagation: vi.fn(), stopImmediatePropagation: vi.fn() })
+    listener(event())
+    listener({ ...event(), key: 'x', ctrlKey: false, shiftKey: false, keyCode: 88 })
+    listener({ ...event(), key: 's', ctrlKey: false, shiftKey: false, keyCode: 83 })
+    expect(action).not.toHaveBeenCalled()
+    listener(event())
+    listener({ ...event(), key: 's', ctrlKey: false, shiftKey: false, keyCode: 83 })
+    expect(action).toHaveBeenCalledOnce()
+    dispose()
+  })
+
+  it('does not consume editable targets across all supported element types', () => {
+    const profile = {
+      id: 'editable', label: 'editable', description: 'editable',
+      bindings: [{ command: 'startSession', scope: 'global', key: { key: 'n', modifiers: ['Ctrl'] } }],
+    } as unknown as ShortcutProfile
+    const dispose = createGlobalKeyboardRouter(window, { getProfile: () => profile, getActions: () => ({ startSession: vi.fn() }), platform: 'linux' })
+    const elements = [document.createElement('input'), document.createElement('textarea'), document.createElement('select')]
+    const contenteditable = document.createElement('div')
+    contenteditable.setAttribute('contenteditable', 'true')
+    const nested = document.createElement('span')
+    nested.setAttribute('contenteditable', 'true')
+    contenteditable.append(nested)
+    elements.push(contenteditable, nested)
+    for (const element of elements) {
+      document.body.append(element)
+      const event = new KeyboardEvent('keydown', { key: 'n', ctrlKey: true, bubbles: true, cancelable: true })
+      const preventDefault = vi.spyOn(event, 'preventDefault')
+      const stopPropagation = vi.spyOn(event, 'stopPropagation')
+      const stopImmediatePropagation = vi.spyOn(event, 'stopImmediatePropagation')
+      Object.defineProperty(element, 'isContentEditable', { configurable: true, value: element === contenteditable || element === nested })
+      element.dispatchEvent(event)
+      expect(event.defaultPrevented).toBe(false)
+      expect(preventDefault).not.toHaveBeenCalled()
+      expect(stopPropagation).not.toHaveBeenCalled()
+      expect(stopImmediatePropagation).not.toHaveBeenCalled()
+      element.remove()
+    }
     dispose()
   })
 

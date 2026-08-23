@@ -49,3 +49,19 @@ GREEN：
 
 实际提交 hash：`905d0c95e000b762d6baaf6dfb814ecb291ce6eb`。
 
+## 修复轮次 2
+
+状态：完成
+
+本轮修复：
+- command 与 prefix 测试从真实 descendant `div` dispatch `KeyboardEvent`，经过 body/document/window capture 路径，验证 `defaultPrevented` 及同节点、ancestor listener 均被阻止。
+- 新增无效第二 stroke 回归，确认 chord state 清理后原第二 stroke 不执行，重新发送 prefix + 正确第二 stroke 可执行。
+- 独立覆盖 input、textarea、select、contenteditable 与嵌套 contenteditable，验证 `preventDefault`、`stopPropagation`、`stopImmediatePropagation` 均未调用且 `defaultPrevented` 保持 false。
+
+验证：
+- `CI=true pnpm exec vitest run --dir tests keyboard-router.client.spec.ts`：12/12 通过。
+- `CI=true pnpm run typecheck`：通过。
+- `git diff --check`：通过。
+
+实际提交 hash：待提交。
+
