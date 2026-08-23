@@ -6,7 +6,7 @@ English | [中文](README.zh.md)
 
 Browser-safe, profile-aware keyboard control for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) Web.
 
-This plugin runs inside DSH Web, adds predictable keyboard control for question and approval flows, and provides capability-aware Session and Workspace navigation. It does not modify DSH core, the agent loop, or the model protocol.
+This plugin runs inside DSH Web, adds predictable keyboard control for question and approval flows, and provides Session and Workspace navigation when the corresponding DSH capabilities are available. It does not modify DSH core, the agent loop, or the model protocol.
 
 ## Why install it
 
@@ -14,7 +14,7 @@ This plugin runs inside DSH Web, adds predictable keyboard control for question 
 - Choose Standard, Vim, or Custom profiles for interaction cards and global actions.
 - Navigate Sessions and Workspaces with explicit physical `Meta`, `Ctrl`, `Alt`, and `Shift` modifiers.
 - Automatically expand a collapsed target Workspace before opening an existing eligible Session.
-- Keep unavailable actions out of routing and shortcut lists through capability filtering.
+- Keep unavailable actions out of routing and shortcut lists when DSH does not provide the required capability.
 - Stay within browser and operating-system boundaries: reserved shortcuts may never reach a web page.
 
 ## Install in 60 seconds
@@ -37,8 +37,8 @@ For upgrades, removal, local tarballs, profile inspection, and troubleshooting, 
 - Standard, Vim, and editable Custom profiles with one active profile at a time.
 - Explicit physical `Meta`, `Ctrl`, `Alt`, and `Shift` modifiers, alternatives, and two-stroke chords.
 - Browser-reserved shortcut denylist and conflict validation.
-- Capability filtering for unavailable DSH public faces.
-- Session, Workspace, session-branch, and theme actions when their required public faces are available.
+- Capability checks for DSH features that are not available in the current composition.
+- Session, Workspace, session-branch, and theme actions when the corresponding DSH capabilities are available.
 
 ## Shortcut reference
 
@@ -67,7 +67,7 @@ The active profile's default global bindings are:
 | Fork current Session | `Meta+Alt+Shift+B` |
 | Toggle light/dark theme | `Meta+Alt+Shift+T` |
 
-Global actions are registered only when DSH exposes the required public capability. The hidden `Meta+,` settings binding is retained in profile data but is not an available feature because DSH exposes no public settings opener.
+Global actions are registered only when DSH provides the required capability.
 
 ## Profiles and Custom bindings
 
@@ -77,7 +77,7 @@ The resolver matches physical `KeyboardEvent.code` values, normalizes aliases su
 
 ## Browser and platform boundaries
 
-The router uses capture-phase listeners owned by the active Client fiber. It yields to unmatched text input, IME composition, repeated events, pending question or approval takeover, and host-owned popup focus. A matching global action can run from an input or contenteditable element because it is an explicit global binding.
+The router uses capture-phase listeners in the browser. It yields to unmatched text input, IME composition, repeated events, pending question or approval takeover, and host-owned popup focus. A matching global action can run from an input or contenteditable element because it is an explicit global binding.
 
 The browser denylist covers known Chrome, Safari, Firefox, and Edge combinations. It cannot query arbitrary OS or browser shortcut ownership, and capture listeners can prevent only shortcuts the browser has dispatched to the page.
 
@@ -86,8 +86,6 @@ The browser denylist covers known Chrome, Safari, Firefox, and Edge combinations
 Session navigation follows the current Workspace's stored Session order and skips archived, subagent, and blank Sessions. Workspace navigation opens an existing non-blank Session in the target Workspace. When a target Workspace is collapsed, the plugin expands it automatically before opening the eligible Session; navigation does not create a blank Session or call `connectWorkspace` to manufacture a target.
 
 ## DSH compatibility
-
-This is an out-of-tree DSH Web Client extension. It uses public composition points for the conversation composer, profile settings card, settings persistence, and locale dictionaries, while keeping DSH live services out of React props and persisted settings. It does not modify DSH core.
 
 The package is loaded only through a real DSH Web composition and DSH boot/module loader. Installing an update does not replace code already running in an open page; reload the Web composition to load the new Client bundle.
 
@@ -112,7 +110,11 @@ No. The plugin changes browser interaction only. It does not add tools, prompt s
 
 ### Why does a global action not appear?
 
-Global actions are capability-gated by design. If the current DSH composition does not expose the required public face, the action is not registered and its shortcut row is not rendered.
+Global actions are available only when the current DSH composition provides the required capability. Actions that are unavailable are not registered, and their shortcut rows are not shown.
+
+### Why is the settings shortcut hidden?
+
+DSH does not provide a public settings opener, so the retained `Meta+,` binding stays hidden and is not activated.
 
 ### Why did installing an update not change the open page?
 
@@ -120,7 +122,7 @@ DSH must reload the Web composition so the new Client bundle is loaded. Installi
 
 ### Can I use it without DSH Web?
 
-No. The browser artifact is a DSH lazy-CJS loader factory and depends on DSH boot injection, slots, settings, locale, and runtime services.
+No. The browser artifact is a DSH loader factory and depends on DSH boot injection, slots, settings, locale, and runtime services.
 
 ## Links
 
