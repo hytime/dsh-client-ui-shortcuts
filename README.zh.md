@@ -86,13 +86,14 @@ active profile 现在提供 global router。内置全局绑定如下：
 
 Custom profile 会参考 Claude Code 和 Codex 熟悉的修饰键习惯，但不会声称完整复制它们的默认键位：
 
-- `Mod` 在 macOS 映射为 `Meta`，其他平台映射为 `Ctrl`，路由器运行时也严格执行该平台映射。
-- 会话导航优先停留在当前 Workspace，遵循 Workspace 的 `sessionIds` 顺序，并跳过 archived、subagent 和 blank 会话。
-- Workspace 导航只打开目标 Workspace 中已有的非空白会话，不会因为导航动作创建新会话。
-- macOS `Cmd+N` 等浏览器保留快捷键可能在页面收到 `keydown` 之前被浏览器处理；浏览器不分发事件时，应选择非保留键位。
-- UI 根据平台显示 `Cmd` 或 `Ctrl`，持久化时不写死两个互相冲突的绑定。
-- 一个 binding 支持单键或两段 chord，例如 `Ctrl+X Ctrl+S`。
-- 一个 command 可以拥有多个候选绑定，用于平台兼容或保留备用键。
+全局 router 使用 `Mod` 作为逻辑主修饰键：macOS 映射为 `Meta`，其他平台映射为 `Ctrl`。默认字母组合使用 `Mod+Alt+Shift`，包括用于新建会话的 `Mod+Alt+Shift+N`，以及其他全局动作对应的 `Mod+Alt+Shift` 组合。这样 profile 数据保持跨平台，同时避开 `Cmd+N` 等常见浏览器保留键。
+
+- 会话导航会尽量停留在当前 Workspace，遵循 Workspace 保存的 `sessionIds` 顺序，并跳过 archived、subagent 和 blank 会话。
+- Workspace 导航只打开目标 Workspace 中已有的非空白会话；导航不会创建 blank session 或新会话。
+- capture listener 只能阻止浏览器已经分发到页面的 DOM 事件。浏览器或 OS 保留的快捷键可能根本不会到达页面，而 Web 平台也没有查询任意 OS/浏览器快捷键占用情况的通用 API。
+- 浏览器 denylist 只记录已知冲突，不是系统范围快捷键占用的权威查询。
+- UI 会根据平台显示 `Cmd` 或 `Ctrl`。一个 binding 支持单键或两段 chord，例如 `Ctrl+X Ctrl+S`。
+- 一个 command 可以拥有多个候选绑定，用于平台兼容或用户选择备用键。
 - 比较前会归一化常见别名，包括 `Esc`/`Escape` 和 `Return`/`Enter`。
 - chord 最多两段；同一 scope 中不能让一个 binding 成为另一个 binding 的前缀。
 

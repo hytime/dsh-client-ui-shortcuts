@@ -84,14 +84,13 @@ These are useful future candidates because the current DSH Web composition alrea
 
 ## Key design
 
-The Custom profile follows conventions familiar from Claude Code and Codex without claiming to copy their complete default maps:
+The global router uses `Mod` as a logical primary modifier: it resolves to `Meta` on macOS and `Ctrl` on other platforms. The default letter combinations use `Mod+Alt+Shift`, including `Mod+Alt+Shift+N` for creating a session and the corresponding `Mod+Alt+Shift` combinations for other global actions. This keeps the profile data platform-neutral while avoiding common browser-reserved defaults such as `Cmd+N`.
 
-- `Mod` maps to `Meta` on macOS and `Ctrl` on other platforms, and the router enforces that platform mapping at runtime.
 - Session navigation stays within the current Workspace when possible, follows the Workspace's stored `sessionIds` order, and skips archived, subagent, and blank sessions.
-- Workspace navigation opens an existing non-blank session in the target Workspace; it does not create a new session as a navigation side effect.
-- Browser-reserved shortcuts such as macOS `Cmd+N` may be handled by the browser before a web page receives `keydown`; choose a non-reserved binding when the browser does not dispatch the event.
-- The UI displays `Cmd` or `Ctrl` according to the platform instead of storing two conflicting bindings.
-- A binding accepts one key or a two-stroke chord such as `Ctrl+X Ctrl+S`.
+- Workspace navigation opens an existing non-blank session in the target Workspace; it does not create a blank session or a new session as a navigation side effect.
+- The capture listener can only prevent DOM events that the browser has already dispatched to the page. Browser- or OS-reserved shortcuts may never reach the page, and the Web platform provides no general API for querying arbitrary OS/browser shortcut ownership.
+- The browser denylist records known conflicts only; it is not an authoritative query of system-wide shortcut usage.
+- The UI displays `Cmd` or `Ctrl` according to the platform. A binding accepts one key or a two-stroke chord such as `Ctrl+X Ctrl+S`.
 - One command may have alternative bindings for platform compatibility or a user-selected backup key.
 - Key aliases are normalized before comparison, including `Esc`/`Escape` and `Return`/`Enter`.
 - A chord cannot have three or more strokes, and one binding cannot be a prefix of another binding in the same scope.
