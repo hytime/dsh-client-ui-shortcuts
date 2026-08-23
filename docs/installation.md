@@ -8,14 +8,14 @@ This guide installs `@hytime/dsh-client-ui-shortcuts` into a DSH Web profile. Th
 - Node.js and the package-manager version required by that DSH installation.
 - The package's DSH peer packages available from the installation or profile.
 
-The DSH CLI owns profile installation and package reconciliation. The package's pnpm declaration applies only when developing or packing this source checkout; it is not an installation command for a DSH profile. Do not invoke `npm install`, `pnpm add`, or edit a profile manifest or lockfile directly.
+The DSH CLI owns profile installation, upgrade, and removal. The package's pnpm declaration applies only when developing or packing this source checkout; it is not an installation command for a DSH profile. Do not invoke `npm install`, `pnpm add`, or edit a profile manifest or lockfile directly. These package-manager commands and direct lockfile edits belong only to the development or packing context, not the consumer installation flow.
 
 ## Install a published package
 
 Use the DSH plugin command with the Web profile:
 
 ```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.11
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.12
 ```
 
 The command forwards the package installation to the profile and reconciles packages that declare `dsh.bundle.patch` into `dsh.profile.bundles`.
@@ -37,7 +37,7 @@ Then install the generated tarball into the DSH Web profile:
 export DSH_HOME="$(mktemp -d)"
 
 dsh plugin --profile web add \\
-  /tmp/dsh-client-ui-shortcuts-pack/hytime-dsh-client-ui-shortcuts-0.1.11.tgz
+  /tmp/dsh-client-ui-shortcuts-pack/hytime-dsh-client-ui-shortcuts-0.1.12.tgz
 ```
 
 Use a persistent `DSH_HOME` instead of `mktemp -d` when the profile should survive the shell session. The package tarball must contain `lib/client.js`, `lib/index.js`, `lib/invariant.js`, type declarations, and `cordis.patch.yml`.
@@ -58,7 +58,7 @@ The output should contain the installed package and its canonical row:
   name: '@hytime/dsh-client-ui-shortcuts'
 ```
 
-The profile manifest should also list the package in both `dependencies` and `dsh.profile.bundles`. `--dump-config` verifies Host-side composition and patch resolution; it does not start the browser, load `window.__DSH_BOOT__`, or prove Client slot activation.
+The profile manifest should also list the package in both `dependencies` and `dsh.profile.bundles`. `--dump-config` verifies only the Host composition and patch resolution; it does not start the browser, load `window.__DSH_BOOT__`, or prove Client slot activation. After installing, reload the DSH Web composition or refresh the already running Web page before checking the Client UI; installing a package does not update an already loaded page.
 
 ## Start DSH Web
 
@@ -90,7 +90,7 @@ Remove it with the DSH plugin command:
 dsh plugin --profile web remove @hytime/dsh-client-ui-shortcuts
 ```
 
-The DSH profile reconciles the bundle list after the package operation. Removing the package removes its `dsh-ui-shortcuts` bundle layer; it does not modify DSH core.
+The DSH profile reconciles the bundle list after the package operation. Reload the Web composition or refresh the page after installing, upgrading, or removing the package so the running Web surface picks up the new composition. Removing the package removes its `dsh-ui-shortcuts` bundle layer; it does not modify DSH core.
 
 ## Local validation
 

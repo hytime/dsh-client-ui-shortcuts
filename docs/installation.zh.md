@@ -8,14 +8,14 @@
 - 满足该 DSH 安装要求的 Node.js 和 package manager 版本。
 - DSH 安装或 profile 能解析本包声明的 peer packages。
 
-DSH CLI 负责 profile 的插件安装和依赖协调。本包声明的 pnpm 版本只适用于开发或打包源码，不是将插件安装到 DSH profile 的命令。不要执行 `npm install`、`pnpm add`，也不要直接修改 profile manifest 或 lockfile。
+DSH CLI 负责 profile 的插件安装、升级和移除。本包声明的 pnpm 版本只适用于开发或打包源码，不是将插件安装到 DSH profile 的命令。不要执行 `npm install`、`pnpm add`，也不要直接修改 profile manifest 或 lockfile。这些 package manager 命令和直接编辑 lockfile 只属于开发或打包上下文，不属于消费者安装流程。
 
 ## 安装已发布的包
 
 使用 DSH plugin command 安装到 Web profile：
 
 ```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.11
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.12
 ```
 
 该命令会把包安装到 profile，并根据包中声明的 `dsh.bundle.patch` 将它加入 `dsh.profile.bundles`。
@@ -37,7 +37,7 @@ pnpm pack --pack-destination /tmp/dsh-client-ui-shortcuts-pack
 export DSH_HOME="$(mktemp -d)"
 
 dsh plugin --profile web add \\
-  /tmp/dsh-client-ui-shortcuts-pack/hytime-dsh-client-ui-shortcuts-0.1.11.tgz
+  /tmp/dsh-client-ui-shortcuts-pack/hytime-dsh-client-ui-shortcuts-0.1.12.tgz
 ```
 
 如果希望 profile 在 shell 退出后继续存在，请将 `mktemp -d` 换成持久目录。发布 tarball 必须包含 `lib/client.js`、`lib/index.js`、`lib/invariant.js`、类型声明和 `cordis.patch.yml`。
@@ -58,7 +58,7 @@ dsh --profile web --dump-config
   name: '@hytime/dsh-client-ui-shortcuts'
 ```
 
-profile manifest 也应在 `dependencies` 和 `dsh.profile.bundles` 中列出该包。`--dump-config` 验证的是 Host 侧 composition 和 patch resolution；它不会启动浏览器、加载 `window.__DSH_BOOT__`，也不能单独证明 Client slot 已激活。
+profile manifest 也应在 `dependencies` 和 `dsh.profile.bundles` 中列出该包。`--dump-config` 只能验证 Host 侧 composition 和 patch resolution；它不会启动浏览器、加载 `window.__DSH_BOOT__`，也不能单独证明 Client slot 已激活。安装完成后，需要重载 DSH Web composition，或刷新已经运行的 Web 页面，再检查 Client UI；安装包不会更新已经加载的页面。
 
 ## 启动 DSH Web
 
@@ -90,7 +90,7 @@ dsh plugin --profile web update @hytime/dsh-client-ui-shortcuts
 dsh plugin --profile web remove @hytime/dsh-client-ui-shortcuts
 ```
 
-DSH 会在 package operation 后重新协调 bundle list。移除包会移除 `dsh-ui-shortcuts` bundle layer，但不会修改 DSH core。
+DSH 会在 package operation 后重新协调 bundle list。安装、升级或移除包后，请重载 Web composition 或刷新页面，让正在运行的 Web surface 使用新的 composition。移除包会移除 `dsh-ui-shortcuts` bundle layer，但不会修改 DSH core。
 
 ## 本地验证
 
