@@ -69,19 +69,16 @@ describe('profile-aware keyboard resolver', () => {
     expect(start).toEqual({
       command: 'startSession',
       scope: 'global',
-      sequences: [
-        [{ key: 'n', modifiers: ['Meta', 'Alt'] }],
-        [{ key: 'n', modifiers: ['Ctrl'] }],
-      ],
+      key: { key: 'n', modifiers: ['Mod', 'Alt', 'Shift'] },
     })
-    expect(resolveKey(standardProfile, 'global', input('n', { meta: true, alt: true }), 'mac')).toEqual({ kind: 'command', command: 'startSession' })
-    expect(resolveKey(standardProfile, 'global', input('n', { ctrl: true }), 'windows')).toEqual({ kind: 'command', command: 'startSession' })
-    expect(resolveKey(standardProfile, 'global', input('n', { ctrl: true }), 'mac')).toEqual({ kind: 'pass' })
+    expect(resolveKey(standardProfile, 'global', input('n', { meta: true, alt: true, shift: true }), 'mac')).toEqual({ kind: 'command', command: 'startSession' })
+    expect(resolveKey(standardProfile, 'global', input('n', { ctrl: true, alt: true, shift: true }), 'windows')).toEqual({ kind: 'command', command: 'startSession' })
+    expect(resolveKey(standardProfile, 'global', input('n', { ctrl: true, alt: true, shift: true }), 'mac')).toEqual({ kind: 'pass' })
   })
 
   it('resolves shifted global defaults with browser key casing', () => {
-    expect(resolveKey(standardProfile, 'global', input('B', { ctrl: true, shift: true }), 'windows')).toEqual({ kind: 'command', command: 'forkSession' })
-    expect(resolveKey(standardProfile, 'global', input('L', { meta: true, alt: true, shift: true }), 'mac')).toEqual({ kind: 'command', command: 'toggleTheme' })
+    expect(resolveKey(standardProfile, 'global', input('B', { ctrl: true, alt: true, shift: true }), 'windows')).toEqual({ kind: 'command', command: 'forkSession' })
+    expect(resolveKey(standardProfile, 'global', input('T', { meta: true, alt: true, shift: true }), 'mac')).toEqual({ kind: 'command', command: 'toggleTheme' })
   })
 
   it('resolves declarative Mod and Alt combinations', () => {
