@@ -2,6 +2,26 @@
 
 `@hytime/dsh-client-ui-shortcuts` 的重要变更记录如下。
 
+## 0.1.12 - 物理修饰键与可靠的全局导航
+
+### 新增
+
+- 新增平台感知的 SVG 键帽，覆盖 Command、Windows/Meta、Control、Option/Alt、Shift、导航键和普通字符。
+- 新增浏览器安全的全局快捷键，可在可编辑控件获得焦点时工作，并在不创建空白替代项的情况下导航现有 Session 和 Workspace。
+- 切换到折叠的目标 Workspace 时，先自动展开该分组，再打开选中的 Session。
+
+### 修复
+
+- 保存自定义 binding 后继续保持 `Custom` profile，并在持久化过程中保留 settings controller 上下文。
+- 在交互卡片中展示问题选项描述，并正确处理长文本换行。
+- 根据物理事件 code 规范化受键盘布局影响的输入，包括 macOS Option/Shift 组合。
+- 从导航目标中过滤空白、已归档及 subagent Session，并拒绝已知的浏览器保留组合键和冲突 binding。
+
+### 变更
+
+- 移除公开的 `Mod` 修饰键。设置和规范化 binding 只使用物理 `Meta`、`Ctrl`、`Alt`、`Shift`；旧持久化数据中的 `Mod` 会迁移为 `Meta`，且不会再次写回。
+- 快捷键冲突标识不再依赖平台，平台差异只用于键帽展示。
+
 ## 0.1.11 - 全局快捷键与 Custom profile
 
 ### 新增

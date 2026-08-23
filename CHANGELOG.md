@@ -2,6 +2,26 @@
 
 All notable changes to `@hytime/dsh-client-ui-shortcuts` are documented here.
 
+## 0.1.12 - Physical modifiers and reliable global navigation
+
+### Added
+
+- Added platform-aware SVG keycaps for Command, Windows/Meta, Control, Option/Alt, Shift, navigation keys, and ordinary characters.
+- Added browser-safe global shortcuts that work from editable controls and navigate existing Sessions and Workspaces without creating blank replacements.
+- Added automatic expansion of a collapsed target Workspace before its selected Session is opened.
+
+### Fixed
+
+- Kept the `Custom` profile selected after saving and preserved the settings controller context while persisting custom bindings.
+- Rendered question option descriptions and preserved long-text wrapping in interaction cards.
+- Normalized layout-dependent keyboard input from physical event codes, including macOS Option/Shift combinations.
+- Filtered blank, archived, and subagent Sessions from navigation and rejected known browser-reserved or conflicting bindings.
+
+### Changed
+
+- Removed the public `Mod` modifier. Settings and canonical bindings now use the physical `Meta`, `Ctrl`, `Alt`, and `Shift` modifiers; legacy persisted `Mod` input migrates to `Meta` and is never written back.
+- Made shortcut conflict identity platform-independent while keeping platform differences limited to keycap presentation.
+
 ## 0.1.11 - Global shortcuts and Custom profile
 
 ### Added
