@@ -6,7 +6,7 @@
 
 ### 新增
 
-- 新增可编辑的 `Custom` profile，支持持久化 binding、显式修饰键、`Mod` 平台映射、候选绑定和有界两段 chord。
+- 新增可编辑的 `Custom` profile，支持持久化 binding，以及 `Meta`、`Ctrl`、`Alt`、`Shift` 这几种显式修饰键、候选绑定和有界两段 chord。旧的持久化 `Mod` 仅作为兼容输入迁移为 `Meta`，不会写回。
 - 新增 capability-aware 全局动作，支持 session/Workspace 导航、新建及分支会话，以及主题切换。
 - 新增由 Client fiber 管理的全局 keyboard router，并保护可编辑控件、IME composition、重复事件、pending question/approval takeover 和宿主 popup。
 - 新增按 global scope 分组的快捷键行；当前 DSH composition 不具备能力时会隐藏对应动作。

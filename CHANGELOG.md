@@ -6,7 +6,7 @@ All notable changes to `@hytime/dsh-client-ui-shortcuts` are documented here.
 
 ### Added
 
-- Added the editable `Custom` profile with persisted bindings, explicit modifiers, `Mod` platform mapping, alternatives, and bounded two-stroke chords.
+- Added the editable `Custom` profile with persisted bindings, explicit `Meta`, `Ctrl`, `Alt`, and `Shift` modifiers, alternatives, and bounded two-stroke chords. Legacy persisted `Mod` values are accepted only as compatibility input and migrated to `Meta`; they are never written back.
 - Added capability-aware global actions for session and Workspace navigation, session creation and forking, and theme switching.
 - Added a fiber-owned global keyboard router with guards for editable controls, IME composition, repeated events, pending question/approval takeover, and host popups.
 - Added grouped global shortcut rows that hide actions unavailable in the current DSH composition.
