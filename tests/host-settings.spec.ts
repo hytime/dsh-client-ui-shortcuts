@@ -2,20 +2,26 @@ import { Context } from '@deepseek-ai/cordis'
 import { describe, expect, it } from 'vitest'
 import { SettingsProvider, type SettingsNamespace } from '@deepseek-ai/dsh-settings'
 import { apply, SHORTCUTS_SETTINGS_NAMESPACE } from '../src/index.js'
-import { validatePersistedShortcutBindings } from '../src/settings-validation.js'
+import { normalizePersistedShortcutResult, validatePersistedShortcutBindings } from '../src/settings-validation.js'
 import { defaultShortcutBindings } from '../src/settings.js'
 import type { ShortcutSettings } from '../src/settings.js'
 
 class MemorySettings extends SettingsProvider {
   readonly writable = true
+  readonly persisted: Array<{ ns: SettingsNamespace; section: Record<string, unknown> }> = []
 
   protected load(): Promise<Record<string, unknown>> {
     return Promise.resolve({})
   }
 
-  protected persist(_ns: SettingsNamespace, _section: Record<string, unknown>): Promise<void> {
+  protected persist(ns: SettingsNamespace, section: Record<string, unknown>): Promise<void> {
+    this.persisted.push({ ns, section })
     return Promise.resolve()
   }
+}
+
+const flushSettingsMigration = async (): Promise<void> => {
+  await new Promise<void>(resolve => setTimeout(resolve, 0))
 }
 
 const validCustomBinding = {
@@ -80,11 +86,37 @@ describe('shortcut Host settings', () => {
   })
 
   it('migrates legacy Mod persisted input to Meta and emits no Mod', () => {
-    expect(validatePersistedShortcutBindings([
+    const result = normalizePersistedShortcutResult([
       { command: 'openSettings', scope: 'global', key: { key: 's', modifiers: ['Mod', 'Alt'] } },
-    ])).toBeUndefined()
+    ])
+    expect(result.bindings).toEqual([
+      { command: 'openSettings', scope: 'global', key: { key: 's', modifiers: ['Meta', 'Alt'] } },
+    ])
   })
 
+  it('persists migrated Meta bindings and keeps them after updates', async () => {
+    const ctx = new Context()
+    const providerFiber = ctx.plugin(MemorySettings)
+    await providerFiber.await()
+    const provider = providerFiber.ctx.settings as unknown as MemorySettings
+    const fiber = ctx.plugin({ apply })
+    await fiber.await()
+
+    await ctx.settings.update(SHORTCUTS_SETTINGS_NAMESPACE, {
+      activeProfile: 'standard',
+      customBindings: [{ command: 'openSettings', scope: 'global', key: { key: 's', modifiers: ['Mod'] } }],
+    })
+    await flushSettingsMigration()
+    const first = provider.persisted.at(-1)?.section
+    expect(first).toMatchObject({ customBindings: [{ key: { modifiers: ['Meta'] } }] })
+    expect(JSON.stringify(first)).not.toContain('Mod')
+    expect(ctx.settings.get(SHORTCUTS_SETTINGS_NAMESPACE)).toMatchObject({ customBindings: [{ key: { modifiers: ['Meta'] } }] })
+
+    await ctx.settings.update(SHORTCUTS_SETTINGS_NAMESPACE, { activeProfile: 'vim' })
+    expect(provider.persisted.at(-1)?.section).toMatchObject({ activeProfile: 'vim', customBindings: [{ key: { modifiers: ['Meta'] } }] })
+    await expect(ctx.settings.update(SHORTCUTS_SETTINGS_NAMESPACE, { activeProfile: 'unknown' })).rejects.toThrow('unknown')
+    await fiber.dispose()
+  })
   it('accepts explicit combinations in custom settings', () => {
     expect(() => validatePersistedShortcutBindings([
       { command: 'openSettings', scope: 'global', key: { key: 's', modifiers: ['Meta', 'Alt'] } },
@@ -174,14 +206,19 @@ describe('shortcut Host settings', () => {
 
   it('migrates Mod with Ctrl in custom settings and persists Meta with Ctrl', async () => {
     const ctx = new Context()
-    await ctx.plugin(MemorySettings).await()
+    const providerFiber = ctx.plugin(MemorySettings)
+    await providerFiber.await()
+    const provider = providerFiber.ctx.settings as unknown as MemorySettings
     const fiber = ctx.plugin({ apply })
     await fiber.await()
     await expect(ctx.settings.update(SHORTCUTS_SETTINGS_NAMESPACE, {
       activeProfile: 'standard',
       customBindings: [{ ...validCustomBinding, key: { key: 's', modifiers: ['Mod', 'Ctrl'] } }],
     })).resolves.toBeUndefined()
-    expect(ctx.settings.get(SHORTCUTS_SETTINGS_NAMESPACE)).toMatchObject({ customBindings: [{ key: { key: 's', modifiers: ['Mod', 'Ctrl'] } }] })
+    await flushSettingsMigration()
+    expect(provider.persisted.at(-1)?.section).toMatchObject({ customBindings: [{ key: { modifiers: ['Ctrl', 'Meta'] } }] })
+    expect(JSON.stringify(provider.persisted.at(-1)?.section)).not.toContain('Mod')
+    expect(ctx.settings.get(SHORTCUTS_SETTINGS_NAMESPACE)).toMatchObject({ customBindings: [{ key: { modifiers: ['Ctrl', 'Meta'] } }] })
     await fiber.dispose()
   })
   it('rejects non-object custom binding JSON at the schema boundary', async () => {
