@@ -45,12 +45,13 @@ export function createGlobalKeyboardRouter(target: RouterWindow, options: Global
       action()
       return
     }
-    if (isGuardedTarget(event.target)) return
     if (isPrefix(options.getProfile(), input, platform)) {
       consume(event)
       if (timer !== undefined) target.clearTimeout(timer)
       timer = target.setTimeout(reset, options.timeoutMs ?? GLOBAL_SEQUENCE_TIMEOUT_MS)
+      return
     }
+    if (isGuardedTarget(event.target)) return
   }
   target.addEventListener('keydown', onKeyDown as EventListener, CAPTURE_OPTIONS)
   return () => { reset(); target.removeEventListener('keydown', onKeyDown as EventListener, CAPTURE_OPTIONS) }

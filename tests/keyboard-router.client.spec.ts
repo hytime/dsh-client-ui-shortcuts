@@ -35,6 +35,78 @@ describe('global keyboard router', () => {
     input.remove()
   })
 
+  it('dispatches a matched global binding from each editable target type', () => {
+    const action = vi.fn()
+    const profile = {
+      id: 'editable-command-types', label: 'editable-command-types', description: 'editable-command-types',
+      bindings: [{ command: 'startSession', scope: 'global', key: { key: 'n', modifiers: ['Ctrl'] } }],
+    } as unknown as ShortcutProfile
+    const dispose = createGlobalKeyboardRouter(window, { getProfile: () => profile, getActions: () => ({ startSession: action }), platform: 'linux' })
+    const contenteditable = document.createElement('div')
+    contenteditable.setAttribute('contenteditable', 'true')
+    const targets = [document.createElement('textarea'), document.createElement('select'), contenteditable]
+
+    for (const target of targets) {
+      document.body.append(target)
+      const event = new KeyboardEvent('keydown', { key: 'n', ctrlKey: true, bubbles: true, cancelable: true })
+      target.dispatchEvent(event)
+      expect(action).toHaveBeenCalledTimes(targets.indexOf(target) + 1)
+      expect(event.defaultPrevented).toBe(true)
+      target.remove()
+    }
+
+    dispose()
+  })
+
+  it('does not consume a matched profile command when its action is unavailable', () => {
+    const profile = {
+      id: 'missing-action', label: 'missing-action', description: 'missing-action',
+      bindings: [{ command: 'startSession', scope: 'global', key: { key: 'n', modifiers: ['Ctrl'] } }],
+    } as unknown as ShortcutProfile
+    const dispose = createGlobalKeyboardRouter(window, { getProfile: () => profile, getActions: () => ({}) as never, platform: 'linux' })
+    const textarea = document.createElement('textarea')
+    document.body.append(textarea)
+    const event = new KeyboardEvent('keydown', { key: 'n', ctrlKey: true, bubbles: true, cancelable: true })
+    textarea.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(false)
+    dispose()
+    textarea.remove()
+  })
+
+  it('does not execute or consume a real keyCode 229 event', () => {
+    const action = vi.fn()
+    const profile = {
+      id: 'real-229', label: 'real-229', description: 'real-229',
+      bindings: [{ command: 'startSession', scope: 'global', key: { key: 'n', modifiers: ['Ctrl'] } }],
+    } as unknown as ShortcutProfile
+    const dispose = createGlobalKeyboardRouter(window, { getProfile: () => profile, getActions: () => ({ startSession: action }), platform: 'linux' })
+    const event = new KeyboardEvent('keydown', { key: 'n', ctrlKey: true, bubbles: true, cancelable: true })
+    Object.defineProperty(event, 'keyCode', { configurable: true, value: 229 })
+    document.body.dispatchEvent(event)
+    expect(action).not.toHaveBeenCalled()
+    expect(event.defaultPrevented).toBe(false)
+    dispose()
+  })
+
+  it('consumes both strokes of a global chord on a real editable descendant', () => {
+    const action = vi.fn()
+    const profile = {
+      id: 'editable-chord', label: 'editable-chord', description: 'editable-chord',
+      bindings: [{ command: 'forkSession', scope: 'global', sequences: [[{ key: 'b', modifiers: ['Mod', 'Shift'] }, { key: 's', modifiers: [] }]] }],
+    } as unknown as ShortcutProfile
+    const dispose = createGlobalKeyboardRouter(window, { getProfile: () => profile, getActions: () => ({ forkSession: action }), platform: 'linux' })
+    const textarea = document.createElement('textarea')
+    document.body.append(textarea)
+    const first = new KeyboardEvent('keydown', { key: 'B', ctrlKey: true, shiftKey: true, bubbles: true, cancelable: true })
+    const second = new KeyboardEvent('keydown', { key: 's', bubbles: true, cancelable: true })
+    textarea.dispatchEvent(first)
+    textarea.dispatchEvent(second)
+    expect(first.defaultPrevented).toBe(true)
+    expect(second.defaultPrevented).toBe(true)
+    expect(action).toHaveBeenCalledOnce()
+    dispose()
+    textarea.remove()
+  })
   it('dispatches a default Mod global binding and consumes the event', () => {
     let listener: (event: RouterEvent) => void = () => {}
     const target = {
@@ -59,6 +131,7 @@ describe('global keyboard router', () => {
     expect(stopPropagation).toHaveBeenCalledOnce()
     dispose()
   })
+
 
   it('uses only the platform Mod modifier for global bindings', () => {
     let listener: (event: RouterEvent) => void = () => {}
@@ -247,8 +320,7 @@ describe('global keyboard router', () => {
     dispose()
     input.remove()
   })
-
-
+  it('starts a chord sequence and schedules its reset timeout', () => {
     let listener: (event: RouterEvent) => void = () => {}
     const setTimeout = vi.fn(() => 1)
     const target = {
@@ -258,25 +330,15 @@ describe('global keyboard router', () => {
       clearTimeout: vi.fn(),
     }
     const profile = {
-      id: 'chord',
-      label: 'chord',
-      description: 'chord',
-      bindings: [{
-        command: 'forkSession',
-        scope: 'global',
-        sequences: [[{ key: 'b', modifiers: ['Mod', 'Shift'] }, { key: 's', modifiers: [] }]],
-      }],
+      id: 'chord', label: 'chord', description: 'chord',
+      bindings: [{ command: 'forkSession', scope: 'global', sequences: [[{ key: 'b', modifiers: ['Mod', 'Shift'] }, { key: 's', modifiers: [] }]] }],
     } as unknown as ShortcutProfile
-
-    const dispose = createGlobalKeyboardRouter(target, {
-      getProfile: () => profile,
-      getActions: () => ({ forkSession: vi.fn() }),
-    })
+    const dispose = createGlobalKeyboardRouter(target, { getProfile: () => profile, getActions: () => ({ forkSession: vi.fn() }) })
     listener({ key: 'B', altKey: false, ctrlKey: true, metaKey: false, shiftKey: true, isComposing: false, repeat: false, keyCode: 66, target: null, preventDefault: vi.fn(), stopPropagation: vi.fn() })
-
     expect(setTimeout).toHaveBeenCalledWith(expect.any(Function), GLOBAL_SEQUENCE_TIMEOUT_MS)
     dispose()
   })
+
 
   it('consumes every handled chord stroke and preserves resolver state until the second stroke', () => {
     let listener: (event: RouterEvent) => void = () => {}
@@ -399,3 +461,4 @@ describe('global keyboard router', () => {
     expect(stopPropagation).toHaveBeenCalledOnce()
     dispose()
   })
+})
