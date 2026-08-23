@@ -23,6 +23,7 @@ export type ShortcutComposerProps = {
   readonly activeProfile: ShortcutProfile
   readonly t: (key: string) => string
   readonly cancelTask: () => Promise<void>
+  readonly platform: ShortcutPlatform
 }
 
 /** Props consumed by the keyed settings plugin card. */

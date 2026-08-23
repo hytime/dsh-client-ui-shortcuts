@@ -42,13 +42,14 @@ export function apply(ctx: ClientContext): void {
   }), 'dsh-shortcuts: global keyboard router')
   ctx.effect(() => ctx.slots.inject('conversation.composer', () => ctx.slots.register({
     name: 'conversation.composer', select: selectShortcut, priority: -1, locale: NS,
-    inject: (sessionId: SessionId): { activeProfile: ShortcutProfile; t: (key: string) => string; cancelTask: () => Promise<void> } => {
+    inject: (sessionId: SessionId): { activeProfile: ShortcutProfile; platform: ReturnType<typeof detectShortcutPlatform>; t: (key: string) => string; cancelTask: () => Promise<void> } => {
       const session = ctx.sessions.scope(sessionId)
       if (session === undefined) throw new Error(`dsh-shortcuts: unknown session "${sessionId}"`)
       const conversation = session.get('conversation')
       if (conversation === undefined) throw new Error(`dsh-shortcuts: conversation unavailable for session "${sessionId}"`)
       return {
         activeProfile: registry.active(),
+        platform,
         t: (key: string) => t(key as never),
          cancelTask: async () => {
            const currentSession = ctx.sessions.scope(sessionId)

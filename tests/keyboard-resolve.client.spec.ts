@@ -13,15 +13,15 @@ const input = (key: string, options: Partial<KeyInput> = {}): KeyInput => ({
 
 describe('profile-aware keyboard resolver', () => {
   it('resolves standard and vim navigation and actions', () => {
-    expect(resolveKey(standardProfile, 'question', input('ArrowDown'))).toEqual({ kind: 'command', command: 'focusNext' })
-    expect(resolveKey(standardProfile, 'approval', input('Enter'))).toEqual({ kind: 'command', command: 'activate' })
-    expect(resolveKey(vimProfile, 'question', input('j'))).toEqual({ kind: 'command', command: 'focusNext' })
-    expect(resolveKey(vimProfile, 'question', input('k'))).toEqual({ kind: 'command', command: 'focusPrevious' })
+    expect(resolveKey(standardProfile, 'question', input('ArrowDown'), 'linux')).toEqual({ kind: 'command', command: 'focusNext' })
+    expect(resolveKey(standardProfile, 'approval', input('Enter'), 'linux')).toEqual({ kind: 'command', command: 'activate' })
+    expect(resolveKey(vimProfile, 'question', input('j'), 'linux')).toEqual({ kind: 'command', command: 'focusNext' })
+    expect(resolveKey(vimProfile, 'question', input('k'), 'linux')).toEqual({ kind: 'command', command: 'focusPrevious' })
   })
 
   it('resolves Escape cancellation on both surfaces', () => {
-    expect(resolveKey(standardProfile, 'question', input('Escape'))).toEqual({ kind: 'command', command: 'cancelTask' })
-    expect(resolveKey(standardProfile, 'approval', input('Escape'))).toEqual({ kind: 'command', command: 'cancelTask' })
+    expect(resolveKey(standardProfile, 'question', input('Escape'), 'linux')).toEqual({ kind: 'command', command: 'cancelTask' })
+    expect(resolveKey(standardProfile, 'approval', input('Escape'), 'linux')).toEqual({ kind: 'command', command: 'cancelTask' })
   })
 
   it.each([
@@ -30,7 +30,7 @@ describe('profile-aware keyboard resolver', () => {
     ['repeat', { repeat: true }],
     ['disabled', { disabled: true }],
   ])('passes Enter when %s', (_name, options) => {
-    expect(resolveKey(standardProfile, 'approval', input('Enter', options))).toEqual({ kind: 'pass' })
+    expect(resolveKey(standardProfile, 'approval', input('Enter', options), 'linux')).toEqual({ kind: 'pass' })
   })
 
   it('normalizes Esc without reading DOM', () => {
@@ -60,8 +60,8 @@ describe('profile-aware keyboard resolver', () => {
       bindings: [{ command: 'openCommandPalette', scope: 'global', key: input('p'), modifier: 'Mod' }],
     }
 
-    expect(resolveKey(profile, 'global', input('p', { meta: true }))).toEqual({ kind: 'command', command: 'openCommandPalette' })
-    expect(resolveKey(profile, 'global', input('p', { ctrl: true }))).toEqual({ kind: 'command', command: 'openCommandPalette' })
+    expect(resolveKey(profile, 'global', input('p', { meta: true }), 'mac')).toEqual({ kind: 'command', command: 'openCommandPalette' })
+    expect(resolveKey(profile, 'global', input('p', { ctrl: true }), 'linux')).toEqual({ kind: 'command', command: 'openCommandPalette' })
   })
 
   it('uses browser-safe platform alternatives for global defaults', () => {
@@ -74,14 +74,14 @@ describe('profile-aware keyboard resolver', () => {
         [{ key: 'n', modifiers: ['Ctrl'] }],
       ],
     })
-    expect(resolveKey(standardProfile, 'global', input('n', { meta: true, alt: true }), 'mac')).toEqual({ kind: 'command', command: 'startSession' })
-    expect(resolveKey(standardProfile, 'global', input('n', { ctrl: true }), 'windows')).toEqual({ kind: 'command', command: 'startSession' })
-    expect(resolveKey(standardProfile, 'global', input('n', { ctrl: true }), 'mac')).toEqual({ kind: 'pass' })
+    expect(resolveKey(standardProfile, 'global', input('n', { meta: true, alt: true }), 'mac'), 'linux').toEqual({ kind: 'command', command: 'startSession' })
+    expect(resolveKey(standardProfile, 'global', input('n', { ctrl: true }), 'windows'), 'linux').toEqual({ kind: 'command', command: 'startSession' })
+    expect(resolveKey(standardProfile, 'global', input('n', { ctrl: true }), 'mac'), 'linux').toEqual({ kind: 'pass' })
   })
 
   it('resolves shifted global defaults with browser key casing', () => {
-    expect(resolveKey(standardProfile, 'global', input('B', { ctrl: true, shift: true }), 'windows')).toEqual({ kind: 'command', command: 'forkSession' })
-    expect(resolveKey(standardProfile, 'global', input('L', { meta: true, alt: true, shift: true }), 'mac')).toEqual({ kind: 'command', command: 'toggleTheme' })
+    expect(resolveKey(standardProfile, 'global', input('B', { ctrl: true, shift: true }), 'windows'), 'linux').toEqual({ kind: 'command', command: 'forkSession' })
+    expect(resolveKey(standardProfile, 'global', input('L', { meta: true, alt: true, shift: true }), 'mac'), 'linux').toEqual({ kind: 'command', command: 'toggleTheme' })
   })
 
   it('resolves declarative Mod and Alt combinations', () => {
@@ -93,7 +93,7 @@ describe('profile-aware keyboard resolver', () => {
     }
 
     expect(resolveKey(profile, 'global', input('p', { ctrl: true, alt: true }))).toEqual({ kind: 'command', command: 'openSettings' })
-    expect(resolveKey(profile, 'global', input('p', { meta: true, alt: true }))).toEqual({ kind: 'command', command: 'openSettings' })
+    expect(resolveKey(profile, 'global', input('p', { meta: true, alt: true }), 'mac')).toEqual({ kind: 'command', command: 'openSettings' })
     expect(resolveKey(profile, 'global', input('p', { ctrl: true, meta: true, alt: true }))).toEqual({ kind: 'pass' })
   })
   it('resolves two-stroke sequences and alternative sequences', () => {
@@ -107,8 +107,8 @@ describe('profile-aware keyboard resolver', () => {
       }],
     }
 
-    expect(resolveKey(profile, 'global', input('g'))).toEqual({ kind: 'pass' })
-    expect(resolveKey(profile, 'global', input('s'))).toEqual({ kind: 'command', command: 'openSettings' })
+    expect(resolveKey(profile, 'global', input('g'), 'linux')).toEqual({ kind: 'pass' })
+    expect(resolveKey(profile, 'global', input('s'), 'linux')).toEqual({ kind: 'command', command: 'openSettings' })
   })
 
 
@@ -121,9 +121,9 @@ describe('profile-aware keyboard resolver', () => {
     const first = createKeyResolver()
     const second = createKeyResolver()
 
-    expect(first.resolve(profile, 'global', input('g'))).toEqual({ kind: 'pass' })
-    expect(second.resolve(profile, 'global', input('s'))).toEqual({ kind: 'pass' })
-    expect(first.resolve(profile, 'global', input('s'))).toEqual({ kind: 'command', command: 'openSettings' })
+    expect(first.resolve(profile, 'global', input('g'), 'linux')).toEqual({ kind: 'pass' })
+    expect(second.resolve(profile, 'global', input('s'), 'linux')).toEqual({ kind: 'pass' })
+    expect(first.resolve(profile, 'global', input('s'), 'linux')).toEqual({ kind: 'command', command: 'openSettings' })
   })
 
   it('matches Mod equivalence but keeps explicit Ctrl and Meta exact', () => {
@@ -139,7 +139,7 @@ describe('profile-aware keyboard resolver', () => {
     }
 
     expect(resolveKey(modProfile, 'global', input('p', { ctrl: true }))).toEqual({ kind: 'command', command: 'openSettings' })
-    expect(resolveKey(modProfile, 'global', input('p', { meta: true }))).toEqual({ kind: 'command', command: 'openSettings' })
+    expect(resolveKey(modProfile, 'global', input('p', { meta: true }), 'mac')).toEqual({ kind: 'command', command: 'openSettings' })
     expect(resolveKey(ctrlProfile, 'global', input('p', { meta: true }))).toEqual({ kind: 'pass' })
   })
 
