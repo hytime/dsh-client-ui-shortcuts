@@ -450,6 +450,7 @@ describe('shortcut settings card', () => {
     const settings = settingsFace()
     settings.customBindings = () => registry.custom()
     settings.setCustomBindings = vi.fn(async bindings => { registry.replaceCustom(bindings); settings.emit() })
+    registry.replaceCustom([{ command: 'startSession', scope: 'global', key: { key: 'n', modifiers: ['Mod', 'Alt', 'Shift'] } }])
     const availableGlobalActions = [
       'startSession', 'previousSession', 'nextSession', 'previousWorkspace', 'nextWorkspace', 'forkSession', 'toggleTheme',
     ] as const
@@ -474,12 +475,31 @@ describe('shortcut settings card', () => {
       expect.objectContaining({
         command: 'startSession',
         scope: 'global',
-        sequences: [
-          [{ key: 'n', modifiers: ['Meta', 'Alt'] }],
-          [{ key: 'x', modifiers: ['Ctrl'] }],
-        ],
+        key: { key: 'x', modifiers: ['Ctrl'] },
       }),
     ]))
+  })
+
+  it('saves a recorded Custom binding through the real settings controller', async () => {
+    const registry = createProfileRegistry([standardProfile, vimProfile])
+    const scope = controllerScope({ activeProfile: 'standard' })
+    const { createShortcutSettingsController } = await import('../src/client/settings/controller.js')
+    const controller = createShortcutSettingsController(scope, registry)
+
+    render(<ShortcutProfileCard settings={controller} profiles={registry.list()} availableGlobalActions={[]} platform="linux" t={t} />)
+    openCard()
+    fireEvent.change(screen.getByRole('combobox', { name: 'Profile' }), { target: { value: 'custom' } })
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Questions' })).toBeTruthy())
+
+    const record = screen.getByRole('heading', { name: 'Questions' }).parentElement?.querySelector('button')
+    expect(record).toBeTruthy()
+    fireEvent.click(record!)
+    fireEvent.keyDown(record!, { key: 'x', ctrlKey: true })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() => expect(scope.set).toHaveBeenCalledWith('customBindings', expect.any(Array)))
+    expect(screen.queryByText('Could not save custom shortcuts: Cannot read properties of undefined (reading \'disposed\')')).toBeNull()
+    controller.dispose()
   })
 
   it('keeps standard and Vim profiles read-only', () => {
@@ -490,6 +510,7 @@ describe('shortcut settings card', () => {
     expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Record shortcut' })).toBeNull()
   })
+
 
 
   it('updates translated labels without changing profile ids or bindings', () => {

@@ -1,5 +1,5 @@
 /** Shared profile ids used by the Host settings namespace and browser registry. */
-export const SHORTCUT_PROFILE_IDS = ['standard', 'vim'] as const
+export const SHORTCUT_PROFILE_IDS = ['standard', 'vim', 'custom'] as const
 
 /** Built-in shortcut profile id. */
 export type ShortcutProfileId = (typeof SHORTCUT_PROFILE_IDS)[number]

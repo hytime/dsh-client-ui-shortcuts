@@ -115,6 +115,51 @@ describe('capability-aware global actions', () => {
     expect(d.sessions.open).not.toHaveBeenCalled()
   })
 
+  it('does not navigate sessions outside the current workspace when current is not mapped', () => {
+    const d = services()
+    d.sessions.list.getSnapshot = () => ({
+      ids: ['s1', 's2'],
+      byId: {
+        s1: { id: 's1', blank: false },
+        s2: { id: 's2', blank: false },
+      },
+      current: 'orphan',
+    }) as never
+    d.workspaces.list.getSnapshot = () => ({
+      items: [{ workspaceId: 'w1', sessionIds: ['s1'] }, { workspaceId: 'w2', sessionIds: ['s2'] }],
+      archivedSessionIds: [],
+    }) as never
+    const actions = createGlobalActions(d)
+
+    actions.nextSession?.()
+
+    expect(d.sessions.open).not.toHaveBeenCalled()
+  })
+
+  it('does not navigate to archived or subagent workspace sessions', () => {
+    const d = services()
+    d.sessions.list.getSnapshot = () => ({
+      ids: ['s1', 'archived', 'subagent', 's2'],
+      byId: {
+        s1: { id: 's1', blank: false },
+        archived: { id: 'archived', blank: false },
+        subagent: { id: 'subagent', blank: false, origin: 'subagent' },
+        s2: { id: 's2', blank: false },
+      },
+      current: 's1',
+    }) as never
+    d.workspaces.list.getSnapshot = () => ({
+      items: [{ workspaceId: 'w1', sessionIds: ['s1', 'archived', 'subagent', 's2'] }],
+      archivedSessionIds: ['archived'],
+    }) as never
+    const actions = createGlobalActions(d)
+
+    actions.nextSession?.()
+
+    expect(d.sessions.open).toHaveBeenCalledWith('s2')
+    expect(d.sessions.open).not.toHaveBeenCalledWith('archived')
+    expect(d.sessions.open).not.toHaveBeenCalledWith('subagent')
+  })
   it('allows start session without a sessions list', () => {
     const d = services()
     const actions = createGlobalActions({ workspaces: d.workspaces })

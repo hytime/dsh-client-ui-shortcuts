@@ -11,27 +11,20 @@ function uniqueModifiers(...modifiers: ShortcutModifier[]): ShortcutModifier[] {
   return [...new Set(modifiers)]
 }
 
-function globalSequences(key: string, modifiers: readonly ShortcutModifier[] = []): readonly (readonly ShortcutStroke[])[] {
-  return [
-    [{ key, modifiers: uniqueModifiers('Meta', 'Alt', ...modifiers) }],
-    [{ key, modifiers: uniqueModifiers('Ctrl', ...modifiers) }],
-  ]
-}
-
 function globalBinding(command: GlobalBindingCommand, key: string, modifiers: readonly ShortcutModifier[] = []) {
-  return { command, scope: 'global' as const, sequences: globalSequences(key, modifiers) }
+  return { command, scope: 'global' as const, key: { key, modifiers: uniqueModifiers(...modifiers) } }
 }
 
 const globalBindings = [
-  globalBinding('openCommandPalette', 'p'),
-  globalBinding('openSettings', ','),
-  globalBinding('startSession', 'n'),
-  globalBinding('previousSession', 'ArrowUp', ['Alt']),
-  globalBinding('nextSession', 'ArrowDown', ['Alt']),
-  globalBinding('previousWorkspace', 'ArrowLeft', ['Shift']),
-  globalBinding('nextWorkspace', 'ArrowRight', ['Shift']),
-  globalBinding('forkSession', 'b', ['Shift']),
-  globalBinding('toggleTheme', 'l', ['Shift']),
+  globalBinding('openCommandPalette', 'p', ['Mod']),
+  globalBinding('openSettings', ',', ['Mod']),
+  globalBinding('startSession', 'n', ['Mod', 'Alt', 'Shift']),
+  globalBinding('previousSession', 'j', ['Mod', 'Alt', 'Shift']),
+  globalBinding('nextSession', 'k', ['Mod', 'Alt', 'Shift']),
+  globalBinding('previousWorkspace', 'h', ['Mod', 'Alt', 'Shift']),
+  globalBinding('nextWorkspace', 'l', ['Mod', 'Alt', 'Shift']),
+  globalBinding('forkSession', 'b', ['Mod', 'Alt', 'Shift']),
+  globalBinding('toggleTheme', 't', ['Mod', 'Alt', 'Shift']),
 ]
 
 export const standardProfile: ShortcutProfile = {

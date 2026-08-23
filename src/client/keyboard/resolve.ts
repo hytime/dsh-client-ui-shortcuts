@@ -5,7 +5,7 @@ import type { ShortcutPlatform } from '../contract/keyboard-visual.js'
 type ResolverState = { profile: ShortcutProfile; scope: ShortcutScope; strokes: KeyInput[] } | undefined
 
 export interface KeyResolver {
-  resolve(profile: ShortcutProfile, scope: ShortcutScope, input: KeyInput, platform?: ShortcutPlatform): ShortcutDecision
+  resolve(profile: ShortcutProfile, scope: ShortcutScope, input: KeyInput, platform: ShortcutPlatform): ShortcutDecision
   reset(): void
 }
 
@@ -27,7 +27,7 @@ export function normalizeKeyStroke(stroke: KeyStroke): KeyStroke {
   return { ...stroke, key: normalizeKey(stroke.key) }
 }
 
-export function resolveKey(profile: ShortcutProfile, scope: ShortcutScope, input: KeyInput, platform?: ShortcutPlatform): ShortcutDecision {
+export function resolveKey(profile: ShortcutProfile, scope: ShortcutScope, input: KeyInput, platform: ShortcutPlatform): ShortcutDecision {
   return resolveWithState(profile, scope, input, undefined, platform).decision
 }
 
@@ -36,7 +36,7 @@ function resolveWithState(
   scope: ShortcutScope,
   input: KeyInput,
   pending: ResolverState,
-  platform?: ShortcutPlatform,
+  platform: ShortcutPlatform,
 ): { decision: ShortcutDecision; state: ResolverState } {
   if (input.disabled || input.composing || input.keyCode === 229 || input.repeat) {
     return { decision: { kind: 'pass' }, state: pending }
@@ -93,21 +93,21 @@ function normalizeKey(key: string): string {
 function sameSequence(
   left: readonly KeyStroke[] | readonly KeyInput[],
   right: readonly KeyStroke[] | readonly KeyInput[],
-  platform?: ShortcutPlatform,
+  platform: ShortcutPlatform,
 ): boolean {
   return left.length === right.length && left.every((stroke, index) => sameStroke(stroke, right[index]!, platform))
 }
 
-function sameStroke(left: KeyStroke | KeyInput, right: KeyStroke | KeyInput, platform?: ShortcutPlatform): boolean {
+function sameStroke(left: KeyStroke | KeyInput, right: KeyStroke | KeyInput, platform: ShortcutPlatform): boolean {
   const leftModifier = 'modifier' in left ? left.modifier : undefined
   const effectiveLeftModifier = leftModifier ?? (left.ctrl ? 'Ctrl' : left.meta ? 'Meta' : undefined)
   const rightCtrl = right.ctrl
   const rightMeta = right.meta
   if (rightCtrl && rightMeta) return false
   if (effectiveLeftModifier === 'Ctrl' && platform === 'mac') return false
-  if (effectiveLeftModifier === 'Meta' && platform !== undefined && platform !== 'mac') return false
+  if (effectiveLeftModifier === 'Meta' && platform !== 'mac') return false
   const modifierMatches = effectiveLeftModifier === 'Mod'
-    ? platform === 'mac' ? rightMeta && !rightCtrl : platform === undefined ? rightCtrl !== rightMeta : rightCtrl && !rightMeta
+    ? platform === 'mac' ? rightMeta && !rightCtrl : rightCtrl && !rightMeta
     : effectiveLeftModifier === 'Ctrl'
       ? rightCtrl && !rightMeta
       : effectiveLeftModifier === 'Meta'

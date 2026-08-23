@@ -73,7 +73,7 @@ export function ShortcutProfileCard({ settings, profiles, availableGlobalActions
           </label>
         </fieldset>
         {error !== undefined || settings.error() !== undefined ? <p role="alert" className={styles.error}>{t('settings.error').replace('{message}', error ?? settings.error() ?? '')}</p> : null}
-        {currentProfile === undefined ? <p role="status" className={styles.empty}>{t('settings.conflict')}</p> : currentProfile.id === 'custom' ? <ShortcutBindingEditor bindings={settings.customBindings()} availableGlobalActions={availableGlobalActions as readonly GlobalShortcutCommand[]} platform={platform} t={t} onSave={settings.setCustomBindings} /> : <>
+        {currentProfile === undefined ? <p role="status" className={styles.empty}>{t('settings.conflict')}</p> : currentProfile.id === 'custom' ? <ShortcutBindingEditor bindings={settings.customBindings()} availableGlobalActions={availableGlobalActions as readonly GlobalShortcutCommand[]} platform={platform} t={t} onSave={bindings => settings.setCustomBindings(bindings)} /> : <>
           <p className={styles.summary}>{currentProfile.description ? t(currentProfile.description) : ''}</p>
           <ShortcutLegend bindings={currentProfile.bindings} availableGlobalActions={availableGlobalActions as readonly GlobalShortcutCommand[]} platform={platform} t={t} />
         </>}

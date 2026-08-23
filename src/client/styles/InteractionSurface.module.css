@@ -109,7 +109,9 @@
   opacity: 0.6;
 }
 
+.optionContent { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 2px; }
 .optionLabel { min-width: 0; overflow-wrap: anywhere; }
+.optionDescription { min-width: 0; color: var(--dsw-alias-label-tertiary); font-size: 13px; line-height: 1.4; overflow-wrap: anywhere; white-space: pre-wrap; }
 .optionMark { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 18px; height: 18px; border: 1px solid transparent; border-radius: 4px; color: var(--dsw-alias-label-white, #fff); }
 .optionMarkSelected {
   border-color: var(--dsw-alias-label-primary);

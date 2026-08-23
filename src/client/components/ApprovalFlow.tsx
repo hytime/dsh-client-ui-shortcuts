@@ -13,9 +13,9 @@ interface ApprovalFlowProps {
   readonly activeProfile: ShortcutProfile
   readonly t: (key: string) => string
   readonly cancelTask: () => Promise<void>
+  readonly platform: 'mac' | 'windows' | 'linux'
 }
-
-export function ApprovalFlow({ matched, activeProfile, t, cancelTask }: ApprovalFlowProps): React.ReactElement {
+export function ApprovalFlow({ matched, activeProfile, t, cancelTask, platform }: ApprovalFlowProps): React.ReactElement {
   const [choice, setChoice] = useState<'allowed-once' | 'rejected'>('allowed-once')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string>()
@@ -46,7 +46,7 @@ export function ApprovalFlow({ matched, activeProfile, t, cancelTask }: Approval
   }
   const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
     const input: KeyInput = { key: event.key, alt: event.altKey, ctrl: event.ctrlKey, meta: event.metaKey, shift: event.shiftKey, composing: composing(event), keyCode: event.keyCode, repeat: event.repeat, disabled: busy }
-    const decision = resolveKey(activeProfile, 'approval', input)
+    const decision = resolveKey(activeProfile, 'approval', input, platform)
     if (decision.kind === 'pass') return
     event.preventDefault()
     if (decision.command === 'cancelTask') { void cancelTask().catch(cause => { setError(cause instanceof Error ? cause.message : String(cause)); setBusy(false) }); return }

@@ -13,7 +13,7 @@ Use it when DSH asks you a question, requests approval, or needs a predictable k
 Install the plugin through the DSH CLI, then restart or reload the Web composition:
 
 ```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.11
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.12
 dsh --profile web
 ```
 
@@ -59,13 +59,13 @@ The global router is available in the active profile. Its built-in global bindin
 
 | Action | Default binding | Capability requirement |
 | --- | --- | --- |
-| Create a session | `Mod+N` | `workspaces.startSession()` |
-| Previous session | `Mod+Alt+ArrowUp` | current Workspace session list, `sessions.open()`, and non-blank session metadata |
-| Next session | `Mod+Alt+ArrowDown` | current Workspace session list, `sessions.open()`, and non-blank session metadata |
-| Previous Workspace | `Mod+Shift+ArrowLeft` | Workspace list, an existing non-blank target session, and `sessions.open()` |
-| Next Workspace | `Mod+Shift+ArrowRight` | Workspace list, an existing non-blank target session, and `sessions.open()` |
-| Fork current session | `Mod+Shift+B` | `sessions.fork()` and `sessions.open()` |
-| Toggle light/dark theme | `Mod+Shift+L` | `theme.getTheme()` and `theme.setTheme()` |
+| Create a session | `Mod+Alt+Shift+N` | `workspaces.startSession()` |
+| Previous session | `Mod+Alt+Shift+J` | current Workspace session list, `sessions.open()`, and non-blank session metadata |
+| Next session | `Mod+Alt+Shift+K` | current Workspace session list, `sessions.open()`, and non-blank session metadata |
+| Previous Workspace | `Mod+Alt+Shift+H` | Workspace list, an existing non-blank target session, and `sessions.open()` |
+| Next Workspace | `Mod+Alt+Shift+L` | Workspace list, an existing non-blank target session, and `sessions.open()` |
+| Fork current session | `Mod+Alt+Shift+B` | `sessions.fork()` and `sessions.open()` |
+| Toggle light/dark theme | `Mod+Alt+Shift+T` | `theme.getTheme()` and `theme.setTheme()` |
 
 The `Mod+,` settings binding is retained in the profile data but remains hidden and inactive because no public DSH settings opener is available. Capability filtering removes unavailable global actions from both routing and the shortcut list; it does not leave dead rows or simulate private DSH UI behavior.
 
@@ -84,19 +84,21 @@ These are useful future candidates because the current DSH Web composition alrea
 
 ## Key design
 
-The Custom profile follows conventions familiar from Claude Code and Codex without claiming to copy their complete default maps:
+The global router uses `Mod` as the logical primary modifier: macOS maps it to `Meta`/Command, while Windows and Linux map it to `Control`. The platform determines both the displayed keycap and the resolver's physical modifier match. The default global bindings are `Mod+Alt+Shift+N/J/K/H/L/B/T`, mapped respectively to create a session, previous session, next session, previous Workspace, next Workspace, fork, and theme. This keeps profile data platform-neutral while avoiding common browser-reserved defaults such as `Cmd+N`.
 
-- `Mod` maps to `Meta` on macOS and `Ctrl` on other platforms, and the router enforces that platform mapping at runtime.
-- Session navigation stays within the current Workspace when possible, follows the Workspace's stored `sessionIds` order, and skips archived, subagent, and blank sessions.
-- Workspace navigation opens an existing non-blank session in the target Workspace; it does not create a new session as a navigation side effect.
-- Browser-reserved shortcuts such as macOS `Cmd+N` may be handled by the browser before a web page receives `keydown`; choose a non-reserved binding when the browser does not dispatch the event.
-- The UI displays `Cmd` or `Ctrl` according to the platform instead of storing two conflicting bindings.
-- A binding accepts one key or a two-stroke chord such as `Ctrl+X Ctrl+S`.
+On macOS, Option and Shift can make `KeyboardEvent.key` produce layout characters (for example, `Option+Shift+N` can produce `˜`). The shortcut resolver uses `KeyboardEvent.code` such as `KeyN` and normalizes it to the logical key `n`; diagnostics may still display the raw `key` value.
+
+- Session navigation stays within the current Workspace when possible, follows the Workspace's stored `sessionIds` order, and skips archived, subagent, and blank sessions. It opens only an existing non-blank session and does not call `connectWorkspace` to create a navigation target.
+- Workspace navigation opens an existing non-blank session in the target Workspace; it does not create a blank session or a new session as a navigation side effect, and does not call `connectWorkspace` to create the target.
+- The global router handles events during the capture phase. A matching global action runs and prevents the event even when focus is in an `input`, `textarea`, `select`, or `contenteditable` element. Unmatched text input, IME composition, repeated events, and pending `Enter`/`Escape` takeover continue to yield.
+- The capture listener can only prevent DOM events that the browser has already dispatched to the page. Browser- or OS-reserved shortcuts may never reach the page, and the Web platform provides no general API for querying arbitrary OS/browser shortcut ownership.
+- The browser denylist is a prompt for known Chrome, Safari, Firefox, and Edge combinations; it is not an authoritative query of arbitrary OS/browser shortcut usage.
+- The UI displays `Cmd` or `Ctrl` according to the platform. A binding accepts one key or a two-stroke chord such as `Ctrl+X Ctrl+S`.
 - One command may have alternative bindings for platform compatibility or a user-selected backup key.
 - Key aliases are normalized before comparison, including `Esc`/`Escape` and `Return`/`Enter`.
 - A chord cannot have three or more strokes, and one binding cannot be a prefix of another binding in the same scope.
 
-The global router yields to text inputs, textareas, contenteditable controls, IME composition, repeated key events, pending question/approval takeover, and host-owned popup focus. Every listener is owned by the current Client fiber and is removed when the plugin stops or updates.
+The global router is registered in the capture phase. It yields to unmatched text input, IME composition, repeated key events, pending question/approval takeover, and host-owned popup focus. Every listener is owned by the current Client fiber and is removed when the plugin stops or updates.
 
 ## DSH compatibility
 

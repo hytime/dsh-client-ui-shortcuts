@@ -161,14 +161,7 @@ describe('shortcut profile registry', () => {
     expect(standard.bindings).toEqual(expect.arrayContaining([
       { command: 'activate', scope: 'question', key: stroke('Enter') },
       { command: 'activate', scope: 'approval', key: stroke('Enter') },
-      {
-        command: 'openCommandPalette',
-        scope: 'global',
-        sequences: [
-          [{ key: 'p', modifiers: ['Meta', 'Alt'] }],
-          [{ key: 'p', modifiers: ['Ctrl'] }],
-        ],
-      },
+      { command: 'openCommandPalette', scope: 'global', key: { key: 'p', modifiers: ['Mod'] } },
     ]))
   })
 
@@ -176,13 +169,13 @@ describe('shortcut profile registry', () => {
     const registry = createBuiltinProfileRegistry()
     const standard = registry.get('standard')!
     expect(standard.bindings).toEqual(expect.arrayContaining([
-      { command: 'startSession', scope: 'global', sequences: [[{ key: 'n', modifiers: ['Meta', 'Alt'] }], [{ key: 'n', modifiers: ['Ctrl'] }]] },
-      { command: 'previousSession', scope: 'global', sequences: [[{ key: 'ArrowUp', modifiers: ['Meta', 'Alt'] }], [{ key: 'ArrowUp', modifiers: ['Ctrl', 'Alt'] }]] },
-      { command: 'nextSession', scope: 'global', sequences: [[{ key: 'ArrowDown', modifiers: ['Meta', 'Alt'] }], [{ key: 'ArrowDown', modifiers: ['Ctrl', 'Alt'] }]] },
-      { command: 'previousWorkspace', scope: 'global', sequences: [[{ key: 'ArrowLeft', modifiers: ['Meta', 'Alt', 'Shift'] }], [{ key: 'ArrowLeft', modifiers: ['Ctrl', 'Shift'] }]] },
-      { command: 'nextWorkspace', scope: 'global', sequences: [[{ key: 'ArrowRight', modifiers: ['Meta', 'Alt', 'Shift'] }], [{ key: 'ArrowRight', modifiers: ['Ctrl', 'Shift'] }]] },
-      { command: 'forkSession', scope: 'global', sequences: [[{ key: 'b', modifiers: ['Meta', 'Alt', 'Shift'] }], [{ key: 'b', modifiers: ['Ctrl', 'Shift'] }]] },
-      { command: 'toggleTheme', scope: 'global', sequences: [[{ key: 'l', modifiers: ['Meta', 'Alt', 'Shift'] }], [{ key: 'l', modifiers: ['Ctrl', 'Shift'] }]] },
+      { command: 'startSession', scope: 'global', key: { key: 'n', modifiers: ['Mod', 'Alt', 'Shift'] } },
+      { command: 'previousSession', scope: 'global', key: { key: 'j', modifiers: ['Mod', 'Alt', 'Shift'] } },
+      { command: 'nextSession', scope: 'global', key: { key: 'k', modifiers: ['Mod', 'Alt', 'Shift'] } },
+      { command: 'previousWorkspace', scope: 'global', key: { key: 'h', modifiers: ['Mod', 'Alt', 'Shift'] } },
+      { command: 'nextWorkspace', scope: 'global', key: { key: 'l', modifiers: ['Mod', 'Alt', 'Shift'] } },
+      { command: 'forkSession', scope: 'global', key: { key: 'b', modifiers: ['Mod', 'Alt', 'Shift'] } },
+      { command: 'toggleTheme', scope: 'global', key: { key: 't', modifiers: ['Mod', 'Alt', 'Shift'] } },
     ]))
   })
 

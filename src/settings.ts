@@ -20,23 +20,20 @@ function defaultGlobalBinding(command: string, key: string, modifiers: readonly 
   return {
     command,
     scope: 'global',
-    sequences: [
-      [{ key, modifiers: [...new Set(['Meta', 'Alt', ...modifiers])] }],
-      [{ key, modifiers: [...new Set(['Ctrl', ...modifiers])] }],
-    ],
+    key: { key, modifiers: [...new Set(modifiers)] },
   }
 }
 
 const defaultCustomBindings: PersistedShortcutBinding[] = [
-  defaultGlobalBinding('openCommandPalette', 'p'),
-  defaultGlobalBinding('openSettings', ','),
-  defaultGlobalBinding('startSession', 'n'),
-  defaultGlobalBinding('previousSession', 'ArrowUp', ['Alt']),
-  defaultGlobalBinding('nextSession', 'ArrowDown', ['Alt']),
-  defaultGlobalBinding('previousWorkspace', 'ArrowLeft', ['Shift']),
-  defaultGlobalBinding('nextWorkspace', 'ArrowRight', ['Shift']),
-  defaultGlobalBinding('forkSession', 'b', ['Shift']),
-  defaultGlobalBinding('toggleTheme', 'l', ['Shift']),
+  defaultGlobalBinding('openCommandPalette', 'p', ['Mod']),
+  defaultGlobalBinding('openSettings', ',', ['Mod']),
+  defaultGlobalBinding('startSession', 'n', ['Mod', 'Alt', 'Shift']),
+  defaultGlobalBinding('previousSession', 'j', ['Mod', 'Alt', 'Shift']),
+  defaultGlobalBinding('nextSession', 'k', ['Mod', 'Alt', 'Shift']),
+  defaultGlobalBinding('previousWorkspace', 'h', ['Mod', 'Alt', 'Shift']),
+  defaultGlobalBinding('nextWorkspace', 'l', ['Mod', 'Alt', 'Shift']),
+  defaultGlobalBinding('forkSession', 'b', ['Mod', 'Alt', 'Shift']),
+  defaultGlobalBinding('toggleTheme', 't', ['Mod', 'Alt', 'Shift']),
   { command: 'focusPrevious', scope: 'question', key: { key: 'ArrowUp', modifiers: [] } },
   { command: 'focusNext', scope: 'question', key: { key: 'ArrowDown', modifiers: [] } },
   { command: 'activate', scope: 'question', key: { key: 'Enter', modifiers: [] } },

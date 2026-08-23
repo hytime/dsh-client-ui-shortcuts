@@ -13,8 +13,8 @@ export interface QuestionFlowProps {
   readonly activeProfile: ShortcutProfile
   readonly t: (key: string) => string
   readonly cancelTask: () => Promise<void>
+  readonly platform: 'mac' | 'windows' | 'linux'
 }
-
 type Question = QuestionWait['payload']['questions'][number]
 type Answer = { id: string; selected: string[]; custom?: string }
 type Draft = { selected: string[]; custom: string; skipped: boolean }
@@ -28,7 +28,7 @@ type FocusItem =
 const composing = (event: React.KeyboardEvent<HTMLElement>): boolean => event.nativeEvent.isComposing || (event.nativeEvent as KeyboardEvent).isComposing
 function initialDraft(): Draft { return { selected: [], custom: '', skipped: false } }
 
-export function QuestionFlow({ matched, activeProfile, t, cancelTask }: QuestionFlowProps): React.ReactElement {
+export function QuestionFlow({ matched, activeProfile, t, cancelTask, platform }: QuestionFlowProps): React.ReactElement {
   const questions = matched.payload.questions
   const [drafts, setDrafts] = useState<Draft[]>(() => questions.map(() => initialDraft()))
   const [index, setIndex] = useState(0)
@@ -102,7 +102,7 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask }: Question
   }
   const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
     const input: KeyInput = { key: event.key, alt: event.altKey, ctrl: event.ctrlKey, meta: event.metaKey, shift: event.shiftKey, composing: composing(event), keyCode: event.keyCode, repeat: event.repeat, disabled: submitting }
-    const decision = resolveKey(activeProfile, 'question', input)
+    const decision = resolveKey(activeProfile, 'question', input, platform)
     if (event.target !== event.currentTarget && event.key === 'Enter') {
       const target = event.target as HTMLElement
       if (target.getAttribute('role') === 'radio' && !multi && draft.selected.length > 0) {
@@ -145,7 +145,7 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask }: Question
             aria-checked={draft.selected.includes(option.label)}
             disabled={submitting}
             onClick={() => { setFocusIndex(optionIndex); choose(option.label) }}
-          >{multi ? <span className={clsx(surfaceStyles.optionMark, draft.selected.includes(option.label) && surfaceStyles.optionMarkSelected)}>{draft.selected.includes(option.label) ? <ShortcutIcon name="check" size={14} /> : null}</span> : null}<span className={surfaceStyles.optionLabel}>{option.label}</span></button>)}
+          >{multi ? <span className={clsx(surfaceStyles.optionMark, draft.selected.includes(option.label) && surfaceStyles.optionMarkSelected)}>{draft.selected.includes(option.label) ? <ShortcutIcon name="check" size={14} /> : null}</span> : null}<span className={surfaceStyles.optionContent}><span className={surfaceStyles.optionLabel}>{option.label}</span>{option.description ? <span className={surfaceStyles.optionDescription}>{option.description}</span> : null}</span></button>)}
           {options.length > 0 ? <input
             ref={node => { focusItems.current[options.length] = node }}
             className={surfaceStyles.customInput}

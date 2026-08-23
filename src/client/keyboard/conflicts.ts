@@ -15,7 +15,8 @@ export function findNewShortcutConflicts(baseline: readonly ShortcutBinding[], d
   const entries = draftEntries
     .filter(entry => bindingPlatformCompatible(entry.binding, platform))
     .flatMap(entry => platformSequences(entry.binding, platform).map(sequence => ({ ...entry, sequence })))
-  const baselineEntries = baseline.flatMap((binding, index) => platformSequences(binding, platform).map(sequence => ({ binding, index, sequence })))
+  const baselineEntries = baseline
+    .flatMap((binding, index) => bindingPlatformCompatible(binding, platform) ? platformSequences(binding, platform).map(sequence => ({ binding, index, sequence })) : [])
   const conflicts: ShortcutConflict[] = []
   const reported = new Set<string>()
   for (let index = 0; index < entries.length; index += 1) for (let otherIndex = index + 1; otherIndex < entries.length; otherIndex += 1) {

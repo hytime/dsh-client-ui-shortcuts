@@ -79,7 +79,7 @@ describe('package manifest', () => {
     expect(row).toEqual({ id: 'dsh-ui-shortcuts', name: PACKAGE_NAME })
     expect(SHORTCUTS_SETTINGS_NAMESPACE).toBe('dsh-ui-shortcuts')
     expect(NS).toBe('dsh-shortcuts')
-    expect(SHORTCUT_PROFILE_IDS).toEqual(['standard', 'vim'])
+    expect(SHORTCUT_PROFILE_IDS).toEqual(['standard', 'vim', 'custom'])
   })
 
 })

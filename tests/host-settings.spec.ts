@@ -30,8 +30,8 @@ describe('shortcut Host settings', () => {
     const second = defaultShortcutBindings()
     expect(first).not.toBe(second)
     expect(first[0]).not.toBe(second[0])
-    expect(first[0]?.sequences).not.toBe(second[0]?.sequences)
-    expect(first[0]?.sequences?.[0]).not.toBe(second[0]?.sequences?.[0])
+    expect(first[0]?.key).not.toBe(second[0]?.key)
+    expect(first[0]?.key?.modifiers).not.toBe(second[0]?.key?.modifiers)
   })
 
   it.each([
@@ -109,6 +109,24 @@ describe('shortcut Host settings', () => {
       expect.objectContaining({ command: 'startSession', scope: 'global' }),
     ]))
     expect(settings.customBindings.length).toBeGreaterThan(0)
+
+    await fiber.dispose()
+  })
+
+  it('accepts custom profile with legal bindings and persists both values', async () => {
+    const ctx = new Context()
+    await ctx.plugin(MemorySettings).await()
+    const fiber = ctx.plugin({ apply })
+    await fiber.await()
+
+    await expect(ctx.settings.update(SHORTCUTS_SETTINGS_NAMESPACE, {
+      activeProfile: 'custom',
+      customBindings: [validCustomBinding],
+    })).resolves.toBeUndefined()
+    expect(ctx.settings.get(SHORTCUTS_SETTINGS_NAMESPACE)).toMatchObject({
+      activeProfile: 'custom',
+      customBindings: [validCustomBinding],
+    })
 
     await fiber.dispose()
   })

@@ -30,7 +30,7 @@ export function createGlobalKeyboardRouter(target: RouterWindow, options: Global
     timer = undefined
   }
   const onKeyDown = (event: RouterEvent): void => {
-    if (isGuardedTarget(event.target) || event.isComposing || event.keyCode === 229 || event.repeat) return
+    if (event.isComposing || event.keyCode === 229 || event.repeat) return
     if (options.isInteractionPending?.() && (event.key === 'Enter' || event.key === 'Escape')) {
       reset()
       return
@@ -49,7 +49,9 @@ export function createGlobalKeyboardRouter(target: RouterWindow, options: Global
       consume(event)
       if (timer !== undefined) target.clearTimeout(timer)
       timer = target.setTimeout(reset, options.timeoutMs ?? GLOBAL_SEQUENCE_TIMEOUT_MS)
+      return
     }
+    if (isGuardedTarget(event.target)) return
   }
   target.addEventListener('keydown', onKeyDown as EventListener, CAPTURE_OPTIONS)
   return () => { reset(); target.removeEventListener('keydown', onKeyDown as EventListener, CAPTURE_OPTIONS) }
