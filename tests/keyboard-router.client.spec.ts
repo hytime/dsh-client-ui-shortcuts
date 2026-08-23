@@ -18,6 +18,23 @@ type RouterEvent = {
 }
 
 describe('global keyboard router', () => {
+  it('dispatches a matched global binding from an editable target', () => {
+    const action = vi.fn()
+    const input = document.createElement('input')
+    document.body.append(input)
+    const profile = {
+      id: 'editable-command', label: 'editable-command', description: 'editable-command',
+      bindings: [{ command: 'startSession', scope: 'global', key: { key: 'n', modifiers: ['Ctrl'] } }],
+    } as unknown as ShortcutProfile
+    const dispose = createGlobalKeyboardRouter(window, { getProfile: () => profile, getActions: () => ({ startSession: action }), platform: 'linux' })
+    const event = new KeyboardEvent('keydown', { key: 'n', ctrlKey: true, bubbles: true, cancelable: true })
+    input.dispatchEvent(event)
+    expect(action).toHaveBeenCalledOnce()
+    expect(event.defaultPrevented).toBe(true)
+    dispose()
+    input.remove()
+  })
+
   it('dispatches a default Mod global binding and consumes the event', () => {
     let listener: (event: RouterEvent) => void = () => {}
     const target = {
@@ -177,7 +194,7 @@ describe('global keyboard router', () => {
   it('does not consume editable targets across all supported element types', () => {
     const profile = {
       id: 'editable', label: 'editable', description: 'editable',
-      bindings: [{ command: 'startSession', scope: 'global', key: { key: 'n', modifiers: ['Ctrl'] } }],
+      bindings: [{ command: 'startSession', scope: 'global', key: { key: 'x', modifiers: ['Ctrl'] } }],
     } as unknown as ShortcutProfile
     const dispose = createGlobalKeyboardRouter(window, { getProfile: () => profile, getActions: () => ({ startSession: vi.fn() }), platform: 'linux' })
     const elements = [document.createElement('input'), document.createElement('textarea'), document.createElement('select')]
@@ -207,7 +224,7 @@ describe('global keyboard router', () => {
   it('does not consume guarded, IME, repeat, or pending interaction events', () => {
     const profile = {
       id: 'real-guards', label: 'real-guards', description: 'real-guards',
-      bindings: [{ command: 'startSession', scope: 'global', key: { key: 'n', modifiers: ['Ctrl'] } }],
+      bindings: [{ command: 'startSession', scope: 'global', key: { key: 'x', modifiers: ['Ctrl'] } }],
     } as unknown as ShortcutProfile
     const dispose = createGlobalKeyboardRouter(window, { getProfile: () => profile, getActions: () => ({ startSession: vi.fn() }), isInteractionPending: () => true })
     const input = document.createElement('input')
@@ -301,7 +318,7 @@ describe('global keyboard router', () => {
     }
     const profile = {
       id: 'guards', label: 'guards', description: 'guards',
-      bindings: [{ command: 'startSession', scope: 'global', key: { key: 'n', modifiers: ['Ctrl'] } }],
+      bindings: [{ command: 'startSession', scope: 'global', key: { key: 'x', modifiers: ['Ctrl'] } }],
     } as unknown as ShortcutProfile
     const dispose = createGlobalKeyboardRouter(target, {
       getProfile: () => profile,
