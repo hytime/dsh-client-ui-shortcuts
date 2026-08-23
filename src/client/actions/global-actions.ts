@@ -32,11 +32,6 @@ function navigableSessionIds(
   })
 }
 
-function ungroupedSessionIds(sessions: SessionListSnapshot, workspaces: readonly WorkspaceListItem[], archivedSessionIds: readonly SessionId[]): SessionId[] {
-  const accounted = new Set(workspaces.flatMap(workspace => workspace.sessionIds))
-  return navigableSessionIds(sessions.ids.filter(id => !accounted.has(id)), sessions, archivedSessionIds)
-}
-
 export function createGlobalActions({ sessions, workspaces, theme }: GlobalActionCapabilities): GlobalActions {
   const actions: GlobalActions = {}
   if (workspaces?.startSession !== undefined) actions.startSession = () => { workspaces.startSession() }
@@ -46,7 +41,7 @@ export function createGlobalActions({ sessions, workspaces, theme }: GlobalActio
       const workspaceSnapshot = workspaces.list.getSnapshot()
       const currentWorkspace = workspaceSnapshot.items.find(item => item.sessionIds.includes(sessionSnapshot.current as SessionId))
       const ids = currentWorkspace === undefined
-        ? ungroupedSessionIds(sessionSnapshot, workspaceSnapshot.items, workspaceSnapshot.archivedSessionIds)
+        ? []
         : navigableSessionIds(currentWorkspace.sessionIds, sessionSnapshot, workspaceSnapshot.archivedSessionIds)
       const target = adjacent(ids, sessionSnapshot.current, delta)
       if (target !== undefined) sessions.open(target)
