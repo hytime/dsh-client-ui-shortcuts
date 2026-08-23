@@ -171,7 +171,6 @@ function validateAndNormalizeProfile(
 
 function normalizeBinding(binding: ShortcutBinding): NormalizedSequence[] {
   const legacyModifier = (binding as ShortcutBinding & { readonly modifier?: string }).modifier
-  const normalizedLegacyModifier = legacyModifier === 'Mod' ? 'Meta' : legacyModifier
   const shapeCount = Number(binding.sequence !== undefined)
     + Number(binding.sequences !== undefined)
   if (shapeCount > 0 && binding.key !== undefined) {
@@ -186,7 +185,7 @@ function normalizeBinding(binding: ShortcutBinding): NormalizedSequence[] {
   if (!SCOPES.includes(binding.scope)) {
     throw new Error(`invalid shortcut scope: ${String(binding.scope)}`)
   }
-  if (normalizedLegacyModifier !== undefined && !MODIFIERS.includes(normalizedLegacyModifier as ShortcutModifier)) {
+  if (legacyModifier !== undefined && !MODIFIERS.includes(legacyModifier as ShortcutModifier)) {
     throw new Error(`invalid shortcut modifier: ${String(legacyModifier)}`)
   }
   const rawSequences = binding.sequences !== undefined
@@ -201,7 +200,7 @@ function normalizeBinding(binding: ShortcutBinding): NormalizedSequence[] {
     throw new Error(`invalid shortcut key in profile: ${binding.scope}`)
   }
   return rawSequences.map(sequence => ({
-    strokes: sequence.map(stroke => normalizeStroke(stroke, normalizedLegacyModifier as ShortcutModifier | undefined)),
+    strokes: sequence.map(stroke => normalizeStroke(stroke, legacyModifier as ShortcutModifier | undefined)),
   }))
 }
 
@@ -273,10 +272,7 @@ function normalizeStroke(stroke: KeyStroke | ShortcutStroke, modifier?: Shortcut
 
 function normalizeModifiers(modifiers: readonly ShortcutModifier[]): ShortcutModifier[] {
   if (!Array.isArray(modifiers) || modifiers.length === 0) throw new Error('invalid shortcut modifier')
-  const normalized = modifiers.map(modifier => {
-    const legacy = modifier as string
-    return (legacy === 'Mod' ? 'Meta' : legacy) as ShortcutModifier
-  })
+  const normalized = modifiers.map(modifier => modifier as ShortcutModifier)
   if (normalized.some(modifier => !MODIFIERS.includes(modifier))) throw new Error('invalid shortcut modifier')
   if (new Set(normalized).size !== normalized.length) throw new Error('invalid shortcut modifier')
   return normalized

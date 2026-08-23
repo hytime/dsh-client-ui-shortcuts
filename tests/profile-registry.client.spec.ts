@@ -192,14 +192,12 @@ describe('shortcut profile registry', () => {
     expect(registry.get('custom')).toBeUndefined()
   })
 
-  it('migrates legacy Mod inputs to Meta without retaining Mod', () => {
-    const registry = createProfileRegistry([{
+  it('rejects legacy Mod runtime inputs', () => {
+    expect(() => createProfileRegistry([{
       ...alphaProfile,
       id: 'legacy',
-      bindings: [{ command: 'openSettings', scope: 'global', key: { key: 's', modifiers: ['Mod', 'Alt'] } }],
-    }])
-    expect(registry.get('legacy')?.bindings[0]?.key).toEqual({ key: 's', modifiers: ['Meta', 'Alt'] })
-    expect(registry.get('legacy')?.bindings[0]?.key).not.toEqual(expect.objectContaining({ modifiers: expect.arrayContaining(['Mod']) }))
+      bindings: [{ command: 'openSettings', scope: 'global', key: { key: 's', modifiers: ['Mod' as never] } }],
+    }])).toThrow('modifier')
   })
   it('normalizes declarative symbolic strokes and rejects contradictory shapes', () => {
     const declarative: ShortcutStroke = { key: 'p', modifiers: ['Meta', 'Alt'] }
@@ -267,20 +265,12 @@ describe('shortcut profile registry', () => {
     expect(Object.isFrozen(stored.sequences)).toBe(true)
   })
 
-  it('preserves legacy canonical slots for declarative Mod bindings without internal labels', () => {
-    expect(canonicalBindingKey({
-      command: 'openSettings',
-      scope: 'global',
-      key: stroke('p', { ctrl: true }),
-    })).toBe('|ctrl|||p')
-
-    const symbolicKey = canonicalBindingKey({
+  it('rejects legacy Mod in runtime canonical identity', () => {
+    expect(() => canonicalBindingKey({
       command: 'openCommandPalette',
       scope: 'global',
-      key: { key: 'p', modifiers: ['Mod'] },
-    })
-    expect(symbolicKey).toBe('||meta||p')
-     expect(symbolicKey).not.toContain('modifier')
+      key: { key: 'p', modifiers: ['Mod' as never] },
+    })).toThrow('modifier')
   })
 
   it('owns declarative representations without internal modifier fields', () => {

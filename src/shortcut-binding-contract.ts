@@ -59,7 +59,10 @@ export interface NormalizedPersistedShortcutResult {
 
 export function normalizePersistedShortcutResult(bindings: readonly PersistedShortcutBinding[]): NormalizedPersistedShortcutResult {
   const canonical = normalizePersistedShortcutBindings(bindings)
-  return { canonical, bindings: canonical.map((binding, index) => preserveBindingShape(bindings[index]!, binding)) }
+  return {
+    canonical,
+    bindings: canonical.map((binding, index) => preserveBindingShape(bindings[index]!, binding)),
+  }
 }
 
 export function validatePersistedShortcutBindings(bindings: readonly PersistedShortcutBinding[]): void {

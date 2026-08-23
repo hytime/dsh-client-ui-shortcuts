@@ -62,7 +62,7 @@ function resolveWithState(
 
 function sequencesFor(binding: ShortcutBinding): readonly (readonly KeyStroke[])[] {
   const legacyModifier = (binding as ShortcutBinding & { readonly modifier?: string }).modifier
-  const normalizedLegacyModifier = legacyModifier === 'Mod' ? 'Meta' : legacyModifier as ShortcutModifier | undefined
+  const normalizedLegacyModifier = legacyModifier as ShortcutModifier | undefined
   const convert = (stroke: KeyStroke | ShortcutStroke): KeyStroke & { readonly modifier?: ShortcutModifier } => {
     if ('modifiers' in stroke) {
       const modifiers = stroke.modifiers

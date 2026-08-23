@@ -32,5 +32,6 @@ The previous `settings.update` monkey patch was removed because the provider's i
 
 ## Commit
 
-- `fix: remove platform from physical conflict identity`
-- Hash: `87f5220`
+- `fix: finalize legacy modifier boundary`
+- Final commit: `fix: finalize legacy modifier boundary`
+- Hash: `04eb16cd5b62bca819101736176a670c2c346db9`
