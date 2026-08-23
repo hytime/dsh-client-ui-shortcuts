@@ -113,6 +113,24 @@ describe('shortcut Host settings', () => {
     await fiber.dispose()
   })
 
+  it('accepts custom profile with legal bindings and persists both values', async () => {
+    const ctx = new Context()
+    await ctx.plugin(MemorySettings).await()
+    const fiber = ctx.plugin({ apply })
+    await fiber.await()
+
+    await expect(ctx.settings.update(SHORTCUTS_SETTINGS_NAMESPACE, {
+      activeProfile: 'custom',
+      customBindings: [validCustomBinding],
+    })).resolves.toBeUndefined()
+    expect(ctx.settings.get(SHORTCUTS_SETTINGS_NAMESPACE)).toMatchObject({
+      activeProfile: 'custom',
+      customBindings: [validCustomBinding],
+    })
+
+    await fiber.dispose()
+  })
+
   it('accepts legal custom bindings and preserves their JSON shape', async () => {
     const ctx = new Context()
     await ctx.plugin(MemorySettings).await()
