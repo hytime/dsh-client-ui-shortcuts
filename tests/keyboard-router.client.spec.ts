@@ -122,6 +122,98 @@ describe('global keyboard router', () => {
     dispose()
   })
 
+  it('consumes every handled chord stroke and preserves resolver state until the second stroke', () => {
+    let listener: (event: RouterEvent) => void = () => {}
+    const target = {
+      addEventListener: (_type: string, callback: EventListener) => { listener = callback as unknown as (event: RouterEvent) => void },
+      removeEventListener: vi.fn(),
+      setTimeout: vi.fn(() => 1),
+      clearTimeout: vi.fn(),
+    }
+    const action = vi.fn()
+    const profile = {
+      id: 'chord-continuity', label: 'chord-continuity', description: 'chord-continuity',
+      bindings: [{ command: 'forkSession', scope: 'global', sequences: [[{ key: 'b', modifiers: ['Mod', 'Shift'] }, { key: 's', modifiers: [] }]] }],
+    } as unknown as ShortcutProfile
+    const dispose = createGlobalKeyboardRouter(target, { getProfile: () => profile, getActions: () => ({ forkSession: action }) })
+    const first = { preventDefault: vi.fn(), stopPropagation: vi.fn(), stopImmediatePropagation: vi.fn() }
+    const second = { preventDefault: vi.fn(), stopPropagation: vi.fn(), stopImmediatePropagation: vi.fn() }
+
+    listener({ key: 'B', altKey: false, ctrlKey: true, metaKey: false, shiftKey: true, isComposing: false, repeat: false, keyCode: 66, target: null, ...first })
+    listener({ key: 's', altKey: false, ctrlKey: false, metaKey: false, shiftKey: false, isComposing: false, repeat: false, keyCode: 83, target: null, ...second })
+
+    expect(first.preventDefault).toHaveBeenCalledOnce()
+    expect(first.stopPropagation).toHaveBeenCalledOnce()
+    expect(first.stopImmediatePropagation).toHaveBeenCalledOnce()
+    expect(second.preventDefault).toHaveBeenCalledOnce()
+    expect(second.stopPropagation).toHaveBeenCalledOnce()
+    expect(second.stopImmediatePropagation).toHaveBeenCalledOnce()
+    expect(action).toHaveBeenCalledOnce()
+    dispose()
+  })
+
+  it('leaves guarded targets, IME, repeat, and pending interaction keys untouched', () => {
+    let listener: (event: RouterEvent) => void = () => {}
+    const target = {
+      addEventListener: (_type: string, callback: EventListener) => { listener = callback as unknown as (event: RouterEvent) => void },
+      removeEventListener: vi.fn(),
+      setTimeout: vi.fn(),
+      clearTimeout: vi.fn(),
+    }
+    const profile = {
+      id: 'guards', label: 'guards', description: 'guards',
+      bindings: [{ command: 'startSession', scope: 'global', key: { key: 'n', modifiers: ['Ctrl'] } }],
+    } as unknown as ShortcutProfile
+    const dispose = createGlobalKeyboardRouter(target, {
+      getProfile: () => profile,
+      getActions: () => ({ startSession: vi.fn() }),
+      isInteractionPending: () => true,
+    })
+    const makeEvent = (overrides: Partial<RouterEvent> = {}) => ({ key: 'n', altKey: false, ctrlKey: true, metaKey: false, shiftKey: false, isComposing: false, repeat: false, keyCode: 78, target: null, preventDefault: vi.fn(), stopPropagation: vi.fn(), ...overrides })
+    const input = { tagName: 'INPUT', isContentEditable: false, parentElement: null } as unknown as EventTarget
+    const guarded = makeEvent({ target: input })
+    const composing = makeEvent({ isComposing: true })
+    const ime = makeEvent({ keyCode: 229 })
+    const repeated = makeEvent({ repeat: true })
+    const pending = makeEvent({ key: 'Enter', ctrlKey: false, keyCode: 13 })
+
+    listener(guarded)
+    listener(composing)
+    listener(ime)
+    listener(repeated)
+    listener(pending)
+
+    for (const event of [guarded, composing, ime, repeated, pending]) {
+      expect(event.preventDefault).not.toHaveBeenCalled()
+      expect(event.stopPropagation).not.toHaveBeenCalled()
+    }
+    dispose()
+  })
+
+  it('clears pending chord state when the timeout callback runs', () => {
+    let listener: (event: RouterEvent) => void = () => {}
+    let timeoutCallback = () => {}
+    const target = {
+      addEventListener: (_type: string, callback: EventListener) => { listener = callback as unknown as (event: RouterEvent) => void },
+      removeEventListener: vi.fn(),
+      setTimeout: vi.fn((callback: () => void) => { timeoutCallback = callback; return 1 }),
+      clearTimeout: vi.fn(),
+    }
+    const action = vi.fn()
+    const profile = {
+      id: 'timeout', label: 'timeout', description: 'timeout',
+      bindings: [{ command: 'forkSession', scope: 'global', sequences: [[{ key: 'b', modifiers: ['Mod', 'Shift'] }, { key: 's', modifiers: [] }]] }],
+    } as unknown as ShortcutProfile
+    const dispose = createGlobalKeyboardRouter(target, { getProfile: () => profile, getActions: () => ({ forkSession: action }) })
+    const event = { key: 'B', altKey: false, ctrlKey: true, metaKey: false, shiftKey: true, isComposing: false, repeat: false, keyCode: 66, target: null, preventDefault: vi.fn(), stopPropagation: vi.fn(), stopImmediatePropagation: vi.fn() }
+    listener(event)
+    timeoutCallback()
+    listener({ key: 's', altKey: false, ctrlKey: false, metaKey: false, shiftKey: false, isComposing: false, repeat: false, keyCode: 83, target: null, preventDefault: vi.fn(), stopPropagation: vi.fn(), stopImmediatePropagation: vi.fn() })
+
+    expect(action).not.toHaveBeenCalled()
+    dispose()
+  })
+
   it('consumes a matched chord prefix before browser defaults run', () => {
     let listener: (event: RouterEvent) => void = () => {}
     const target = {
