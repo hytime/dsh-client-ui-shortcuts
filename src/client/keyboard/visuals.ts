@@ -54,8 +54,8 @@ export function compatibleBindingSequences(binding: ShortcutBinding, platform: S
   return bindingSequenceCandidates(binding).filter(sequence => sequence.length > 0 && sequence.every(stroke => isBindingPlatformCompatible(stroke, platform)))
 }
 export function detectShortcutPlatform(navigatorLike: Pick<Navigator, 'platform' | 'userAgent'>): ShortcutPlatform {
-  const platform = typeof navigatorLike.platform === 'string' ? navigatorLike.platform.toLowerCase() : ''
-  if (platform === 'macintel' || platform.includes('mac')) return 'mac'
-  if (platform === 'win32' || platform.includes('win')) return 'windows'
+  const platform = `${navigatorLike.platform ?? ''} ${navigatorLike.userAgent ?? ''}`.toLowerCase()
+  if (platform.includes('mac')) return 'mac'
+  if (platform.includes('win')) return 'windows'
   return 'linux'
 }

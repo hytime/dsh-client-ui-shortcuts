@@ -1,20 +1,37 @@
-import type { ShortcutProfile, ShortcutStroke } from '../contract/profile.js'
+import type { GlobalShortcutCommand, ShortcutCommand, ShortcutModifier, ShortcutProfile, ShortcutStroke } from '../contract/profile.js'
+
+type GlobalBindingCommand = Extract<ShortcutCommand, GlobalShortcutCommand | 'openCommandPalette' | 'openSettings'>
 
 const stroke = (key: string, modifiers: Partial<ReturnType<typeof makeStroke>> = {}) => makeStroke(key, modifiers)
 const makeStroke = (key: string, modifiers: Partial<{ alt: boolean; ctrl: boolean; meta: boolean; shift: boolean }> = {}) => ({
   key, alt: false, ctrl: false, meta: false, shift: false, ...modifiers,
 })
 
+function uniqueModifiers(...modifiers: ShortcutModifier[]): ShortcutModifier[] {
+  return [...new Set(modifiers)]
+}
+
+function globalSequences(key: string, modifiers: readonly ShortcutModifier[] = []): readonly (readonly ShortcutStroke[])[] {
+  return [
+    [{ key, modifiers: uniqueModifiers('Meta', 'Alt', ...modifiers) }],
+    [{ key, modifiers: uniqueModifiers('Ctrl', ...modifiers) }],
+  ]
+}
+
+function globalBinding(command: GlobalBindingCommand, key: string, modifiers: readonly ShortcutModifier[] = []) {
+  return { command, scope: 'global' as const, sequences: globalSequences(key, modifiers) }
+}
+
 const globalBindings = [
-  { command: 'openCommandPalette' as const, scope: 'global' as const, key: { key: 'p', modifiers: ['Mod'] } satisfies ShortcutStroke },
-  { command: 'openSettings' as const, scope: 'global' as const, key: { key: ',', modifiers: ['Mod'] } satisfies ShortcutStroke },
-  { command: 'startSession' as const, scope: 'global' as const, key: { key: 'n', modifiers: ['Mod'] } satisfies ShortcutStroke },
-  { command: 'previousSession' as const, scope: 'global' as const, key: { key: 'ArrowUp', modifiers: ['Mod', 'Alt'] } satisfies ShortcutStroke },
-  { command: 'nextSession' as const, scope: 'global' as const, key: { key: 'ArrowDown', modifiers: ['Mod', 'Alt'] } satisfies ShortcutStroke },
-  { command: 'previousWorkspace' as const, scope: 'global' as const, key: { key: 'ArrowLeft', modifiers: ['Mod', 'Shift'] } satisfies ShortcutStroke },
-  { command: 'nextWorkspace' as const, scope: 'global' as const, key: { key: 'ArrowRight', modifiers: ['Mod', 'Shift'] } satisfies ShortcutStroke },
-  { command: 'forkSession' as const, scope: 'global' as const, key: { key: 'b', modifiers: ['Mod', 'Shift'] } satisfies ShortcutStroke },
-  { command: 'toggleTheme' as const, scope: 'global' as const, key: { key: 'l', modifiers: ['Mod', 'Shift'] } satisfies ShortcutStroke },
+  globalBinding('openCommandPalette', 'p'),
+  globalBinding('openSettings', ','),
+  globalBinding('startSession', 'n'),
+  globalBinding('previousSession', 'ArrowUp', ['Alt']),
+  globalBinding('nextSession', 'ArrowDown', ['Alt']),
+  globalBinding('previousWorkspace', 'ArrowLeft', ['Shift']),
+  globalBinding('nextWorkspace', 'ArrowRight', ['Shift']),
+  globalBinding('forkSession', 'b', ['Shift']),
+  globalBinding('toggleTheme', 'l', ['Shift']),
 ]
 
 export const standardProfile: ShortcutProfile = {

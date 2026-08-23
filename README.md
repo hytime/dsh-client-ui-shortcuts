@@ -60,10 +60,10 @@ The global router is available in the active profile. Its built-in global bindin
 | Action | Default binding | Capability requirement |
 | --- | --- | --- |
 | Create a session | `Mod+N` | `workspaces.startSession()` |
-| Previous session | `Mod+Alt+ArrowUp` | session list and `sessions.open()` |
-| Next session | `Mod+Alt+ArrowDown` | session list and `sessions.open()` |
-| Previous Workspace | `Mod+Shift+ArrowLeft` | Workspace list, `connectWorkspace()`, and `sessions.open()` |
-| Next Workspace | `Mod+Shift+ArrowRight` | Workspace list, `connectWorkspace()`, and `sessions.open()` |
+| Previous session | `Mod+Alt+ArrowUp` | current Workspace session list, `sessions.open()`, and non-blank session metadata |
+| Next session | `Mod+Alt+ArrowDown` | current Workspace session list, `sessions.open()`, and non-blank session metadata |
+| Previous Workspace | `Mod+Shift+ArrowLeft` | Workspace list, an existing non-blank target session, and `sessions.open()` |
+| Next Workspace | `Mod+Shift+ArrowRight` | Workspace list, an existing non-blank target session, and `sessions.open()` |
 | Fork current session | `Mod+Shift+B` | `sessions.fork()` and `sessions.open()` |
 | Toggle light/dark theme | `Mod+Shift+L` | `theme.getTheme()` and `theme.setTheme()` |
 
@@ -86,7 +86,10 @@ These are useful future candidates because the current DSH Web composition alrea
 
 The Custom profile follows conventions familiar from Claude Code and Codex without claiming to copy their complete default maps:
 
-- `Mod` maps to `Meta` on macOS and `Ctrl` on other platforms.
+- `Mod` maps to `Meta` on macOS and `Ctrl` on other platforms, and the router enforces that platform mapping at runtime.
+- Session navigation stays within the current Workspace when possible, follows the Workspace's stored `sessionIds` order, and skips archived, subagent, and blank sessions.
+- Workspace navigation opens an existing non-blank session in the target Workspace; it does not create a new session as a navigation side effect.
+- Browser-reserved shortcuts such as macOS `Cmd+N` may be handled by the browser before a web page receives `keydown`; choose a non-reserved binding when the browser does not dispatch the event.
 - The UI displays `Cmd` or `Ctrl` according to the platform instead of storing two conflicting bindings.
 - A binding accepts one key or a two-stroke chord such as `Ctrl+X Ctrl+S`.
 - One command may have alternative bindings for platform compatibility or a user-selected backup key.
@@ -149,7 +152,7 @@ For the full DSH composition workflow, use the [installation guide](docs/install
 | Item | Value |
 | --- | --- |
 | Package | `@hytime/dsh-client-ui-shortcuts` |
-| Current version | `0.1.11` |
+| Current version | `0.1.12` |
 | Bundle row | `dsh-ui-shortcuts` |
 | Settings namespace | `dsh-ui-shortcuts` |
 | Persisted fields | `activeProfile`, `customBindings` |

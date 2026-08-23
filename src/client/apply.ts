@@ -37,6 +37,7 @@ export function apply(ctx: ClientContext): void {
   ctx.effect(() => createGlobalKeyboardRouter(window, {
     getProfile: () => registry.active(),
     getActions: () => getGlobalActions(),
+    platform,
     isInteractionPending: () => pending?.current?.() !== undefined,
   }), 'dsh-shortcuts: global keyboard router')
   ctx.effect(() => ctx.slots.inject('conversation.composer', () => ctx.slots.register({

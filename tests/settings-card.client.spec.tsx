@@ -471,7 +471,14 @@ describe('shortcut settings card', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
     await waitFor(() => expect(settings.setCustomBindings).toHaveBeenCalled())
     expect(settings.setCustomBindings).toHaveBeenCalledWith(expect.arrayContaining([
-      expect.objectContaining({ command: 'startSession', scope: 'global', key: { key: 'x', modifiers: ['Ctrl'] } }),
+      expect.objectContaining({
+        command: 'startSession',
+        scope: 'global',
+        sequences: [
+          [{ key: 'n', modifiers: ['Meta', 'Alt'] }],
+          [{ key: 'x', modifiers: ['Ctrl'] }],
+        ],
+      }),
     ]))
   })
 

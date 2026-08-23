@@ -50,7 +50,8 @@ describe('keyboard visuals', () => {
   it('detects explicit platform strings and defaults unknown values to linux', () => {
     expect(detectShortcutPlatform({ platform: 'MacIntel', userAgent: '' })).toBe('mac')
     expect(detectShortcutPlatform({ platform: 'Win32', userAgent: '' })).toBe('windows')
-    expect(detectShortcutPlatform({ platform: '', userAgent: '' })).toBe('linux')
+    expect(detectShortcutPlatform({ platform: '', userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0)' })).toBe('mac')
+    expect(detectShortcutPlatform({ platform: '', userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' })).toBe('windows')
     expect(detectShortcutPlatform({ platform: 'Other', userAgent: 'Unknown' })).toBe('linux')
   })
 })
