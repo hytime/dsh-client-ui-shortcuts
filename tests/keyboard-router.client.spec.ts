@@ -137,7 +137,7 @@ describe('global keyboard router', () => {
     dispose()
     textarea.remove()
   })
-  it('dispatches a default Mod global binding and consumes the event', () => {
+  it('dispatches a default Meta global binding and consumes the event', () => {
     let listener: (event: RouterEvent) => void = () => {}
     const target = {
       addEventListener: (_type: string, callback: EventListener) => { listener = callback as unknown as (event: RouterEvent) => void },
@@ -163,7 +163,7 @@ describe('global keyboard router', () => {
   })
 
 
-  it('uses only the platform Mod modifier for global bindings', () => {
+  it('uses only the platform Meta modifier for global bindings', () => {
     let listener: (event: RouterEvent) => void = () => {}
     const target = {
       addEventListener: (_type: string, callback: EventListener) => { listener = callback as unknown as (event: RouterEvent) => void },

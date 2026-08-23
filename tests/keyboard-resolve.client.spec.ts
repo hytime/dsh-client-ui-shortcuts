@@ -107,7 +107,7 @@ describe('profile-aware keyboard resolver', () => {
     expect(resolveKey(standardProfile, 'global', input('T', { meta: true, alt: true, shift: true }), 'mac')).toEqual({ kind: 'command', command: 'toggleTheme' })
   })
 
-  it('resolves declarative Mod and Alt combinations', () => {
+  it('resolves declarative Meta and Alt combinations', () => {
     const stroke: ShortcutStroke = { key: 'p', modifiers: ['Meta', 'Alt'] }
     const profile: ShortcutProfile = {
       ...standardProfile,
@@ -149,8 +149,8 @@ describe('profile-aware keyboard resolver', () => {
     expect(first.resolve(profile, 'global', input('s'), 'linux')).toEqual({ kind: 'command', command: 'openSettings' })
   })
 
-  it('matches Mod equivalence but keeps explicit Ctrl and Meta exact', () => {
-    const modProfile: ShortcutProfile = {
+  it('matches explicit Meta and Ctrl modifiers exactly', () => {
+    const metaProfile: ShortcutProfile = {
       ...standardProfile,
       id: 'mod',
       bindings: [{ command: 'openSettings', scope: 'global', key: input('p'), modifier: 'Meta' }],
@@ -161,12 +161,12 @@ describe('profile-aware keyboard resolver', () => {
       bindings: [{ command: 'openSettings', scope: 'global', key: input('p', { ctrl: true }) }],
     }
 
-    expect(resolveKey(modProfile, 'global', input('p', { ctrl: true }), 'linux')).toEqual({ kind: 'pass' })
-    expect(resolveKey(modProfile, 'global', input('p', { meta: true }), 'mac')).toEqual({ kind: 'command', command: 'openSettings' })
+    expect(resolveKey(metaProfile, 'global', input('p', { ctrl: true }), 'linux')).toEqual({ kind: 'pass' })
+    expect(resolveKey(metaProfile, 'global', input('p', { meta: true }), 'mac')).toEqual({ kind: 'command', command: 'openSettings' })
     expect(resolveKey(ctrlProfile, 'global', input('p', { meta: true }), 'mac')).toEqual({ kind: 'pass' })
   })
 
-  it('does not match Mod against a dual-platform modifier event', () => {
+  it('preserves the legacy single-stroke key and exposes sequence canonicalization separately', () => {
     const profile: ShortcutProfile = {
       ...standardProfile,
       id: 'dual-mod',

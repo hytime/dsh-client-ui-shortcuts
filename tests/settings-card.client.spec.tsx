@@ -15,7 +15,7 @@ import type { SettingsScope, SettingsScopeSnapshot } from '@deepseek-ai/dsh-clie
 const customBindings = [{
   command: 'openSettings' as const,
   scope: 'global' as const,
-  key: { key: 's', modifiers: ['Mod'] as const },
+  key: { key: 's', modifiers: ['Meta'] as const },
 }]
 
 function controllerScope(initial: { activeProfile: string; customBindings?: typeof customBindings }, fail = false): SettingsScope<import('../src/settings.js').ShortcutSettings> {
@@ -50,7 +50,7 @@ const labels: Record<string, string> = {
   'keyboard.startSession': 'New session', 'keyboard.previousSession': 'Previous session', 'keyboard.nextSession': 'Next session',
   'keyboard.previousWorkspace': 'Previous workspace', 'keyboard.nextWorkspace': 'Next workspace', 'keyboard.forkSession': 'Fork session', 'keyboard.toggleTheme': 'Toggle theme',
   'editor.save': 'Save', 'editor.cancel': 'Cancel', 'editor.record': 'Record shortcut', 'editor.conflict': 'Shortcut conflicts with another command.', 'editor.invalid': 'Resolve shortcut conflicts before saving.', 'editor.saveFailed': 'Could not save custom shortcuts: {message}',
-  'modifier.Mod': 'Mod', 'modifier.Ctrl': 'Ctrl', 'modifier.Alt': 'Alt', 'modifier.Meta': 'Meta', 'modifier.Shift': 'Shift',
+  'modifier.Meta': 'Meta', 'modifier.Ctrl': 'Ctrl', 'modifier.Alt': 'Alt', 'modifier.Shift': 'Shift',
 }
 const t = (key: string) => labels[key] ?? key
 const openCard = () => fireEvent.click(screen.getByRole('button', { name: 'Expand: Shortcuts' }))
@@ -143,12 +143,12 @@ describe('shortcut settings controller custom profile', () => {
   it('matches Host alias and modifier acceptance rules', async () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     expect(() => registry.replaceCustom([
-      { command: 'openSettings', scope: 'global', key: { key: 'Esc', modifiers: ['Mod', 'Alt'] } },
-      { command: 'openCommandPalette', scope: 'global', key: { key: 'p', modifiers: ['Mod', 'Shift'] } },
+      { command: 'openSettings', scope: 'global', key: { key: 'Esc', modifiers: ['Meta', 'Alt'] } },
+      { command: 'openCommandPalette', scope: 'global', key: { key: 'p', modifiers: ['Meta', 'Shift'] } },
     ])).not.toThrow()
     expect(() => registry.replaceCustom([
-      { command: 'openSettings', scope: 'global', key: { key: 's', modifiers: ['Mod', 'Ctrl'] } },
-    ])).toThrow()
+      { command: 'openSettings', scope: 'global', key: { key: 's', modifiers: ['Meta', 'Ctrl'] } },
+    ])).not.toThrow()
     expect(() => registry.replaceCustom([
       { command: 'openSettings', scope: 'global', key: { key: 'Return', modifiers: [] } },
       { command: 'openCommandPalette', scope: 'global', key: { key: 'Enter', modifiers: [] } },
@@ -168,7 +168,7 @@ describe('shortcut settings controller custom profile', () => {
     const { createShortcutSettingsController } = await import('../src/client/settings/controller.js')
     const controller = createShortcutSettingsController(scope, registry)
     const first = controller.setCustomBindings(customBindings)
-    const second = controller.setCustomBindings([{ command: 'openCommandPalette', scope: 'global', key: { key: 'p', modifiers: ['Mod'] } }])
+    const second = controller.setCustomBindings([{ command: 'openCommandPalette', scope: 'global', key: { key: 'p', modifiers: ['Meta'] } }])
     await Promise.resolve()
     expect(resolvers).toHaveLength(1)
     controller.dispose()
@@ -203,7 +203,7 @@ describe('shortcut settings controller custom profile', () => {
     const submitted = [{
       command: 'openSettings' as const,
       scope: 'global' as const,
-      key: { key: 's', modifiers: ['Mod'] as const },
+      key: { key: 's', modifiers: ['Meta'] as const },
     }]
 
     await controller.setCustomBindings(submitted)
@@ -212,7 +212,7 @@ describe('shortcut settings controller custom profile', () => {
     expect(controller.customBindings()).toEqual([{
       command: 'openSettings',
       scope: 'global',
-      key: { key: 's', modifiers: ['Mod'] },
+      key: { key: 's', modifiers: ['Meta'] },
     }])
     controller.dispose()
   })
@@ -226,8 +226,8 @@ describe('shortcut settings controller custom profile', () => {
     })
     const { createShortcutSettingsController } = await import('../src/client/settings/controller.js')
     const controller = createShortcutSettingsController(scope, registry)
-    const first = [{ command: 'openSettings' as const, scope: 'global' as const, key: { key: 's', modifiers: ['Mod'] as const } }]
-    const second = [{ command: 'openCommandPalette' as const, scope: 'global' as const, key: { key: 'p', modifiers: ['Mod'] as const } }]
+    const first = [{ command: 'openSettings' as const, scope: 'global' as const, key: { key: 's', modifiers: ['Meta'] as const } }]
+    const second = [{ command: 'openCommandPalette' as const, scope: 'global' as const, key: { key: 'p', modifiers: ['Meta'] as const } }]
 
     const firstSave = controller.setCustomBindings(first)
     const secondSave = controller.setCustomBindings(second)
@@ -245,23 +245,23 @@ describe('shortcut settings controller custom profile', () => {
 })
 
 describe('shortcut settings card', () => {
-  it('renders platform keycaps and hides incompatible explicit modifiers', () => {
+  it('renders platform keycaps with explicit physical modifiers', () => {
     render(<ShortcutLegend platform="mac" bindings={[
       { command: 'openSettings', scope: 'global', key: { key: 'p', modifiers: ['Ctrl'] } },
-      { command: 'openCommandPalette', scope: 'global', key: { key: 'p', modifiers: ['Mod'] } },
+      { command: 'openCommandPalette', scope: 'global', key: { key: 'p', modifiers: ['Meta'] } },
     ]} availableGlobalActions={['openSettings', 'openCommandPalette']} t={t} />)
-    expect(screen.queryByText('Settings')).toBeNull()
+    expect(screen.getByText('Settings')).toBeTruthy()
     expect(screen.getByText('Command palette', { exact: true })).toBeTruthy()
     expect(screen.getAllByRole('img', { name: 'Command' }).length).toBeGreaterThan(0)
   })
 
-  it('renders every compatible alternative sequence and filters incompatible strokes', () => {
-    render(<ShortcutLegend platform="mac" bindings={[{ command: 'openSettings', scope: 'global', sequences: [[{ key: 'g', modifiers: ['Mod'] }, { key: 's', modifiers: ['Mod'] }], [{ key: 'p', modifiers: ['Mod'] }, { key: 'o', modifiers: ['Mod'] }]] }, { command: 'openCommandPalette', scope: 'global', sequence: [{ key: 'x', modifiers: ['Mod'] }, { key: 'y', modifiers: ['Ctrl'] }] }]} availableGlobalActions={['openSettings', 'openCommandPalette']} t={t} />)
+  it('renders every explicit alternative sequence', () => {
+    render(<ShortcutLegend platform="mac" bindings={[{ command: 'openSettings', scope: 'global', sequences: [[{ key: 'g', modifiers: ['Meta'] }, { key: 's', modifiers: ['Meta'] }], [{ key: 'p', modifiers: ['Meta'] }, { key: 'o', modifiers: ['Meta'] }]] }, { command: 'openCommandPalette', scope: 'global', sequence: [{ key: 'x', modifiers: ['Meta'] }, { key: 'y', modifiers: ['Ctrl'] }] }]} availableGlobalActions={['openSettings', 'openCommandPalette']} t={t} />)
     expect(screen.getAllByText('Settings')).toHaveLength(2)
-    expect(screen.getAllByRole('img', { name: 'Command' })).toHaveLength(4)
+    expect(screen.getAllByRole('img', { name: 'Command' })).toHaveLength(5)
     expect(screen.getAllByRole('img', { name: 'S' })).toHaveLength(1)
     expect(screen.getAllByRole('img', { name: 'O' })).toHaveLength(1)
-    expect(screen.queryByText('Command palette')).toBeNull()
+    expect(screen.getByText('Command palette', { exact: true })).toBeTruthy()
   })
 
   it('allows inherited cross-scope defaults but rejects a new global duplicate', () => {
@@ -288,15 +288,15 @@ describe('shortcut settings card', () => {
     ], 'linux')).toHaveLength(1)
   })
 
-  it('compares Mod against platform-specific physical modifiers across platforms', () => {
+  it('compares explicit physical modifiers across platforms', () => {
     const make = (scope: 'question' | 'approval', key: unknown) => ({ command: 'activate' as const, scope, key })
 
     for (const [platform, physical] of [['mac', { key: 'k', alt: false, ctrl: false, meta: true, shift: false }], ['windows', { key: 'k', alt: false, ctrl: true, meta: false, shift: false }], ['linux', { key: 'k', alt: false, ctrl: true, meta: false, shift: false }]] as const) {
-      const baseline = [make('question', { key: 'k', modifiers: ['Mod'] as const }), make('approval', physical)]
-      const changedChord = { command: 'activate' as const, scope: 'question' as const, sequence: [{ key: 'k', modifiers: ['Mod'] as const }, { key: 'x', modifiers: ['Alt'] as const }] }
+      const baseline = [make('question', { key: 'k', modifiers: ['Meta'] as const }), make('approval', physical)]
+      const changedChord = { command: 'activate' as const, scope: 'question' as const, sequence: [{ key: 'k', modifiers: ['Meta'] as const }, { key: 'x', modifiers: ['Alt'] as const }] }
       expect(findNewShortcutConflicts(baseline, baseline.map((binding, index) => ({ binding, index })), platform)).toEqual([])
-      expect(findNewShortcutConflicts(baseline, [{ binding: { ...baseline[0]!, key: { key: 'k', modifiers: ['Mod'] as const } }, index: 0 }, { binding: { ...baseline[1]!, key: { key: 'k', modifiers: ['Alt'] as const } }, index: 1 }], platform)).toHaveLength(0)
-      expect(findNewShortcutConflicts(baseline, [{ binding: changedChord, index: 0 }, { binding: baseline[1]!, index: 1 }], platform)).toHaveLength(1)
+      expect(findNewShortcutConflicts(baseline, [{ binding: { ...baseline[0]!, key: { key: 'k', modifiers: ['Meta'] as const } }, index: 0 }, { binding: { ...baseline[1]!, key: { key: 'k', modifiers: ['Alt'] as const } }, index: 1 }], platform)).toHaveLength(0)
+      expect(findNewShortcutConflicts(baseline, [{ binding: changedChord, index: 0 }, { binding: baseline[1]!, index: 1 }], platform)).toHaveLength(platform === 'mac' ? 1 : 0)
     }
   })
   it('filters explicit platform modifiers across symbolic, physical, sequence, and sequences bindings', () => {
@@ -308,7 +308,7 @@ describe('shortcut settings card', () => {
     expect(findNewShortcutConflicts([], [
       { binding: symbolicCtrl, index: 0 },
       { binding: { ...symbolicCtrl, scope: 'approval' }, index: 1 },
-    ], 'mac')).toEqual([])
+    ], 'mac')).toHaveLength(1)
     expect(findNewShortcutConflicts([], [
       { binding: symbolicCtrl, index: 0 },
       { binding: { ...symbolicCtrl, scope: 'approval' }, index: 1 },
@@ -316,7 +316,7 @@ describe('shortcut settings card', () => {
     expect(findNewShortcutConflicts([], [
       { binding: physicalMeta, index: 0 },
       { binding: { ...physicalMeta, scope: 'question' }, index: 1 },
-    ], 'linux')).toEqual([])
+    ], 'linux')).toHaveLength(1)
     expect(findNewShortcutConflicts([], [
       { binding: physicalMeta, index: 0 },
       { binding: { ...physicalMeta, scope: 'question' }, index: 1 },
@@ -324,7 +324,7 @@ describe('shortcut settings card', () => {
     expect(findNewShortcutConflicts([], [
       { binding: sequenceCtrl, index: 0 },
       { binding: { ...sequenceCtrl, scope: 'approval' }, index: 1 },
-    ], 'mac')).toEqual([])
+    ], 'mac')).toHaveLength(1)
     expect(findNewShortcutConflicts([], [
       { binding: sequenceCtrl, index: 0 },
       { binding: { ...sequenceCtrl, scope: 'approval' }, index: 1 },
@@ -332,7 +332,7 @@ describe('shortcut settings card', () => {
     expect(findNewShortcutConflicts([], [
       { binding: sequencesMeta, index: 0 },
       { binding: { ...sequencesMeta, scope: 'question' }, index: 1 },
-    ], 'linux')).toEqual([])
+    ], 'linux')).toHaveLength(1)
     expect(findNewShortcutConflicts([], [
       { binding: sequencesMeta, index: 0 },
       { binding: { ...sequencesMeta, scope: 'question' }, index: 1 },
@@ -430,7 +430,7 @@ describe('shortcut settings card', () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     registry.replaceCustom([
       { command: 'activate', scope: 'question', key: { key: 'Enter', alt: false, ctrl: false, meta: false, shift: false } },
-      { command: 'openCommandPalette', scope: 'global', key: { key: 'n', modifiers: ['Mod'] } },
+      { command: 'openCommandPalette', scope: 'global', key: { key: 'n', modifiers: ['Meta'] } },
     ])
     const settings = settingsFace()
     settings.customBindings = () => registry.custom()
@@ -450,7 +450,7 @@ describe('shortcut settings card', () => {
     const settings = settingsFace()
     settings.customBindings = () => registry.custom()
     settings.setCustomBindings = vi.fn(async bindings => { registry.replaceCustom(bindings); settings.emit() })
-    registry.replaceCustom([{ command: 'startSession', scope: 'global', key: { key: 'n', modifiers: ['Mod', 'Alt', 'Shift'] } }])
+    registry.replaceCustom([{ command: 'startSession', scope: 'global', key: { key: 'n', modifiers: ['Meta', 'Alt', 'Shift'] } }])
     const availableGlobalActions = [
       'startSession', 'previousSession', 'nextSession', 'previousWorkspace', 'nextWorkspace', 'forkSession', 'toggleTheme',
     ] as const

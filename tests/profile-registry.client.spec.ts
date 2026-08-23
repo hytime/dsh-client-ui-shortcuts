@@ -161,7 +161,7 @@ describe('shortcut profile registry', () => {
     expect(standard.bindings).toEqual(expect.arrayContaining([
       { command: 'activate', scope: 'question', key: stroke('Enter') },
       { command: 'activate', scope: 'approval', key: stroke('Enter') },
-      { command: 'openCommandPalette', scope: 'global', key: { key: 'p', modifiers: ['Mod'] } },
+       { command: 'openCommandPalette', scope: 'global', key: { key: 'p', modifiers: ['Meta'] } },
     ]))
   })
 
@@ -169,13 +169,13 @@ describe('shortcut profile registry', () => {
     const registry = createBuiltinProfileRegistry()
     const standard = registry.get('standard')!
     expect(standard.bindings).toEqual(expect.arrayContaining([
-      { command: 'startSession', scope: 'global', key: { key: 'n', modifiers: ['Mod', 'Alt', 'Shift'] } },
-      { command: 'previousSession', scope: 'global', key: { key: 'j', modifiers: ['Mod', 'Alt', 'Shift'] } },
-      { command: 'nextSession', scope: 'global', key: { key: 'k', modifiers: ['Mod', 'Alt', 'Shift'] } },
-      { command: 'previousWorkspace', scope: 'global', key: { key: 'h', modifiers: ['Mod', 'Alt', 'Shift'] } },
-      { command: 'nextWorkspace', scope: 'global', key: { key: 'l', modifiers: ['Mod', 'Alt', 'Shift'] } },
-      { command: 'forkSession', scope: 'global', key: { key: 'b', modifiers: ['Mod', 'Alt', 'Shift'] } },
-      { command: 'toggleTheme', scope: 'global', key: { key: 't', modifiers: ['Mod', 'Alt', 'Shift'] } },
+       { command: 'startSession', scope: 'global', key: { key: 'n', modifiers: ['Meta', 'Alt', 'Shift'] } },
+       { command: 'previousSession', scope: 'global', key: { key: 'j', modifiers: ['Meta', 'Alt', 'Shift'] } },
+       { command: 'nextSession', scope: 'global', key: { key: 'k', modifiers: ['Meta', 'Alt', 'Shift'] } },
+       { command: 'previousWorkspace', scope: 'global', key: { key: 'h', modifiers: ['Meta', 'Alt', 'Shift'] } },
+       { command: 'nextWorkspace', scope: 'global', key: { key: 'l', modifiers: ['Meta', 'Alt', 'Shift'] } },
+       { command: 'forkSession', scope: 'global', key: { key: 'b', modifiers: ['Meta', 'Alt', 'Shift'] } },
+       { command: 'toggleTheme', scope: 'global', key: { key: 't', modifiers: ['Meta', 'Alt', 'Shift'] } },
     ]))
   })
 
@@ -192,8 +192,17 @@ describe('shortcut profile registry', () => {
     expect(registry.get('custom')).toBeUndefined()
   })
 
+  it('migrates legacy Mod inputs to Meta without retaining Mod', () => {
+    const registry = createProfileRegistry([{
+      ...alphaProfile,
+      id: 'legacy',
+      bindings: [{ command: 'openSettings', scope: 'global', key: { key: 's', modifiers: ['Mod', 'Alt'] } }],
+    }])
+    expect(registry.get('legacy')?.bindings[0]?.key).toEqual({ key: 's', modifiers: ['Meta', 'Alt'] })
+    expect(registry.get('legacy')?.bindings[0]?.key).not.toEqual(expect.objectContaining({ modifiers: expect.arrayContaining(['Mod']) }))
+  })
   it('normalizes declarative symbolic strokes and rejects contradictory shapes', () => {
-    const declarative: ShortcutStroke = { key: 'p', modifiers: ['Mod', 'Alt'] }
+    const declarative: ShortcutStroke = { key: 'p', modifiers: ['Meta', 'Alt'] }
     const registry = createProfileRegistry([{
       ...alphaProfile,
       id: 'declarative',
@@ -243,8 +252,8 @@ describe('shortcut profile registry', () => {
     expect(() => createProfileRegistry([{
       ...alphaProfile,
       id: 'symbolic-dual-platform',
-      bindings: [{ command: 'openSettings', scope: 'global', key: { key: 'p', modifiers: ['Mod', 'Ctrl'] } }],
-    }])).toThrow('modifier')
+      bindings: [{ command: 'openSettings', scope: 'global', key: { key: 'p', modifiers: ['Meta', 'Ctrl'] } }],
+    }])).not.toThrow()
   })
 
   it('stores normalized frozen bindings instead of caller-owned objects', () => {
@@ -270,18 +279,18 @@ describe('shortcut profile registry', () => {
       scope: 'global',
       key: { key: 'p', modifiers: ['Mod'] },
     })
-    expect(symbolicKey).toBe('|ctrl||p')
-    expect(symbolicKey).not.toContain('modifier')
+    expect(symbolicKey).toBe('||meta||p')
+     expect(symbolicKey).not.toContain('modifier')
   })
 
   it('owns declarative representations without internal modifier fields', () => {
     const registry = createProfileRegistry([{
       ...alphaProfile,
       id: 'owned-declarative',
-      bindings: [{ command: 'openSettings', scope: 'global', key: { key: 'Esc', modifiers: ['Mod', 'Alt'] } }],
+      bindings: [{ command: 'openSettings', scope: 'global', key: { key: 'Esc', modifiers: ['Meta', 'Alt'] } }],
     }])
     const key = registry.get('owned-declarative')!.bindings[0]!.key
-    expect(key).toEqual({ key: 'Escape', modifiers: ['Mod', 'Alt'] })
+    expect(key).toEqual({ key: 'Escape', modifiers: ['Meta', 'Alt'] })
     expect(key).not.toHaveProperty('modifier')
     expect(Object.isFrozen(key)).toBe(true)
   })

@@ -60,12 +60,12 @@ The global router is available in the active profile. Its built-in global bindin
 | Action | Default binding | Capability requirement |
 | --- | --- | --- |
 | Create a session | `Meta+Alt+Shift+N` | `workspaces.startSession()` |
-| Previous session | `Mod+Alt+Shift+J` | current Workspace session list, `sessions.open()`, and non-blank session metadata |
-| Next session | `Mod+Alt+Shift+K` | current Workspace session list, `sessions.open()`, and non-blank session metadata |
-| Previous Workspace | `Mod+Alt+Shift+H` | Workspace list, an existing non-blank target session, and `sessions.open()` |
-| Next Workspace | `Mod+Alt+Shift+L` | Workspace list, an existing non-blank target session, and `sessions.open()` |
-| Fork current session | `Mod+Alt+Shift+B` | `sessions.fork()` and `sessions.open()` |
-| Toggle light/dark theme | `Mod+Alt+Shift+T` | `theme.getTheme()` and `theme.setTheme()` |
+| Previous session | `Meta+Alt+Shift+J` | current Workspace session list, `sessions.open()`, and non-blank session metadata |
+| Next session | `Meta+Alt+Shift+K` | current Workspace session list, `sessions.open()`, and non-blank session metadata |
+| Previous Workspace | `Meta+Alt+Shift+H` | Workspace list, an existing non-blank target session, and `sessions.open()` |
+| Next Workspace | `Meta+Alt+Shift+L` | Workspace list, an existing non-blank target session, and `sessions.open()` |
+| Fork current session | `Meta+Alt+Shift+B` | `sessions.fork()` and `sessions.open()` |
+| Toggle light/dark theme | `Meta+Alt+Shift+T` | `theme.getTheme()` and `theme.setTheme()` |
 
 The `Meta+,` settings binding is retained in the profile data but remains hidden and inactive because no public DSH settings opener is available. Capability filtering removes unavailable global actions from both routing and the shortcut list; it does not leave dead rows or simulate private DSH UI behavior.
 

@@ -60,12 +60,12 @@ active profile 现在提供 global router。内置全局绑定如下：
 | 动作 | 默认键位 | 能力要求 |
 | --- | --- | --- |
 | 新建会话 | `Meta+Alt+Shift+N` | `workspaces.startSession()` |
-| 上一个会话 | `Mod+Alt+Shift+J` | 当前 Workspace 的会话顺序、`sessions.open()`，以及非空白会话元数据 |
-| 下一个会话 | `Mod+Alt+Shift+K` | 当前 Workspace 的会话顺序、`sessions.open()`，以及非空白会话元数据 |
-| 上一个 Workspace | `Mod+Alt+Shift+H` | Workspace 列表、目标 Workspace 中已有的非空白会话，以及 `sessions.open()` |
-| 下一个 Workspace | `Mod+Alt+Shift+L` | Workspace 列表、目标 Workspace 中已有的非空白会话，以及 `sessions.open()` |
-| 创建当前会话分支 | `Mod+Alt+Shift+B` | `sessions.fork()` 和 `sessions.open()` |
-| 切换浅色/深色主题 | `Mod+Alt+Shift+T` | `theme.getTheme()` 和 `theme.setTheme()` |
+| 上一个会话 | `Meta+Alt+Shift+J` | 当前 Workspace 的会话顺序、`sessions.open()`，以及非空白会话元数据 |
+| 下一个会话 | `Meta+Alt+Shift+K` | 当前 Workspace 的会话顺序、`sessions.open()`，以及非空白会话元数据 |
+| 上一个 Workspace | `Meta+Alt+Shift+H` | Workspace 列表、目标 Workspace 中已有的非空白会话，以及 `sessions.open()` |
+| 下一个 Workspace | `Meta+Alt+Shift+L` | Workspace 列表、目标 Workspace 中已有的非空白会话，以及 `sessions.open()` |
+| 创建当前会话分支 | `Meta+Alt+Shift+B` | `sessions.fork()` 和 `sessions.open()` |
+| 切换浅色/深色主题 | `Meta+Alt+Shift+T` | `theme.getTheme()` 和 `theme.setTheme()` |
 
 `Meta+,` 设置绑定仍保留在 profile 数据中，但由于 DSH 没有公开设置 opener，它保持隐藏且不激活。能力过滤会同时从路由和快捷键列表中移除不可用的全局动作，不留下 dead row，也不模拟 DSH 私有 UI 行为。
 

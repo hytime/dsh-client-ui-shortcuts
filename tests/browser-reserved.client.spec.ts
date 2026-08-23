@@ -4,9 +4,9 @@ import type { ShortcutBinding, ShortcutStroke } from '../src/client/contract/pro
 
 const binding = (key: string, modifiers: ShortcutStroke['modifiers']): ShortcutBinding => ({ command: 'openSettings', scope: 'global', key: { key, modifiers } })
 const cases = [
-  ['n', ['Mod'], 'chrome'], ['t', ['Mod'], 'chrome'], ['w', ['Mod'], 'chrome'], ['p', ['Mod'], 'chrome'],
-  ['l', ['Mod'], 'chrome'], ['s', ['Mod'], 'chrome'], ['f', ['Mod'], 'chrome'], ['r', ['Mod'], 'chrome'],
-  ['n', ['Mod', 'Shift'], 'chrome'], ['ArrowLeft', ['Mod', 'Alt'], 'chrome'], ['ArrowRight', ['Mod', 'Alt'], 'chrome'],
+  ['n', ['Meta'], 'chrome'], ['t', ['Meta'], 'chrome'], ['w', ['Meta'], 'chrome'], ['p', ['Meta'], 'chrome'],
+  ['l', ['Meta'], 'chrome'], ['s', ['Meta'], 'chrome'], ['f', ['Meta'], 'chrome'], ['r', ['Meta'], 'chrome'],
+  ['n', ['Meta', 'Shift'], 'chrome'], ['ArrowLeft', ['Meta', 'Alt'], 'chrome'], ['ArrowRight', ['Meta', 'Alt'], 'chrome'],
 ] as const
 
 describe('browser-reserved shortcut diagnostics', () => {
@@ -15,13 +15,13 @@ describe('browser-reserved shortcut diagnostics', () => {
     expect(diagnostics).toEqual(expect.arrayContaining([expect.objectContaining({ source, sequence: { key, modifiers } })]))
   })
 
-  it.each(['n', 'j', 'k', 'h', 'l', 'b', 't'])('does not identify Mod+Alt+Shift+%s', key => {
-    expect(browserReservedDiagnostics(binding(key, ['Mod', 'Alt', 'Shift']), 'mac')).toEqual([])
-    expect(browserReservedDiagnostics(binding(key, ['Mod', 'Alt', 'Shift']), 'windows')).toEqual([])
+  it.each(['n', 'j', 'k', 'h', 'l', 'b', 't'])('does not identify Meta+Alt+Shift+%s', key => {
+    expect(browserReservedDiagnostics(binding(key, ['Meta', 'Alt', 'Shift']), 'mac')).toEqual([])
+    expect(browserReservedDiagnostics(binding(key, ['Meta', 'Alt', 'Shift']), 'windows')).toEqual([])
   })
 
   it('labels diagnostics as symbolic bindings and does not claim arbitrary system occupancy', () => {
-    const diagnostic = browserReservedDiagnostics(binding('n', ['Mod']), 'mac')[0]
+    const diagnostic = browserReservedDiagnostics(binding('n', ['Meta']), 'mac')[0]
     expect(diagnostic).toMatchObject({ bindingKind: 'symbolic', source: 'chrome' })
     expect(diagnostic).not.toHaveProperty('occupied')
   })

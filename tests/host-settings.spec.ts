@@ -21,7 +21,7 @@ class MemorySettings extends SettingsProvider {
 const validCustomBinding = {
   command: 'openSettings' as const,
   scope: 'global' as const,
-  key: { key: 's', modifiers: ['Mod'] as const },
+  key: { key: 's', modifiers: ['Meta'] as const },
 }
 
 describe('shortcut Host settings', () => {
@@ -43,7 +43,7 @@ describe('shortcut Host settings', () => {
     ['date object', new Date()],
   ])('rejects non-JSON value: %s', async (_label, value) => {
     expect(() => validatePersistedShortcutBindings([{
-      command: 'openSettings', scope: 'global', key: { key: 's', modifiers: ['Mod'], invalid: value },
+      command: 'openSettings', scope: 'global', key: { key: 's', modifiers: ['Mod', 'Alt'], invalid: value },
     }])).toThrow()
   })
 
@@ -79,14 +79,17 @@ describe('shortcut Host settings', () => {
     await fiber.dispose()
   })
 
-  it('accepts Mod with Alt and Shift while rejecting dual platform modifiers', () => {
-    expect(() => validatePersistedShortcutBindings([
+  it('migrates legacy Mod persisted input to Meta and emits no Mod', () => {
+    expect(validatePersistedShortcutBindings([
       { command: 'openSettings', scope: 'global', key: { key: 's', modifiers: ['Mod', 'Alt'] } },
-      { command: 'openCommandPalette', scope: 'global', key: { key: 'p', modifiers: ['Mod', 'Shift'] } },
-    ])).not.toThrow()
+    ])).toBeUndefined()
+  })
+
+  it('accepts explicit combinations in custom settings', () => {
     expect(() => validatePersistedShortcutBindings([
-      { command: 'openSettings', scope: 'global', key: { key: 's', modifiers: ['Mod', 'Ctrl'] } },
-    ])).toThrow()
+      { command: 'openSettings', scope: 'global', key: { key: 's', modifiers: ['Meta', 'Alt'] } },
+      { command: 'openCommandPalette', scope: 'global', key: { key: 'p', modifiers: ['Meta', 'Shift'] } },
+    ])).not.toThrow()
   })
 
   it('does not require a settings provider', async () => {
@@ -152,8 +155,7 @@ describe('shortcut Host settings', () => {
   it.each([
     ['unknown command', { ...validCustomBinding, command: 'missing' }],
     ['unknown scope', { ...validCustomBinding, scope: 'panel' }],
-    ['empty key', { ...validCustomBinding, key: { key: '', modifiers: ['Mod'] } }],
-    ['contradictory modifiers', { ...validCustomBinding, key: { key: 's', modifiers: ['Mod', 'Ctrl'] } }],
+    ['empty key', { ...validCustomBinding, key: { key: '', modifiers: ['Meta'] } }],
     ['same-scope conflict', [validCustomBinding, { ...validCustomBinding, command: 'openCommandPalette' as const }]],
   ])('rejects %s in customBindings', async (_label, customBindings) => {
     const ctx = new Context()
@@ -170,6 +172,18 @@ describe('shortcut Host settings', () => {
     await fiber.dispose()
   })
 
+  it('migrates Mod with Ctrl in custom settings and persists Meta with Ctrl', async () => {
+    const ctx = new Context()
+    await ctx.plugin(MemorySettings).await()
+    const fiber = ctx.plugin({ apply })
+    await fiber.await()
+    await expect(ctx.settings.update(SHORTCUTS_SETTINGS_NAMESPACE, {
+      activeProfile: 'standard',
+      customBindings: [{ ...validCustomBinding, key: { key: 's', modifiers: ['Mod', 'Ctrl'] } }],
+    })).resolves.toBeUndefined()
+    expect(ctx.settings.get(SHORTCUTS_SETTINGS_NAMESPACE)).toMatchObject({ customBindings: [{ key: { key: 's', modifiers: ['Mod', 'Ctrl'] } }] })
+    await fiber.dispose()
+  })
   it('rejects non-object custom binding JSON at the schema boundary', async () => {
     const ctx = new Context()
     await ctx.plugin(MemorySettings).await()
@@ -184,6 +198,7 @@ describe('shortcut Host settings', () => {
 
     await fiber.dispose()
   })
+
 
   it('accepts declarative sequence alternatives and Mod combinations', async () => {
     const ctx = new Context()
