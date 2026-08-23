@@ -16,6 +16,7 @@ import { ShortcutProfileCard } from './components/ShortcutProfileCard.js'
 import { createGlobalActions, type GlobalActionCapabilities } from './actions/global-actions.js'
 import { detectShortcutPlatform } from './keyboard/visuals.js'
 import { createGlobalKeyboardRouter } from './keyboard/router.js'
+import { expandCollapsedWorkspace } from './actions/workspace-expansion.js'
 
 /** Required browser services. */
 export const inject = ['slots', 'locale', 'settingsScope', 'sessions'] as const
@@ -30,6 +31,9 @@ export function apply(ctx: ClientContext): void {
   const getGlobalActions = () => createGlobalActions({
     sessions: ctx.get('sessions') as GlobalActionCapabilities['sessions'],
     workspaces: ctx.get('workspaces') as GlobalActionCapabilities['workspaces'],
+    workspaceView: {
+      expandCollapsedWorkspace: title => { expandCollapsedWorkspace(document, title) },
+    },
     theme: ctx.get('theme') as GlobalActionCapabilities['theme'],
   })
   const platform = detectShortcutPlatform(window.navigator)

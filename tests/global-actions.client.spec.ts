@@ -7,7 +7,7 @@ function services(overrides: Record<string, unknown> = {}) {
     open: vi.fn(), fork: vi.fn().mockResolvedValue('child'),
   }
   const workspaces = {
-    list: { getSnapshot: () => ({ items: [{ workspaceId: 'w1', sessionIds: ['s1'] }, { workspaceId: 'w2', sessionIds: ['s2'] }], archivedSessionIds: [] }) },
+    list: { getSnapshot: () => ({ items: [{ workspaceId: 'w1', title: 'Alpha', sessionIds: ['s1'] }, { workspaceId: 'w2', title: 'Beta', sessionIds: ['s2'] }], archivedSessionIds: [] }) },
     startSession: vi.fn(),
   }
   const theme = { getTheme: () => ({ preference: 'light' }), setTheme: vi.fn() }
@@ -31,6 +31,26 @@ describe('capability-aware global actions', () => {
     expect(d.theme.setTheme).toHaveBeenCalledWith('dark')
   })
 
+  it('requests target workspace expansion before opening its session', () => {
+    const d = services()
+    const expandCollapsedWorkspace = vi.fn()
+    const actions = createGlobalActions({ ...d, workspaceView: { expandCollapsedWorkspace } })
+
+    actions.nextWorkspace?.()
+
+    expect(expandCollapsedWorkspace).toHaveBeenCalledWith('Beta')
+    expect(expandCollapsedWorkspace.mock.invocationCallOrder[0])
+      .toBeLessThan(d.sessions.open.mock.invocationCallOrder[0]!)
+    expect(d.sessions.open).toHaveBeenCalledWith('s2')
+  })
+
+  it('still opens the target session without a workspace view capability', () => {
+    const d = services()
+    const actions = createGlobalActions({ sessions: d.sessions, workspaces: d.workspaces })
+    actions.nextWorkspace?.()
+    expect(d.sessions.open).toHaveBeenCalledWith('s2')
+  })
+
   it('omits actions without optional capabilities or list state', () => {
     expect(createGlobalActions({}).startSession).toBeUndefined()
     expect(createGlobalActions({ sessions: { list: services().sessions.list, open: undefined, fork: undefined } as never }).forkSession).toBeUndefined()
@@ -47,7 +67,7 @@ describe('capability-aware global actions', () => {
       current: 's1',
     }) as never
     d.workspaces.list.getSnapshot = () => ({
-      items: [{ workspaceId: 'w1', sessionIds: ['s1', 's2'] }],
+      items: [{ workspaceId: 'w1', title: 'Alpha', sessionIds: ['s1', 's2'] }],
       archivedSessionIds: [],
     }) as never
     const actions = createGlobalActions(d)
@@ -79,8 +99,8 @@ describe('capability-aware global actions', () => {
     }) as never
     d.workspaces.list.getSnapshot = () => ({
       items: [
-        { workspaceId: 'w1', sessionIds: ['s1', 'blank', 's2'] },
-        { workspaceId: 'w2', sessionIds: ['s3'] },
+        { workspaceId: 'w1', title: 'Alpha', sessionIds: ['s1', 'blank', 's2'] },
+        { workspaceId: 'w2', title: 'Beta', sessionIds: ['s3'] },
       ],
       archivedSessionIds: [],
     }) as never
@@ -104,8 +124,8 @@ describe('capability-aware global actions', () => {
     }) as never
     d.workspaces.list.getSnapshot = () => ({
       items: [
-        { workspaceId: 'w1', sessionIds: ['s1'] },
-        { workspaceId: 'w2', sessionIds: ['blank'] },
+        { workspaceId: 'w1', title: 'Alpha', sessionIds: ['s1'] },
+        { workspaceId: 'w2', title: 'Beta', sessionIds: ['blank'] },
       ],
       archivedSessionIds: [],
     }) as never
@@ -126,7 +146,7 @@ describe('capability-aware global actions', () => {
       current: 'orphan',
     }) as never
     d.workspaces.list.getSnapshot = () => ({
-      items: [{ workspaceId: 'w1', sessionIds: ['s1'] }, { workspaceId: 'w2', sessionIds: ['s2'] }],
+      items: [{ workspaceId: 'w1', title: 'Alpha', sessionIds: ['s1'] }, { workspaceId: 'w2', title: 'Beta', sessionIds: ['s2'] }],
       archivedSessionIds: [],
     }) as never
     const actions = createGlobalActions(d)
@@ -149,7 +169,7 @@ describe('capability-aware global actions', () => {
       current: 's1',
     }) as never
     d.workspaces.list.getSnapshot = () => ({
-      items: [{ workspaceId: 'w1', sessionIds: ['s1', 'archived', 'subagent', 's2'] }],
+      items: [{ workspaceId: 'w1', title: 'Alpha', sessionIds: ['s1', 'archived', 'subagent', 's2'] }],
       archivedSessionIds: ['archived'],
     }) as never
     const actions = createGlobalActions(d)
@@ -175,7 +195,7 @@ describe('capability-aware global actions', () => {
       return { ids, byId: Object.fromEntries(ids.map(id => [id, { id }])), current }
     }
     d.workspaces.list.getSnapshot = () => ({
-      items: [{ workspaceId: 'w1', sessionIds: current === 's1' ? ['s1', 's2'] : ['s2', 's3'] }],
+      items: [{ workspaceId: 'w1', title: 'Alpha', sessionIds: current === 's1' ? ['s1', 's2'] : ['s2', 's3'] }],
       archivedSessionIds: [],
     })
     const actions = createGlobalActions(d)

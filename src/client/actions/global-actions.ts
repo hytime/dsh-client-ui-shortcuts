@@ -6,13 +6,14 @@ export type GlobalActions = Partial<Record<GlobalActionId, GlobalAction>>
 
 type SessionSummaryFace = { readonly id: SessionId; readonly blank: boolean; readonly origin?: string }
 type SessionListSnapshot = { readonly ids: readonly SessionId[]; readonly byId: Readonly<Record<SessionId, SessionSummaryFace>>; readonly current: SessionId | undefined }
-type WorkspaceListItem = { readonly workspaceId: WorkspaceId; readonly sessionIds: readonly SessionId[] }
+type WorkspaceListItem = { readonly workspaceId: WorkspaceId; readonly title: string; readonly sessionIds: readonly SessionId[] }
 type WorkspaceListSnapshot = { readonly items: readonly WorkspaceListItem[]; readonly archivedSessionIds: readonly SessionId[] }
 
 export interface SessionActionFace { readonly list: { getSnapshot(): SessionListSnapshot }; open(id: SessionId): void; fork(opts: { sessionId: SessionId; increaseTitle?: boolean }): Promise<SessionId> }
 export interface WorkspaceActionFace { readonly list: { getSnapshot(): WorkspaceListSnapshot }; startSession(workspaceId?: WorkspaceId): void }
 export interface ThemeActionFace { getTheme(): { preference: string; active?: { colorScheme: 'light' | 'dark' } }; setTheme(id: string): void }
-export interface GlobalActionCapabilities { readonly sessions?: SessionActionFace; readonly workspaces?: WorkspaceActionFace; readonly theme?: ThemeActionFace }
+export interface WorkspaceViewActionFace { expandCollapsedWorkspace(workspaceTitle: string): void }
+export interface GlobalActionCapabilities { readonly sessions?: SessionActionFace; readonly workspaces?: WorkspaceActionFace; readonly workspaceView?: WorkspaceViewActionFace; readonly theme?: ThemeActionFace }
 
 function adjacent<T>(items: readonly T[], current: T | undefined, delta: number): T | undefined {
   if (current === undefined) return undefined
@@ -32,7 +33,7 @@ function navigableSessionIds(
   })
 }
 
-export function createGlobalActions({ sessions, workspaces, theme }: GlobalActionCapabilities): GlobalActions {
+export function createGlobalActions({ sessions, workspaces, workspaceView, theme }: GlobalActionCapabilities): GlobalActions {
   const actions: GlobalActions = {}
   if (workspaces?.startSession !== undefined) actions.startSession = () => { workspaces.startSession() }
   if (sessions !== undefined && sessions.open !== undefined && workspaces?.list !== undefined) {
@@ -57,7 +58,10 @@ export function createGlobalActions({ sessions, workspaces, theme }: GlobalActio
       const target = targetWorkspace === undefined
         ? undefined
         : navigableSessionIds(targetWorkspace.sessionIds, sessionSnapshot, workspaceSnapshot.archivedSessionIds)[0]
-      if (target !== undefined) sessions.open(target)
+      if (target !== undefined && targetWorkspace !== undefined) {
+        workspaceView?.expandCollapsedWorkspace(targetWorkspace.title)
+        sessions.open(target)
+      }
     }
     actions.previousWorkspace = () => { navigateWorkspace(-1) }
     actions.nextWorkspace = () => { navigateWorkspace(1) }
