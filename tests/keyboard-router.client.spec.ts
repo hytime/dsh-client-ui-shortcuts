@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest'
 import { createGlobalKeyboardRouter, GLOBAL_SEQUENCE_TIMEOUT_MS } from '../src/client/keyboard/router.js'
 import type { ShortcutProfile } from '../src/client/contract/profile.js'
@@ -92,7 +93,78 @@ describe('global keyboard router', () => {
     expect(removeEventListener).toHaveBeenCalledWith('keydown', expect.any(Function), { capture: true })
   })
 
-  it('starts the timeout for a shifted uppercase chord prefix', () => {
+  it('blocks real capture and bubble listeners for a matched command', () => {
+    const action = vi.fn()
+    const profile = {
+      id: 'real-command', label: 'real-command', description: 'real-command',
+      bindings: [{ command: 'startSession', scope: 'global', key: { key: 'n', modifiers: ['Ctrl'] } }],
+    } as unknown as ShortcutProfile
+    const dispose = createGlobalKeyboardRouter(window, {
+      getProfile: () => profile,
+      getActions: () => ({ startSession: action }),
+      platform: 'linux',
+    })
+    const order: string[] = []
+    window.addEventListener('keydown', () => order.push('capture-same-target'), { capture: true })
+    window.addEventListener('keydown', () => order.push('bubble-same-target'))
+    document.body.addEventListener('keydown', () => order.push('bubble-body'))
+
+    const event = new KeyboardEvent('keydown', { key: 'n', code: 'KeyN', ctrlKey: true, bubbles: true, cancelable: true })
+    Object.defineProperty(event, 'target', { value: document.body })
+    window.dispatchEvent(event)
+
+    expect(action).toHaveBeenCalledOnce()
+    expect(event.defaultPrevented).toBe(true)
+    expect(order).toEqual([])
+    dispose()
+  })
+
+  it('blocks real capture and bubble listeners for a matched chord prefix', () => {
+    const profile = {
+      id: 'real-prefix', label: 'real-prefix', description: 'real-prefix',
+      bindings: [{ command: 'forkSession', scope: 'global', sequences: [[{ key: 'b', modifiers: ['Mod', 'Shift'] }, { key: 's', modifiers: [] }]] }],
+    } as unknown as ShortcutProfile
+    const dispose = createGlobalKeyboardRouter(window, { getProfile: () => profile, getActions: () => ({ forkSession: vi.fn() }) })
+    const order: string[] = []
+    window.addEventListener('keydown', () => order.push('capture-same-target'), { capture: true })
+    window.addEventListener('keydown', () => order.push('bubble-same-target'))
+    const first = new KeyboardEvent('keydown', { key: 'B', code: 'KeyB', ctrlKey: true, shiftKey: true, bubbles: true, cancelable: true })
+    Object.defineProperty(first, 'target', { value: document.body })
+    window.dispatchEvent(first)
+
+    expect(first.defaultPrevented).toBe(true)
+    expect(order).toEqual([])
+    dispose()
+  })
+
+  it('does not consume guarded, IME, repeat, or pending interaction events', () => {
+    const profile = {
+      id: 'real-guards', label: 'real-guards', description: 'real-guards',
+      bindings: [{ command: 'startSession', scope: 'global', key: { key: 'n', modifiers: ['Ctrl'] } }],
+    } as unknown as ShortcutProfile
+    const dispose = createGlobalKeyboardRouter(window, { getProfile: () => profile, getActions: () => ({ startSession: vi.fn() }), isInteractionPending: () => true })
+    const input = document.createElement('input')
+    document.body.append(input)
+    const events = [
+      new KeyboardEvent('keydown', { key: 'n', ctrlKey: true, bubbles: true, cancelable: true }),
+      new KeyboardEvent('keydown', { key: 'n', ctrlKey: true, isComposing: true, bubbles: true, cancelable: true }),
+      new KeyboardEvent('keydown', { key: 'n', ctrlKey: true, repeat: true, bubbles: true, cancelable: true }),
+      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }),
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+    ]
+    Object.defineProperty(events[1], 'target', { value: document.body })
+    Object.defineProperty(events[2], 'target', { value: document.body })
+    Object.defineProperty(events[3], 'target', { value: document.body })
+    Object.defineProperty(events[4], 'target', { value: document.body })
+    input.dispatchEvent(events[0])
+    for (const event of events.slice(1)) window.dispatchEvent(event)
+
+    for (const event of events) expect(event.defaultPrevented).toBe(false)
+    dispose()
+    input.remove()
+  })
+
+
     let listener: (event: RouterEvent) => void = () => {}
     const setTimeout = vi.fn(() => 1)
     const target = {
@@ -243,4 +315,3 @@ describe('global keyboard router', () => {
     expect(stopPropagation).toHaveBeenCalledOnce()
     dispose()
   })
-})
