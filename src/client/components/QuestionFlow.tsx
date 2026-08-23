@@ -145,7 +145,7 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask, platform }
             aria-checked={draft.selected.includes(option.label)}
             disabled={submitting}
             onClick={() => { setFocusIndex(optionIndex); choose(option.label) }}
-          >{multi ? <span className={clsx(surfaceStyles.optionMark, draft.selected.includes(option.label) && surfaceStyles.optionMarkSelected)}>{draft.selected.includes(option.label) ? <ShortcutIcon name="check" size={14} /> : null}</span> : null}<span className={surfaceStyles.optionLabel}>{option.label}</span></button>)}
+          >{multi ? <span className={clsx(surfaceStyles.optionMark, draft.selected.includes(option.label) && surfaceStyles.optionMarkSelected)}>{draft.selected.includes(option.label) ? <ShortcutIcon name="check" size={14} /> : null}</span> : null}<span className={surfaceStyles.optionContent}><span className={surfaceStyles.optionLabel}>{option.label}</span>{option.description ? <span className={surfaceStyles.optionDescription}>{option.description}</span> : null}</span></button>)}
           {options.length > 0 ? <input
             ref={node => { focusItems.current[options.length] = node }}
             className={surfaceStyles.customInput}

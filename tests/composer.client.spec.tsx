@@ -151,6 +151,28 @@ describe('shortcut composer flows', () => {
     expect(textarea.value).toBe('ab')
   })
 
+  it('renders question detail and option descriptions', () => {
+    const matched = question(vi.fn<Response>(() => receipt()), [
+      { label: 'A', description: 'Option A details' },
+      { label: 'B', description: 'Option B details' },
+    ], false, [{
+      id: 'q',
+      question: 'Pick',
+      detail: 'Question context',
+      options: [
+        { label: 'A', description: 'Option A details' },
+        { label: 'B', description: 'Option B details' },
+      ],
+      multiSelect: false,
+    }])
+
+    render(<QuestionFlow matched={matched} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} />)
+
+    expect(screen.getByText('Question context')).toBeTruthy()
+    expect(screen.getByText('Option A details')).toBeTruthy()
+    expect(screen.getByText('Option B details')).toBeTruthy()
+  })
+
   it('submits the DSH question selected/custom envelope', async () => {
     const respond = vi.fn<Response>(() => receipt())
     render(<QuestionFlow matched={question(respond)} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} />)
