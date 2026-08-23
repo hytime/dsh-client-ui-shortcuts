@@ -4,6 +4,7 @@ function normalizedText(value: string): string {
 
 export function expandCollapsedWorkspace(root: ParentNode, workspaceTitle: string): void {
   const title = normalizedText(workspaceTitle)
+  if (title === '') return
   const matches = [...root.querySelectorAll<HTMLElement>('[role="treeitem"][aria-expanded]')]
     .filter(row => normalizedText(row.innerText ?? '') === title)
   if (matches.length !== 1 || matches[0]?.getAttribute('aria-expanded') !== 'false') return

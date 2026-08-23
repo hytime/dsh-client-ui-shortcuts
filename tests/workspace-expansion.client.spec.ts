@@ -58,12 +58,27 @@ describe('expandCollapsedWorkspace', () => {
     expect(click).not.toHaveBeenCalled()
   })
 
-  it('does not click when the title is absent or ambiguous', () => {
+  it('does not click a uniquely matching empty-title row', () => {
+    const row = workspaceRow('', false)
+    const click = vi.spyOn(row, 'click')
+
+    expandCollapsedWorkspace(document, '   ')
+
+    expect(click).not.toHaveBeenCalled()
+  })
+
+  it('does not click when the title is absent', () => {
+    const row = workspaceRow('Beta', false)
+    const click = vi.spyOn(row, 'click')
+    expandCollapsedWorkspace(document, 'Missing')
+    expect(click).not.toHaveBeenCalled()
+  })
+
+  it('does not click when the title is ambiguous', () => {
     const first = workspaceRow('Beta', false)
     const second = workspaceRow('Beta', false)
     const firstClick = vi.spyOn(first, 'click')
     const secondClick = vi.spyOn(second, 'click')
-    expandCollapsedWorkspace(document, 'Missing')
     expandCollapsedWorkspace(document, 'Beta')
     expect(firstClick).not.toHaveBeenCalled()
     expect(secondClick).not.toHaveBeenCalled()

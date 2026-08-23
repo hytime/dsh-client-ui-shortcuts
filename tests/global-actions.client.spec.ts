@@ -129,9 +129,11 @@ describe('capability-aware global actions', () => {
       ],
       archivedSessionIds: [],
     }) as never
-    const actions = createGlobalActions(d)
+    const expandCollapsedWorkspace = vi.fn()
+    const actions = createGlobalActions({ ...d, workspaceView: { expandCollapsedWorkspace } })
 
     actions.nextWorkspace?.()
+    expect(expandCollapsedWorkspace).not.toHaveBeenCalled()
     expect(d.sessions.open).not.toHaveBeenCalled()
   })
 
