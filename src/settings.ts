@@ -16,16 +16,27 @@ export interface ShortcutSettings {
 
 const jsonArray = z.array(z.any())
 
+function defaultGlobalBinding(command: string, key: string, modifiers: readonly string[] = []): PersistedShortcutBinding {
+  return {
+    command,
+    scope: 'global',
+    sequences: [
+      [{ key, modifiers: [...new Set(['Meta', 'Alt', ...modifiers])] }],
+      [{ key, modifiers: [...new Set(['Ctrl', ...modifiers])] }],
+    ],
+  }
+}
+
 const defaultCustomBindings: PersistedShortcutBinding[] = [
-  { command: 'openCommandPalette', scope: 'global', key: { key: 'p', modifiers: ['Mod'] } },
-  { command: 'openSettings', scope: 'global', key: { key: ',', modifiers: ['Mod'] } },
-  { command: 'startSession', scope: 'global', key: { key: 'n', modifiers: ['Mod'] } },
-  { command: 'previousSession', scope: 'global', key: { key: 'ArrowUp', modifiers: ['Mod', 'Alt'] } },
-  { command: 'nextSession', scope: 'global', key: { key: 'ArrowDown', modifiers: ['Mod', 'Alt'] } },
-  { command: 'previousWorkspace', scope: 'global', key: { key: 'ArrowLeft', modifiers: ['Mod', 'Shift'] } },
-  { command: 'nextWorkspace', scope: 'global', key: { key: 'ArrowRight', modifiers: ['Mod', 'Shift'] } },
-  { command: 'forkSession', scope: 'global', key: { key: 'b', modifiers: ['Mod', 'Shift'] } },
-  { command: 'toggleTheme', scope: 'global', key: { key: 'l', modifiers: ['Mod', 'Shift'] } },
+  defaultGlobalBinding('openCommandPalette', 'p'),
+  defaultGlobalBinding('openSettings', ','),
+  defaultGlobalBinding('startSession', 'n'),
+  defaultGlobalBinding('previousSession', 'ArrowUp', ['Alt']),
+  defaultGlobalBinding('nextSession', 'ArrowDown', ['Alt']),
+  defaultGlobalBinding('previousWorkspace', 'ArrowLeft', ['Shift']),
+  defaultGlobalBinding('nextWorkspace', 'ArrowRight', ['Shift']),
+  defaultGlobalBinding('forkSession', 'b', ['Shift']),
+  defaultGlobalBinding('toggleTheme', 'l', ['Shift']),
   { command: 'focusPrevious', scope: 'question', key: { key: 'ArrowUp', modifiers: [] } },
   { command: 'focusNext', scope: 'question', key: { key: 'ArrowDown', modifiers: [] } },
   { command: 'activate', scope: 'question', key: { key: 'Enter', modifiers: [] } },

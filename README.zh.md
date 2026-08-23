@@ -60,10 +60,10 @@ active profile 现在提供 global router。内置全局绑定如下：
 | 动作 | 默认键位 | 能力要求 |
 | --- | --- | --- |
 | 新建会话 | `Mod+N` | `workspaces.startSession()` |
-| 上一个会话 | `Mod+Alt+ArrowUp` | session list 和 `sessions.open()` |
-| 下一个会话 | `Mod+Alt+ArrowDown` | session list 和 `sessions.open()` |
-| 上一个 Workspace | `Mod+Shift+ArrowLeft` | Workspace list、`connectWorkspace()` 和 `sessions.open()` |
-| 下一个 Workspace | `Mod+Shift+ArrowRight` | Workspace list、`connectWorkspace()` 和 `sessions.open()` |
+| 上一个会话 | `Mod+Alt+ArrowUp` | 当前 Workspace 的会话顺序、`sessions.open()`，以及非空白会话元数据 |
+| 下一个会话 | `Mod+Alt+ArrowDown` | 当前 Workspace 的会话顺序、`sessions.open()`，以及非空白会话元数据 |
+| 上一个 Workspace | `Mod+Shift+ArrowLeft` | Workspace 列表、目标 Workspace 中已有的非空白会话，以及 `sessions.open()` |
+| 下一个 Workspace | `Mod+Shift+ArrowRight` | Workspace 列表、目标 Workspace 中已有的非空白会话，以及 `sessions.open()` |
 | 创建当前会话分支 | `Mod+Shift+B` | `sessions.fork()` 和 `sessions.open()` |
 | 切换浅色/深色主题 | `Mod+Shift+L` | `theme.getTheme()` 和 `theme.setTheme()` |
 
@@ -86,7 +86,10 @@ active profile 现在提供 global router。内置全局绑定如下：
 
 Custom profile 会参考 Claude Code 和 Codex 熟悉的修饰键习惯，但不会声称完整复制它们的默认键位：
 
-- `Mod` 在 macOS 映射为 `Meta`，其他平台映射为 `Ctrl`。
+- `Mod` 在 macOS 映射为 `Meta`，其他平台映射为 `Ctrl`，路由器运行时也严格执行该平台映射。
+- 会话导航优先停留在当前 Workspace，遵循 Workspace 的 `sessionIds` 顺序，并跳过 archived、subagent 和 blank 会话。
+- Workspace 导航只打开目标 Workspace 中已有的非空白会话，不会因为导航动作创建新会话。
+- macOS `Cmd+N` 等浏览器保留快捷键可能在页面收到 `keydown` 之前被浏览器处理；浏览器不分发事件时，应选择非保留键位。
 - UI 根据平台显示 `Cmd` 或 `Ctrl`，持久化时不写死两个互相冲突的绑定。
 - 一个 binding 支持单键或两段 chord，例如 `Ctrl+X Ctrl+S`。
 - 一个 command 可以拥有多个候选绑定，用于平台兼容或保留备用键。
@@ -149,7 +152,7 @@ pnpm exec vitest run tests
 | 项目 | 值 |
 | --- | --- |
 | Package | `@hytime/dsh-client-ui-shortcuts` |
-| 当前版本 | `0.1.11` |
+| 当前版本 | `0.1.12` |
 | Bundle row | `dsh-ui-shortcuts` |
 | Settings namespace | `dsh-ui-shortcuts` |
 | 持久化字段 | `activeProfile`、`customBindings` |

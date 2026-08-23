@@ -3,12 +3,12 @@ import { createGlobalActions } from '../src/client/actions/global-actions.js'
 
 function services(overrides: Record<string, unknown> = {}) {
   const sessions = {
-    list: { getSnapshot: () => ({ items: [{ sessionId: 's1' }, { sessionId: 's2' }], current: 's1' }) },
+    list: { getSnapshot: () => ({ ids: ['s1', 's2'], byId: { s1: { id: 's1', blank: false }, s2: { id: 's2', blank: false } }, current: 's1' }) },
     open: vi.fn(), fork: vi.fn().mockResolvedValue('child'),
   }
   const workspaces = {
-    list: { getSnapshot: () => ({ items: [{ workspaceId: 'w1', sessionIds: ['s1'] }, { workspaceId: 'w2', sessionIds: ['s2'] }] }) },
-    startSession: vi.fn(), connectWorkspace: vi.fn().mockResolvedValue('s2'),
+    list: { getSnapshot: () => ({ items: [{ workspaceId: 'w1', sessionIds: ['s1'] }, { workspaceId: 'w2', sessionIds: ['s2'] }], archivedSessionIds: [] }) },
+    startSession: vi.fn(),
   }
   const theme = { getTheme: () => ({ preference: 'light' }), setTheme: vi.fn() }
   return { sessions, workspaces, theme, ...overrides }
@@ -36,6 +36,26 @@ describe('capability-aware global actions', () => {
     expect(createGlobalActions({ sessions: { list: services().sessions.list, open: undefined, fork: undefined } as never }).forkSession).toBeUndefined()
   })
 
+  it('navigates sessions from the current DSH ids snapshot shape', () => {
+    const d = services()
+    d.sessions.list.getSnapshot = () => ({
+      ids: ['s1', 's2'],
+      byId: {
+        s1: { id: 's1' },
+        s2: { id: 's2' },
+      },
+      current: 's1',
+    }) as never
+    d.workspaces.list.getSnapshot = () => ({
+      items: [{ workspaceId: 'w1', sessionIds: ['s1', 's2'] }],
+      archivedSessionIds: [],
+    }) as never
+    const actions = createGlobalActions(d)
+
+    expect(() => { actions.nextSession?.() }).not.toThrow()
+    expect(d.sessions.open).toHaveBeenCalledWith('s2')
+  })
+
   it('does not change selection when fork fails', async () => {
     const d = services()
     d.sessions.fork.mockRejectedValue(new Error('no'))
@@ -45,37 +65,53 @@ describe('capability-aware global actions', () => {
     expect(d.sessions.open).not.toHaveBeenCalled()
   })
 
-  it('uses workspace connection in both directions and preserves selection on rejection', async () => {
-    let currentSession = 's1'
-    let workspaceItems = [{ workspaceId: 'w1', sessionIds: ['s1'] }, { workspaceId: 'w2', sessionIds: ['s2'] }]
+  it('navigates within the current workspace and skips blank sessions', () => {
     const d = services()
-    d.sessions.list.getSnapshot = () => ({ ids: ['s1', 's2'], current: currentSession })
-    d.workspaces.list.getSnapshot = () => ({ items: workspaceItems })
-    d.workspaces.connectWorkspace
-      .mockResolvedValueOnce('connected-prev')
-      .mockResolvedValueOnce('connected-next')
-      .mockRejectedValueOnce(new Error('offline'))
+    d.sessions.list.getSnapshot = () => ({
+      ids: ['s1', 'blank', 's2', 's3'],
+      byId: {
+        s1: { id: 's1', blank: false },
+        blank: { id: 'blank', blank: true },
+        s2: { id: 's2', blank: false },
+        s3: { id: 's3', blank: false },
+      },
+      current: 's1',
+    }) as never
+    d.workspaces.list.getSnapshot = () => ({
+      items: [
+        { workspaceId: 'w1', sessionIds: ['s1', 'blank', 's2'] },
+        { workspaceId: 'w2', sessionIds: ['s3'] },
+      ],
+      archivedSessionIds: [],
+    }) as never
     const actions = createGlobalActions(d)
 
-    actions.previousWorkspace?.()
-    await Promise.resolve()
-    expect(d.workspaces.connectWorkspace).toHaveBeenNthCalledWith(1, 'w2')
-    expect(d.sessions.open).toHaveBeenCalledWith('connected-prev')
+    actions.nextSession?.()
+    expect(d.sessions.open).toHaveBeenCalledWith('s2')
+    expect(d.sessions.open).not.toHaveBeenCalledWith('blank')
 
-    currentSession = 'connected-prev'
-    workspaceItems = [{ workspaceId: 'w1', sessionIds: ['connected-prev'] }, { workspaceId: 'w2', sessionIds: ['s2'] }]
     d.sessions.open.mockClear()
     actions.nextWorkspace?.()
-    await Promise.resolve()
-    expect(d.workspaces.connectWorkspace).toHaveBeenNthCalledWith(2, 'w2')
-    expect(d.sessions.open).toHaveBeenCalledWith('connected-next')
+    expect(d.sessions.open).toHaveBeenCalledWith('s3')
+  })
 
-    currentSession = 'connected-next'
-    workspaceItems = [{ workspaceId: 'w1', sessionIds: ['s1'] }, { workspaceId: 'w2', sessionIds: ['connected-next'] }]
-    d.sessions.open.mockClear()
-    actions.previousWorkspace?.()
-    await Promise.resolve()
-    expect(d.workspaces.connectWorkspace).toHaveBeenNthCalledWith(3, 'w1')
+  it('does not navigate to a workspace without an existing non-blank session', () => {
+    const d = services()
+    d.sessions.list.getSnapshot = () => ({
+      ids: ['s1'],
+      byId: { s1: { id: 's1', blank: false } },
+      current: 's1',
+    }) as never
+    d.workspaces.list.getSnapshot = () => ({
+      items: [
+        { workspaceId: 'w1', sessionIds: ['s1'] },
+        { workspaceId: 'w2', sessionIds: ['blank'] },
+      ],
+      archivedSessionIds: [],
+    }) as never
+    const actions = createGlobalActions(d)
+
+    actions.nextWorkspace?.()
     expect(d.sessions.open).not.toHaveBeenCalled()
   })
 
@@ -89,7 +125,14 @@ describe('capability-aware global actions', () => {
   it('uses dynamic session snapshots and resolves system theme from active scheme', () => {
     const d = services()
     let current = 's1'
-    d.sessions.list.getSnapshot = () => ({ items: (current === 's1' ? ['s1', 's2'] : ['s2', 's3']).map(sessionId => ({ sessionId })), current })
+    d.sessions.list.getSnapshot = () => {
+      const ids = current === 's1' ? ['s1', 's2'] : ['s2', 's3']
+      return { ids, byId: Object.fromEntries(ids.map(id => [id, { id }])), current }
+    }
+    d.workspaces.list.getSnapshot = () => ({
+      items: [{ workspaceId: 'w1', sessionIds: current === 's1' ? ['s1', 's2'] : ['s2', 's3'] }],
+      archivedSessionIds: [],
+    })
     const actions = createGlobalActions(d)
     current = 's2'
     actions.nextSession?.()
@@ -99,9 +142,14 @@ describe('capability-aware global actions', () => {
     expect(d.theme.setTheme).toHaveBeenCalledWith('light')
   })
 
-  it('omits workspace actions when any required face is missing and invocation is safe', () => {
+  it('omits navigation when sessions cannot open', () => {
     const d = services()
-    const actions = createGlobalActions({ sessions: d.sessions as never, workspaces: { list: d.workspaces.list, connectWorkspace: undefined } as never })
+    const actions = createGlobalActions({
+      sessions: { list: d.sessions.list, open: undefined, fork: undefined } as never,
+      workspaces: { list: d.workspaces.list } as never,
+    })
+    expect(actions.previousSession).toBeUndefined()
+    expect(actions.nextSession).toBeUndefined()
     expect(actions.previousWorkspace).toBeUndefined()
     expect(actions.nextWorkspace).toBeUndefined()
   })
