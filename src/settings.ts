@@ -21,13 +21,12 @@ function defaultGlobalBinding(command: string, key: string, modifiers: readonly 
     command,
     scope: 'global',
     key: { key, modifiers: [...new Set(modifiers)] },
-    sequences: [[{ key, modifiers: [...new Set(modifiers)] }]],
   }
 }
 
 const defaultCustomBindings: PersistedShortcutBinding[] = [
-  defaultGlobalBinding('openCommandPalette', 'p'),
-  defaultGlobalBinding('openSettings', ','),
+  defaultGlobalBinding('openCommandPalette', 'p', ['Mod']),
+  defaultGlobalBinding('openSettings', ',', ['Mod']),
   defaultGlobalBinding('startSession', 'n', ['Mod', 'Alt', 'Shift']),
   defaultGlobalBinding('previousSession', 'j', ['Mod', 'Alt', 'Shift']),
   defaultGlobalBinding('nextSession', 'k', ['Mod', 'Alt', 'Shift']),

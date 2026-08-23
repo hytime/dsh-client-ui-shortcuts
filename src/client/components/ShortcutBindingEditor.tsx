@@ -18,7 +18,6 @@ const isSymbolic = (stroke: KeyStroke | ShortcutStroke): stroke is ShortcutStrok
 const toStroke = (stroke: KeyStroke | ShortcutStroke): ShortcutStroke => isSymbolic(stroke) ? { key: stroke.key, modifiers: [...stroke.modifiers] } : { key: stroke.key, modifiers: [stroke.ctrl && 'Ctrl', stroke.meta && 'Meta', stroke.alt && 'Alt', stroke.shift && 'Shift'].filter(Boolean) as ShortcutModifier[] }
 const bindingPlatformCompatible = (binding: ShortcutBinding, platform: ShortcutPlatform): boolean => compatibleBindingSequences(binding, platform).length > 0
 const editableSequence = (binding: ShortcutBinding): readonly (readonly (KeyStroke | ShortcutStroke)[])[] => binding.sequences ?? (binding.sequence !== undefined ? [binding.sequence] : binding.key !== undefined ? [[binding.key]] : [])
-const sameStroke = (left: KeyStroke | ShortcutStroke, right: KeyStroke | ShortcutStroke): boolean => JSON.stringify(left) === JSON.stringify(right)
 
 export function ShortcutBindingEditor({ bindings, availableGlobalActions, t, onSave, onCancel, platform }: ShortcutBindingEditorProps): React.ReactElement {
   const [draft, setDraft] = useState<readonly ShortcutBinding[]>(bindings)
@@ -32,7 +31,7 @@ export function ShortcutBindingEditor({ bindings, availableGlobalActions, t, onS
     if (position !== index) return binding
     const sequences = editableSequence(binding)
     const active = compatibleBindingSequences(binding, platform)[0]
-    const activeIndex = active === undefined ? 0 : sequences.findIndex(sequence => sequence.length === active.length && sequence.every((item, itemIndex) => sameStroke(item, active[itemIndex]!)))
+    const activeIndex = active === undefined ? 0 : sequences.findIndex(sequence => sequence === active)
     if (binding.sequences !== undefined) return { ...binding, sequences: sequences.map((sequence, sequenceIndex) => sequenceIndex === Math.max(0, activeIndex) ? [stroke, ...sequence.slice(1)] : [...sequence]) }
     if (binding.sequence !== undefined) return { ...binding, sequence: [stroke, ...binding.sequence.slice(1)] }
     return { ...binding, key: stroke }

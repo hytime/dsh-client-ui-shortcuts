@@ -30,8 +30,8 @@ describe('shortcut Host settings', () => {
     const second = defaultShortcutBindings()
     expect(first).not.toBe(second)
     expect(first[0]).not.toBe(second[0])
-    expect(first[0]?.sequences).not.toBe(second[0]?.sequences)
-    expect(first[0]?.sequences?.[0]).not.toBe(second[0]?.sequences?.[0])
+    expect(first[0]?.key).not.toBe(second[0]?.key)
+    expect(first[0]?.key?.modifiers).not.toBe(second[0]?.key?.modifiers)
   })
 
   it.each([

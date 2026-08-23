@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ShortcutBindingEditor } from '../src/client/components/ShortcutBindingEditor.js'
 
 const bindings = [
-  { command: 'openCommandPalette' as const, scope: 'global' as const, key: { key: 'p', modifiers: ['Mod'] as const } },
+  { command: 'openCommandPalette' as const, scope: 'global' as const, key: { key: 'q', modifiers: ['Mod'] as const } },
   { command: 'openSettings' as const, scope: 'global' as const, key: { key: ',', modifiers: ['Mod'] as const } },
 ]
 const t = (key: string) => key
@@ -19,7 +19,9 @@ describe('ShortcutBindingEditor', () => {
     render(<ShortcutBindingEditor platform="linux" bindings={[bindings[0]!, hidden]} availableGlobalActions={['openCommandPalette', 'openSettings']} t={t} onSave={onSave} />)
     expect(screen.getByRole('img', { name: 'Control' })).toBeTruthy()
     expect(screen.queryByText('openSettings')).toBeNull()
+    expect((screen.getByText('editor.save').closest('button') as HTMLButtonElement).disabled).toBe(false)
     fireEvent.click(screen.getByText('editor.save').closest('button')!)
+    await new Promise(resolve => setTimeout(resolve, 0))
     expect(onSave).toHaveBeenCalledWith([bindings[0], hidden])
   })
 

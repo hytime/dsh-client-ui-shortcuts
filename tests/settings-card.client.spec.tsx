@@ -450,6 +450,7 @@ describe('shortcut settings card', () => {
     const settings = settingsFace()
     settings.customBindings = () => registry.custom()
     settings.setCustomBindings = vi.fn(async bindings => { registry.replaceCustom(bindings); settings.emit() })
+    registry.replaceCustom([{ command: 'startSession', scope: 'global', key: { key: 'n', modifiers: ['Mod', 'Alt', 'Shift'] } }])
     const availableGlobalActions = [
       'startSession', 'previousSession', 'nextSession', 'previousWorkspace', 'nextWorkspace', 'forkSession', 'toggleTheme',
     ] as const
@@ -474,10 +475,7 @@ describe('shortcut settings card', () => {
       expect.objectContaining({
         command: 'startSession',
         scope: 'global',
-        sequences: [
-          [{ key: 'n', modifiers: ['Meta', 'Alt'] }],
-          [{ key: 'x', modifiers: ['Ctrl'] }],
-        ],
+        key: { key: 'x', modifiers: ['Ctrl'] },
       }),
     ]))
   })

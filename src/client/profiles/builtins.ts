@@ -12,12 +12,12 @@ function uniqueModifiers(...modifiers: ShortcutModifier[]): ShortcutModifier[] {
 }
 
 function globalBinding(command: GlobalBindingCommand, key: string, modifiers: readonly ShortcutModifier[] = []) {
-  return { command, scope: 'global' as const, key: { key, modifiers: uniqueModifiers(...modifiers) }, sequences: [[{ key, modifiers: uniqueModifiers(...modifiers) }]] }
+  return { command, scope: 'global' as const, key: { key, modifiers: uniqueModifiers(...modifiers) } }
 }
 
 const globalBindings = [
-  globalBinding('openCommandPalette', 'p'),
-  globalBinding('openSettings', ','),
+  globalBinding('openCommandPalette', 'p', ['Mod']),
+  globalBinding('openSettings', ',', ['Mod']),
   globalBinding('startSession', 'n', ['Mod', 'Alt', 'Shift']),
   globalBinding('previousSession', 'j', ['Mod', 'Alt', 'Shift']),
   globalBinding('nextSession', 'k', ['Mod', 'Alt', 'Shift']),
