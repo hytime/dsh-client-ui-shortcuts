@@ -74,14 +74,14 @@ describe('profile-aware keyboard resolver', () => {
         [{ key: 'n', modifiers: ['Ctrl'] }],
       ],
     })
-    expect(resolveKey(standardProfile, 'global', input('n', { meta: true, alt: true }), 'mac'), 'linux').toEqual({ kind: 'command', command: 'startSession' })
-    expect(resolveKey(standardProfile, 'global', input('n', { ctrl: true }), 'windows'), 'linux').toEqual({ kind: 'command', command: 'startSession' })
-    expect(resolveKey(standardProfile, 'global', input('n', { ctrl: true }), 'mac'), 'linux').toEqual({ kind: 'pass' })
+    expect(resolveKey(standardProfile, 'global', input('n', { meta: true, alt: true }), 'mac')).toEqual({ kind: 'command', command: 'startSession' })
+    expect(resolveKey(standardProfile, 'global', input('n', { ctrl: true }), 'windows')).toEqual({ kind: 'command', command: 'startSession' })
+    expect(resolveKey(standardProfile, 'global', input('n', { ctrl: true }), 'mac')).toEqual({ kind: 'pass' })
   })
 
   it('resolves shifted global defaults with browser key casing', () => {
-    expect(resolveKey(standardProfile, 'global', input('B', { ctrl: true, shift: true }), 'windows'), 'linux').toEqual({ kind: 'command', command: 'forkSession' })
-    expect(resolveKey(standardProfile, 'global', input('L', { meta: true, alt: true, shift: true }), 'mac'), 'linux').toEqual({ kind: 'command', command: 'toggleTheme' })
+    expect(resolveKey(standardProfile, 'global', input('B', { ctrl: true, shift: true }), 'windows')).toEqual({ kind: 'command', command: 'forkSession' })
+    expect(resolveKey(standardProfile, 'global', input('L', { meta: true, alt: true, shift: true }), 'mac')).toEqual({ kind: 'command', command: 'toggleTheme' })
   })
 
   it('resolves declarative Mod and Alt combinations', () => {
@@ -92,9 +92,9 @@ describe('profile-aware keyboard resolver', () => {
       bindings: [{ command: 'openSettings', scope: 'global', key: stroke }],
     }
 
-    expect(resolveKey(profile, 'global', input('p', { ctrl: true, alt: true }))).toEqual({ kind: 'command', command: 'openSettings' })
+    expect(resolveKey(profile, 'global', input('p', { ctrl: true, alt: true }), 'linux')).toEqual({ kind: 'command', command: 'openSettings' })
     expect(resolveKey(profile, 'global', input('p', { meta: true, alt: true }), 'mac')).toEqual({ kind: 'command', command: 'openSettings' })
-    expect(resolveKey(profile, 'global', input('p', { ctrl: true, meta: true, alt: true }))).toEqual({ kind: 'pass' })
+    expect(resolveKey(profile, 'global', input('p', { ctrl: true, meta: true, alt: true }), 'linux')).toEqual({ kind: 'pass' })
   })
   it('resolves two-stroke sequences and alternative sequences', () => {
     const profile: ShortcutProfile = {
@@ -138,9 +138,9 @@ describe('profile-aware keyboard resolver', () => {
       bindings: [{ command: 'openSettings', scope: 'global', key: input('p', { ctrl: true }) }],
     }
 
-    expect(resolveKey(modProfile, 'global', input('p', { ctrl: true }))).toEqual({ kind: 'command', command: 'openSettings' })
+    expect(resolveKey(modProfile, 'global', input('p', { ctrl: true }), 'linux')).toEqual({ kind: 'command', command: 'openSettings' })
     expect(resolveKey(modProfile, 'global', input('p', { meta: true }), 'mac')).toEqual({ kind: 'command', command: 'openSettings' })
-    expect(resolveKey(ctrlProfile, 'global', input('p', { meta: true }))).toEqual({ kind: 'pass' })
+    expect(resolveKey(ctrlProfile, 'global', input('p', { meta: true }), 'mac')).toEqual({ kind: 'pass' })
   })
 
   it('does not match Mod against a dual-platform modifier event', () => {
@@ -149,7 +149,7 @@ describe('profile-aware keyboard resolver', () => {
       id: 'dual-mod',
       bindings: [{ command: 'openSettings', scope: 'global', key: input('p'), modifier: 'Mod' }],
     }
-    expect(resolveKey(profile, 'global', input('p', { ctrl: true, meta: true }))).toEqual({ kind: 'pass' })
+    expect(resolveKey(profile, 'global', input('p', { ctrl: true, meta: true }), 'linux')).toEqual({ kind: 'pass' })
   })
 
   it('preserves the legacy single-stroke key and exposes sequence canonicalization separately', () => {

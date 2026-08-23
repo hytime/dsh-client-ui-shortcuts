@@ -98,14 +98,14 @@ function sameSequence(
   return left.length === right.length && left.every((stroke, index) => sameStroke(stroke, right[index]!, platform))
 }
 
-function sameStroke(left: KeyStroke | KeyInput, right: KeyStroke | KeyInput, platform?: ShortcutPlatform): boolean {
+function sameStroke(left: KeyStroke | KeyInput, right: KeyStroke | KeyInput, platform: ShortcutPlatform): boolean {
   const leftModifier = 'modifier' in left ? left.modifier : undefined
   const effectiveLeftModifier = leftModifier ?? (left.ctrl ? 'Ctrl' : left.meta ? 'Meta' : undefined)
   const rightCtrl = right.ctrl
   const rightMeta = right.meta
   if (rightCtrl && rightMeta) return false
   if (effectiveLeftModifier === 'Ctrl' && platform === 'mac') return false
-  if (effectiveLeftModifier === 'Meta' && platform !== undefined && platform !== 'mac') return false
+  if (effectiveLeftModifier === 'Meta' && platform !== 'mac') return false
   const modifierMatches = effectiveLeftModifier === 'Mod'
     ? platform === 'mac' ? rightMeta && !rightCtrl : rightCtrl && !rightMeta
     : effectiveLeftModifier === 'Ctrl'
