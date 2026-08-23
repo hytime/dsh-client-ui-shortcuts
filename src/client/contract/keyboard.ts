@@ -4,6 +4,7 @@ import type { ShortcutCommand, ShortcutScope } from './profile.js'
 /** Normalized browser key input consumed by a profile-aware resolver. */
 export interface KeyInput {
   readonly key: string
+  readonly code?: string
   readonly alt: boolean
   readonly ctrl: boolean
   readonly meta: boolean

@@ -39,6 +39,26 @@ describe('profile-aware keyboard resolver', () => {
     expect(normalizeKeyboardEvent(event)).toEqual(expect.objectContaining({ alt: false, ctrl: false, meta: false, shift: false }))
   })
 
+  it('normalizes physical letter codes over layout-dependent raw keys', () => {
+    const event = { key: '˜', code: 'KeyN', altKey: true, ctrlKey: false, metaKey: true, shiftKey: true, isComposing: false, repeat: false, keyCode: 78 }
+    expect(normalizeKeyboardEvent(event)).toEqual(expect.objectContaining({ key: 'n', code: 'KeyN' }))
+  })
+
+  it('normalizes physical digit codes', () => {
+    const event = { key: ')', code: 'Digit0', altKey: false, ctrlKey: false, metaKey: false, shiftKey: true, isComposing: false, repeat: false, keyCode: 48 }
+    expect(normalizeKeyboardEvent(event)).toEqual(expect.objectContaining({ key: '0', code: 'Digit0' }))
+  })
+
+  it('falls back to raw key when physical code is absent', () => {
+    const event = { key: '˜', altKey: false, ctrlKey: false, metaKey: false, shiftKey: false, isComposing: false, repeat: false, keyCode: 0 }
+    expect(normalizeKeyboardEvent(event)).toEqual(expect.objectContaining({ key: '˜' }))
+  })
+
+  it('keeps ordinary key normalization unchanged', () => {
+    const event = { key: 'B', code: 'KeyB', altKey: false, ctrlKey: false, metaKey: false, shiftKey: false, isComposing: false, repeat: false, keyCode: 66 }
+    expect(normalizeKeyboardEvent(event).key).toBe('b')
+  })
+
   it('uses stable modifier ordering without scope in canonical keys', () => {
     expect(canonicalBindingKey({ command: 'activate', scope: 'approval', key: input('Enter', { alt: true, ctrl: true, meta: true, shift: true }) })).toBe('alt|ctrl|meta|shift|Enter')
   })

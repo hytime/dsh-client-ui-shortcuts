@@ -18,6 +18,36 @@ type RouterEvent = {
 }
 
 describe('global keyboard router', () => {
+  it('dispatches macOS global startSession from KeyN when raw key is layout-dependent', () => {
+    const action = vi.fn()
+    const profile = {
+      id: 'mac-layout', label: 'mac-layout', description: 'mac-layout',
+      bindings: [{ command: 'startSession', scope: 'global', key: { key: 'n', modifiers: ['Mod', 'Alt', 'Shift'] } }],
+    } as unknown as ShortcutProfile
+    const dispose = createGlobalKeyboardRouter(window, { getProfile: () => profile, getActions: () => ({ startSession: action }), platform: 'mac' })
+    const event = new KeyboardEvent('keydown', { key: '˜', code: 'KeyN', metaKey: true, altKey: true, shiftKey: true, bubbles: true, cancelable: true })
+    document.body.dispatchEvent(event)
+    expect(action).toHaveBeenCalledOnce()
+    expect(event.defaultPrevented).toBe(true)
+    dispose()
+  })
+
+  it('dispatches macOS nextSession from KeyK when raw key is layout-dependent', () => {
+    const action = vi.fn()
+    const profile = {
+      id: 'mac-layout-prefix', label: 'mac-layout-prefix', description: 'mac-layout-prefix',
+      bindings: [{ command: 'nextSession', scope: 'global', sequences: [[{ key: 'k', modifiers: ['Mod', 'Alt', 'Shift'] }, { key: 's', modifiers: [] }]] }],
+    } as unknown as ShortcutProfile
+    const dispose = createGlobalKeyboardRouter(window, { getProfile: () => profile, getActions: () => ({ nextSession: action }), platform: 'mac' })
+    const first = new KeyboardEvent('keydown', { key: '˜', code: 'KeyK', metaKey: true, altKey: true, shiftKey: true, bubbles: true, cancelable: true })
+    const second = new KeyboardEvent('keydown', { key: 's', code: 'KeyS', bubbles: true, cancelable: true })
+    document.body.dispatchEvent(first)
+    document.body.dispatchEvent(second)
+    expect(action).toHaveBeenCalledOnce()
+    expect(first.defaultPrevented).toBe(true)
+    expect(second.defaultPrevented).toBe(true)
+    dispose()
+  })
   it('dispatches a matched global binding from an editable target', () => {
     const action = vi.fn()
     const input = document.createElement('input')
