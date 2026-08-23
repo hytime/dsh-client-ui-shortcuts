@@ -25,6 +25,34 @@ describe('ShortcutBindingEditor', () => {
     expect(onSave).toHaveBeenCalledWith([bindings[0], hidden])
   })
 
+  it('allows Linux saves with a hidden browser-reserved Meta binding', async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined)
+    const hidden = { command: 'openSettings' as const, scope: 'global' as const, key: { key: 'n', modifiers: ['Meta'] as const } }
+    render(<ShortcutBindingEditor platform="linux" bindings={[bindings[0]!, hidden]} availableGlobalActions={['openCommandPalette', 'openSettings']} t={t} onSave={onSave} />)
+    expect((screen.getByRole('button', { name: 'editor.save' }) as HTMLButtonElement).disabled).toBe(false)
+    fireEvent.click(screen.getByRole('button', { name: 'editor.save' }))
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(onSave).toHaveBeenCalledWith([bindings[0], hidden])
+  })
+
+  it('allows macOS saves with a hidden browser-reserved Ctrl binding', async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined)
+    const hidden = { command: 'openSettings' as const, scope: 'global' as const, key: { key: 'n', modifiers: ['Ctrl'] as const } }
+    render(<ShortcutBindingEditor platform="mac" bindings={[bindings[0]!, hidden]} availableGlobalActions={['openCommandPalette', 'openSettings']} t={t} onSave={onSave} />)
+    expect((screen.getByRole('button', { name: 'editor.save' }) as HTMLButtonElement).disabled).toBe(false)
+    fireEvent.click(screen.getByRole('button', { name: 'editor.save' }))
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(onSave).toHaveBeenCalledWith([bindings[0], hidden])
+  })
+
+  it('blocks a visible browser-reserved Mod binding', () => {
+    const onSave = vi.fn()
+    render(<ShortcutBindingEditor platform="linux" bindings={[{ ...bindings[0]!, key: { key: 'n', modifiers: ['Mod'] as const }}]} t={t} onSave={onSave} />)
+    expect(screen.getByRole('alert')).toBeTruthy()
+    expect((screen.getByRole('button', { name: 'editor.save' }) as HTMLButtonElement).disabled).toBe(true)
+    expect(onSave).not.toHaveBeenCalled()
+  })
+
   it('validates hidden platform bindings while preserving them in the draft', () => {
     const onSave = vi.fn()
     render(<ShortcutBindingEditor platform="linux" bindings={[bindings[0]!, { command: 'openSettings', scope: 'global', key: { key: 's', modifiers: ['Meta'] }, sequence: [] } as never]} availableGlobalActions={['openCommandPalette', 'openSettings']} t={t} onSave={onSave} />)

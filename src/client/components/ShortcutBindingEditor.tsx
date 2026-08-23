@@ -26,7 +26,7 @@ export function ShortcutBindingEditor({ bindings, availableGlobalActions, t, onS
   const [saving, setSaving] = useState(false)
   useEffect(() => { setDraft(bindings); setError(undefined) }, [bindings])
   const visible = useMemo(() => draft.map((binding, index) => ({ binding, index })).filter(({ binding }) => bindingPlatformCompatible(binding, platform) && (binding.scope !== 'global' || availableGlobalActions === undefined || availableGlobalActions.includes(binding.command as GlobalShortcutCommand))), [draft, availableGlobalActions, platform])
-  const conflict = useMemo(() => { try { validateShortcutBindings(draft); if (findNewShortcutConflicts(bindings, visible, platform).length > 0) return 'cross-scope'; if (draft.some(binding => browserReservedDiagnostics(binding, platform).length > 0)) return 'browser-reserved'; return undefined } catch (reason) { return reason instanceof Error ? reason.message : String(reason) } }, [bindings, draft, visible, platform])
+  const conflict = useMemo(() => { try { validateShortcutBindings(draft); if (findNewShortcutConflicts(bindings, visible, platform).length > 0) return 'cross-scope'; if (visible.some(entry => browserReservedDiagnostics(entry.binding, platform).length > 0)) return 'browser-reserved'; return undefined } catch (reason) { return reason instanceof Error ? reason.message : String(reason) } }, [bindings, draft, visible, platform])
   const update = (index: number, stroke: ShortcutStroke): void => setDraft(current => current.map((binding, position) => {
     if (position !== index) return binding
     const sequences = editableSequence(binding)
