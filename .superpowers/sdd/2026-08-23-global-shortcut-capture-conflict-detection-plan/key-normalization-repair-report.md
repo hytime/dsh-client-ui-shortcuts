@@ -36,4 +36,36 @@ No DSH action API, browser denylist, or capture lifecycle changes were made.
 
 Commit message: `fix: normalize shortcut keys from physical codes`
 
-Commit hash: 246d05a027b212edb319f012ec56af777627c895
+## Follow-up: Hidden Platform Binding Conflict Review
+
+### Root Cause
+
+`findNewShortcutConflicts` filtered draft entries with `bindingPlatformCompatible`, but expanded every baseline binding. A baseline binding using an explicit modifier unavailable on the active platform therefore participated in cross-scope duplicate/prefix comparison and could block an otherwise valid save.
+
+### TDD RED / GREEN
+
+- RED: the new macOS regression failed because a hidden Ctrl baseline binding still blocked a visible Mod binding; Linux and Windows cases covered hidden Meta versus visible Ctrl, and visible conflict cases remained blocking.
+- GREEN: baseline expansion now applies the same active-platform compatibility filter while retaining each binding's original index, preserving exact/prefix and baseline-exemption semantics.
+
+### Regression Coverage
+
+- Linux and Windows: hidden Meta binding versus visible Ctrl binding across scopes does not block saving.
+- macOS: hidden Ctrl binding versus visible Mod binding across scopes does not block saving.
+- Linux and macOS visible cross-scope duplicate conflicts remain blocked.
+- Existing malformed-binding, browser-reserved, exact, prefix, and baseline-exemption behavior remains covered.
+
+### Modified Files
+
+- `src/client/keyboard/conflicts.ts`: filter platform-incompatible baseline bindings before cross-scope comparison.
+- `tests/shortcut-binding-editor.client.spec.tsx`: add hidden-platform cross-scope save regressions and visible conflict regressions.
+
+### Verification
+
+- `CI=true pnpm exec vitest run --dir tests settings-card.client.spec.tsx shortcut-binding-editor.client.spec.tsx browser-reserved.client.spec.ts keyboard-resolve.client.spec.ts`: 4 files passed, 81 tests passed.
+- `CI=true pnpm exec vitest run --dir tests`: 16 files passed, 220 tests passed.
+- `CI=true pnpm run typecheck`: passed with exit code 0.
+- `git diff --check`: passed with no output.
+
+### Commit
+
+Commit message: `fix: ignore hidden platform bindings in conflict checks`

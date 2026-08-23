@@ -45,6 +45,51 @@ describe('ShortcutBindingEditor', () => {
     expect(onSave).toHaveBeenCalledWith([bindings[0], hidden])
   })
 
+  it('allows Linux saves when hidden Meta binding overlaps visible Ctrl binding across scopes', async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined)
+    const hidden = { command: 'openSettings' as const, scope: 'question' as const, key: { key: 'n', modifiers: ['Meta'] as const } }
+    const visible = { command: 'openCommandPalette' as const, scope: 'global' as const, key: { key: 'n', modifiers: ['Ctrl'] as const } }
+    render(<ShortcutBindingEditor platform="linux" bindings={[hidden, visible]} availableGlobalActions={['openCommandPalette', 'openSettings']} t={t} onSave={onSave} />)
+    expect((screen.getByRole('button', { name: 'editor.save' }) as HTMLButtonElement).disabled).toBe(false)
+    fireEvent.click(screen.getByRole('button', { name: 'editor.save' }))
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(onSave).toHaveBeenCalledWith([hidden, visible])
+  })
+
+  it('allows Windows saves when hidden Meta binding overlaps visible Ctrl binding across scopes', async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined)
+    const hidden = { command: 'openSettings' as const, scope: 'question' as const, key: { key: 'n', modifiers: ['Meta'] as const } }
+    const visible = { command: 'openCommandPalette' as const, scope: 'global' as const, key: { key: 'n', modifiers: ['Ctrl'] as const } }
+    render(<ShortcutBindingEditor platform="windows" bindings={[hidden, visible]} availableGlobalActions={['openCommandPalette', 'openSettings']} t={t} onSave={onSave} />)
+    expect((screen.getByRole('button', { name: 'editor.save' }) as HTMLButtonElement).disabled).toBe(false)
+    fireEvent.click(screen.getByRole('button', { name: 'editor.save' }))
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(onSave).toHaveBeenCalledWith([hidden, visible])
+  })
+
+  it('allows macOS saves when hidden Ctrl binding overlaps visible Mod binding across scopes', async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined)
+    const hidden = { command: 'openSettings' as const, scope: 'question' as const, key: { key: 'x', modifiers: ['Ctrl'] as const } }
+    const visible = { command: 'openCommandPalette' as const, scope: 'global' as const, key: { key: 'x', modifiers: ['Mod'] as const } }
+    render(<ShortcutBindingEditor platform="mac" bindings={[hidden, visible]} availableGlobalActions={['openCommandPalette', 'openSettings']} t={t} onSave={onSave} />)
+    expect((screen.getByRole('button', { name: 'editor.save' }) as HTMLButtonElement).disabled).toBe(false)
+    fireEvent.click(screen.getByRole('button', { name: 'editor.save' }))
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(onSave).toHaveBeenCalledWith([hidden, visible])
+  })
+
+  it('still blocks visible cross-scope duplicate and prefix conflicts', () => {
+    for (const [platform, second] of [
+      ['linux', { key: 'n', modifiers: ['Ctrl'] as const }],
+      ['mac', { key: 'n', modifiers: ['Mod'] as const }],
+    ] as const) {
+      const onSave = vi.fn()
+      render(<ShortcutBindingEditor platform={platform} bindings={[{ ...bindings[0]!, scope: 'question', key: { key: 'n', modifiers: ['Mod'] as const } }, { command: 'openSettings' as const, scope: 'global', key: second }]} availableGlobalActions={['openCommandPalette', 'openSettings']} t={t} onSave={onSave} />)
+      expect((screen.getByRole('button', { name: 'editor.save' }) as HTMLButtonElement).disabled).toBe(true)
+      cleanup()
+    }
+  })
+
   it('blocks a visible browser-reserved Mod binding', () => {
     const onSave = vi.fn()
     render(<ShortcutBindingEditor platform="linux" bindings={[{ ...bindings[0]!, key: { key: 'n', modifiers: ['Mod'] as const }}]} t={t} onSave={onSave} />)
