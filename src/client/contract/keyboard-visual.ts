@@ -4,6 +4,7 @@ export type ShortcutPlatform = 'mac' | 'windows' | 'linux'
 
 export enum ShortcutKeyIcon {
   Command = 'command',
+  Windows = 'windows',
   Control = 'control',
   Option = 'option',
   Shift = 'shift',

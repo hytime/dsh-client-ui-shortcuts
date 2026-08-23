@@ -37,6 +37,7 @@ const pathRenderer = (path: string): KeyRenderer => visual => <PathSvg visual={v
 
 export const shortcutKeyIconRenderers: Record<ShortcutKeyIcon, KeyRenderer> = {
   [ShortcutKeyIcon.Command]: iconRenderer(command),
+  [ShortcutKeyIcon.Windows]: pathRenderer('M3 4l8-1v8H3zM13 3l8-1v9h-8zM3 13h8v8l-8-1zM13 13h8v9l-8-1z'),
   [ShortcutKeyIcon.Control]: pathRenderer('M5 5h14v14H5zM9 9h6v6H9z'),
   [ShortcutKeyIcon.Option]: iconRenderer(option),
   [ShortcutKeyIcon.Shift]: pathRenderer('M12 4l7 7h-4v8H9v-8H5z'),

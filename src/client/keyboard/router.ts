@@ -37,6 +37,7 @@ export function createGlobalKeyboardRouter(target: RouterWindow, options: Global
     }
     const input = normalizeKeyboardEvent(event)
     const decision = resolver.resolve(options.getProfile(), 'global', input, platform)
+
     if (decision.kind === 'command') {
       const action = options.getActions()[decision.command as keyof GlobalActions]
       reset()
@@ -45,7 +46,7 @@ export function createGlobalKeyboardRouter(target: RouterWindow, options: Global
       action()
       return
     }
-    if (isPrefix(options.getProfile(), input, platform)) {
+    if (isPrefix(options.getProfile(), input)) {
       consume(event)
       if (timer !== undefined) target.clearTimeout(timer)
       timer = target.setTimeout(reset, options.timeoutMs ?? GLOBAL_SEQUENCE_TIMEOUT_MS)
@@ -63,27 +64,22 @@ function consume(event: RouterEvent): void {
   event.stopImmediatePropagation?.()
 }
 
-function isPrefix(profile: ShortcutProfile, input: KeyInput, platform: ShortcutPlatform): boolean {
+function isPrefix(profile: ShortcutProfile, input: KeyInput): boolean {
   return profile.bindings.some(binding => {
     if (binding.scope !== 'global') return false
-    const sequences = binding.sequences ?? (binding.sequence ? [binding.sequence] : [])
+    const sequences = binding.sequences ?? (binding.sequence ? [binding.sequence] : binding.key ? [[binding.key]] : [])
     const stroke = sequences.find(sequence => sequence.length === 2)?.[0]
-    if (stroke === undefined || stroke.key !== input.key) return false
+    if (stroke === undefined) return false
     if ('modifiers' in stroke) {
-      if (stroke.modifiers.includes('Ctrl') && platform === 'mac') return false
-      if (stroke.modifiers.includes('Meta') && platform !== 'mac') return false
-      const modifierMatches = stroke.modifiers.includes('Mod')
-        ? platform === 'mac' ? input.meta && !input.ctrl : input.ctrl && !input.meta
-        : stroke.modifiers.includes('Ctrl') === input.ctrl && stroke.modifiers.includes('Meta') === input.meta
-      return modifierMatches
+      return stroke.key === input.key
+        && stroke.modifiers.includes('Ctrl') === input.ctrl
+        && stroke.modifiers.includes('Meta') === input.meta
         && stroke.modifiers.includes('Alt') === input.alt
         && stroke.modifiers.includes('Shift') === input.shift
     }
-    if ((platform === 'mac' && stroke.ctrl) || (platform !== 'mac' && stroke.meta)) return false
-    return stroke.alt === input.alt && stroke.ctrl === input.ctrl && stroke.meta === input.meta && stroke.shift === input.shift
+    return stroke.key === input.key && stroke.alt === input.alt && stroke.ctrl === input.ctrl && stroke.meta === input.meta && stroke.shift === input.shift
   })
 }
-
 function isGuardedTarget(target: EventTarget | null): boolean {
   let node = target as HTMLElement | null
   while (node !== null) {

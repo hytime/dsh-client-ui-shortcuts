@@ -1,7 +1,7 @@
 import type { KeyStroke, ShortcutBinding, ShortcutModifier, ShortcutStroke } from '../contract/profile.js'
 import { ShortcutKeyIcon, type ShortcutKeyVisual, type ShortcutPlatform } from '../contract/keyboard-visual.js'
 
-const modifierOrder: readonly ShortcutModifier[] = ['Ctrl', 'Mod', 'Alt', 'Shift', 'Meta']
+const modifierOrder: readonly ShortcutModifier[] = ['Ctrl', 'Meta', 'Alt', 'Shift']
 
 function keyVisual(key: string): ShortcutKeyVisual {
   const normalized = key === 'Esc' ? 'Escape' : key === ' ' ? 'Space' : ({ Up: 'ArrowUp', Down: 'ArrowDown', Left: 'ArrowLeft', Right: 'ArrowRight' } as Record<string, string>)[key] ?? key
@@ -21,26 +21,24 @@ function keyVisual(key: string): ShortcutKeyVisual {
 }
 
 function modifierVisual(modifier: ShortcutModifier, platform: ShortcutPlatform): ShortcutKeyVisual {
-  if (modifier === 'Mod') return platform === 'mac'
-    ? { icon: ShortcutKeyIcon.Command, label: '⌘', ariaLabel: 'Command' }
-    : { icon: ShortcutKeyIcon.Control, label: 'Ctrl', ariaLabel: 'Control' }
   if (modifier === 'Ctrl') return { icon: ShortcutKeyIcon.Control, label: 'Ctrl', ariaLabel: 'Control' }
-  if (modifier === 'Meta') return { icon: ShortcutKeyIcon.Command, label: '⌘', ariaLabel: 'Command' }
-  if (modifier === 'Alt') return { icon: ShortcutKeyIcon.Option, label: 'Alt', ariaLabel: 'Option' }
+  if (modifier === 'Meta') return platform === 'mac'
+    ? { icon: ShortcutKeyIcon.Command, label: '⌘', ariaLabel: 'Command' }
+    : { icon: ShortcutKeyIcon.Windows, label: '⊞', ariaLabel: 'Windows key' }
+  if (modifier === 'Alt') return platform === 'mac'
+    ? { icon: ShortcutKeyIcon.Option, label: '⌥', ariaLabel: 'Option' }
+    : { icon: ShortcutKeyIcon.Option, label: 'Alt', ariaLabel: 'Alt' }
   return { icon: ShortcutKeyIcon.Shift, label: 'Shift', ariaLabel: 'Shift' }
 }
 
 export function visualizeStroke(stroke: KeyStroke | ShortcutStroke, platform: ShortcutPlatform): readonly ShortcutKeyVisual[] {
   const modifiers: ShortcutModifier[] = 'modifiers' in stroke
-    ? [...stroke.modifiers].filter(modifier => !(modifier === 'Ctrl' && platform === 'mac') && !(modifier === 'Meta' && platform !== 'mac')).sort((a, b) => modifierOrder.indexOf(a) - modifierOrder.indexOf(b))
+    ? [...stroke.modifiers].sort((a, b) => modifierOrder.indexOf(a) - modifierOrder.indexOf(b))
     : [stroke.ctrl && 'Ctrl', stroke.meta && 'Meta', stroke.alt && 'Alt', stroke.shift && 'Shift'].filter(Boolean) as ShortcutModifier[]
   return [...modifiers.map(modifier => modifierVisual(modifier, platform)), keyVisual(stroke.key)]
 }
 
-export function isBindingPlatformCompatible(stroke: KeyStroke | ShortcutStroke, platform: ShortcutPlatform): boolean {
-  if ('modifiers' in stroke) return !stroke.modifiers.some(modifier => (modifier === 'Ctrl' && platform === 'mac') || (modifier === 'Meta' && platform !== 'mac'))
-  if (stroke.ctrl && platform === 'mac') return false
-  if (stroke.meta && platform !== 'mac') return false
+export function isBindingPlatformCompatible(_stroke: KeyStroke | ShortcutStroke, _platform: ShortcutPlatform): boolean {
   return true
 }
 

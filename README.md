@@ -59,7 +59,7 @@ The global router is available in the active profile. Its built-in global bindin
 
 | Action | Default binding | Capability requirement |
 | --- | --- | --- |
-| Create a session | `Mod+Alt+Shift+N` | `workspaces.startSession()` |
+| Create a session | `Meta+Alt+Shift+N` | `workspaces.startSession()` |
 | Previous session | `Mod+Alt+Shift+J` | current Workspace session list, `sessions.open()`, and non-blank session metadata |
 | Next session | `Mod+Alt+Shift+K` | current Workspace session list, `sessions.open()`, and non-blank session metadata |
 | Previous Workspace | `Mod+Alt+Shift+H` | Workspace list, an existing non-blank target session, and `sessions.open()` |
@@ -67,7 +67,7 @@ The global router is available in the active profile. Its built-in global bindin
 | Fork current session | `Mod+Alt+Shift+B` | `sessions.fork()` and `sessions.open()` |
 | Toggle light/dark theme | `Mod+Alt+Shift+T` | `theme.getTheme()` and `theme.setTheme()` |
 
-The `Mod+,` settings binding is retained in the profile data but remains hidden and inactive because no public DSH settings opener is available. Capability filtering removes unavailable global actions from both routing and the shortcut list; it does not leave dead rows or simulate private DSH UI behavior.
+The `Meta+,` settings binding is retained in the profile data but remains hidden and inactive because no public DSH settings opener is available. Capability filtering removes unavailable global actions from both routing and the shortcut list; it does not leave dead rows or simulate private DSH UI behavior.
 
 ### DSH actions worth reserving next
 
@@ -84,7 +84,7 @@ These are useful future candidates because the current DSH Web composition alrea
 
 ## Key design
 
-The global router uses `Mod` as the logical primary modifier: macOS maps it to `Meta`/Command, while Windows and Linux map it to `Control`. The platform determines both the displayed keycap and the resolver's physical modifier match. The default global bindings are `Mod+Alt+Shift+N/J/K/H/L/B/T`, mapped respectively to create a session, previous session, next session, previous Workspace, next Workspace, fork, and theme. This keeps profile data platform-neutral while avoiding common browser-reserved defaults such as `Cmd+N`.
+The global router uses explicit physical modifiers. `Meta` matches `metaKey` on every platform and is displayed as Command on macOS or Windows key elsewhere; `Ctrl` matches `ctrlKey` and is displayed as Control everywhere. macOS displays `Alt` as Option. The default global bindings are `Meta+Alt+Shift+N/J/K/H/L/B/T`. Persisted legacy `Mod` values are migrated to `Meta` when read and are never written back.
 
 On macOS, Option and Shift can make `KeyboardEvent.key` produce layout characters (for example, `Option+Shift+N` can produce `˜`). The shortcut resolver uses `KeyboardEvent.code` such as `KeyN` and normalizes it to the logical key `n`; diagnostics may still display the raw `key` value.
 
@@ -93,7 +93,7 @@ On macOS, Option and Shift can make `KeyboardEvent.key` produce layout character
 - The global router handles events during the capture phase. A matching global action runs and prevents the event even when focus is in an `input`, `textarea`, `select`, or `contenteditable` element. Unmatched text input, IME composition, repeated events, and pending `Enter`/`Escape` takeover continue to yield.
 - The capture listener can only prevent DOM events that the browser has already dispatched to the page. Browser- or OS-reserved shortcuts may never reach the page, and the Web platform provides no general API for querying arbitrary OS/browser shortcut ownership.
 - The browser denylist is a prompt for known Chrome, Safari, Firefox, and Edge combinations; it is not an authoritative query of arbitrary OS/browser shortcut usage.
-- The UI displays `Cmd` or `Ctrl` according to the platform. A binding accepts one key or a two-stroke chord such as `Ctrl+X Ctrl+S`.
+- The UI displays Command on macOS or Windows key elsewhere for `Meta`, Control for `Ctrl`, and Option for macOS `Alt`.
 - One command may have alternative bindings for platform compatibility or a user-selected backup key.
 - Key aliases are normalized before comparison, including `Esc`/`Escape` and `Return`/`Enter`.
 - A chord cannot have three or more strokes, and one binding cannot be a prefix of another binding in the same scope.
@@ -118,7 +118,7 @@ The plugin injects the session, Workspace, and theme faces needed by the active 
 
 - Compact question and approval cards inside the DSH conversation composer.
 - Standard, Vim, and editable Custom profiles with one active profile at a time.
-- Custom binding persistence with `Mod`, explicit modifiers, alternatives, and two-stroke chords.
+- Custom binding persistence with explicit `Meta`, `Ctrl`, `Alt`, and `Shift` modifiers, alternatives, and two-stroke chords.
 - Capability-aware global action adapter and fiber-owned keyboard router.
 - Session and Workspace navigation based on DSH list snapshots.
 - Branch creation followed by opening the new child session.

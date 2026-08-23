@@ -22,7 +22,7 @@ describe('global keyboard router', () => {
     const action = vi.fn()
     const profile = {
       id: 'mac-layout', label: 'mac-layout', description: 'mac-layout',
-      bindings: [{ command: 'startSession', scope: 'global', key: { key: 'n', modifiers: ['Mod', 'Alt', 'Shift'] } }],
+      bindings: [{ command: 'startSession', scope: 'global', key: { key: 'n', modifiers: ['Meta', 'Alt', 'Shift'] } }],
     } as unknown as ShortcutProfile
     const dispose = createGlobalKeyboardRouter(window, { getProfile: () => profile, getActions: () => ({ startSession: action }), platform: 'mac' })
     const event = new KeyboardEvent('keydown', { key: '˜', code: 'KeyN', metaKey: true, altKey: true, shiftKey: true, bubbles: true, cancelable: true })
@@ -36,7 +36,7 @@ describe('global keyboard router', () => {
     const action = vi.fn()
     const profile = {
       id: 'mac-layout-prefix', label: 'mac-layout-prefix', description: 'mac-layout-prefix',
-      bindings: [{ command: 'nextSession', scope: 'global', sequences: [[{ key: 'k', modifiers: ['Mod', 'Alt', 'Shift'] }, { key: 's', modifiers: [] }]] }],
+      bindings: [{ command: 'nextSession', scope: 'global', sequences: [[{ key: 'k', modifiers: ['Meta', 'Alt', 'Shift'] }, { key: 's', modifiers: [] }]] }],
     } as unknown as ShortcutProfile
     const dispose = createGlobalKeyboardRouter(window, { getProfile: () => profile, getActions: () => ({ nextSession: action }), platform: 'mac' })
     const first = new KeyboardEvent('keydown', { key: '˜', code: 'KeyK', metaKey: true, altKey: true, shiftKey: true, bubbles: true, cancelable: true })
@@ -122,12 +122,12 @@ describe('global keyboard router', () => {
     const action = vi.fn()
     const profile = {
       id: 'editable-chord', label: 'editable-chord', description: 'editable-chord',
-      bindings: [{ command: 'forkSession', scope: 'global', sequences: [[{ key: 'b', modifiers: ['Mod', 'Shift'] }, { key: 's', modifiers: [] }]] }],
+      bindings: [{ command: 'forkSession', scope: 'global', sequences: [[{ key: 'b', modifiers: ['Meta', 'Shift'] }, { key: 's', modifiers: [] }]] }],
     } as unknown as ShortcutProfile
     const dispose = createGlobalKeyboardRouter(window, { getProfile: () => profile, getActions: () => ({ forkSession: action }), platform: 'linux' })
     const textarea = document.createElement('textarea')
     document.body.append(textarea)
-    const first = new KeyboardEvent('keydown', { key: 'B', ctrlKey: true, shiftKey: true, bubbles: true, cancelable: true })
+    const first = new KeyboardEvent('keydown', { key: 'B', ctrlKey: false, metaKey: true, shiftKey: true, bubbles: true, cancelable: true })
     const second = new KeyboardEvent('keydown', { key: 's', bubbles: true, cancelable: true })
     textarea.dispatchEvent(first)
     textarea.dispatchEvent(second)
@@ -148,13 +148,13 @@ describe('global keyboard router', () => {
     const callback = vi.fn()
     const profile = {
       id: 'standard', label: 'standard', description: 'standard',
-      bindings: [{ command: 'nextSession', scope: 'global', sequences: [[{ key: 'ArrowRight', modifiers: ['Mod'] }]] }],
+      bindings: [{ command: 'nextSession', scope: 'global', sequences: [[{ key: 'ArrowRight', modifiers: ['Meta'] }]] }],
     } as unknown as ShortcutProfile
     const preventDefault = vi.fn()
     const stopPropagation = vi.fn()
     const dispose = createGlobalKeyboardRouter(target, { getProfile: () => profile, getActions: () => ({ nextSession: callback }) })
 
-    listener({ key: 'ArrowRight', altKey: false, ctrlKey: true, metaKey: false, shiftKey: false, isComposing: false, repeat: false, keyCode: 39, target: null, preventDefault, stopPropagation })
+    listener({ key: 'ArrowRight', altKey: false, ctrlKey: false, metaKey: true, shiftKey: false, isComposing: false, repeat: false, keyCode: 39, target: null, preventDefault, stopPropagation })
 
     expect(callback).toHaveBeenCalledOnce()
     expect(preventDefault).toHaveBeenCalledOnce()
@@ -174,7 +174,7 @@ describe('global keyboard router', () => {
     const callback = vi.fn()
     const profile = {
       id: 'mac', label: 'mac', description: 'mac',
-      bindings: [{ command: 'startSession', scope: 'global', key: { key: 'n', modifiers: ['Mod'] } }],
+      bindings: [{ command: 'startSession', scope: 'global', key: { key: 'n', modifiers: ['Meta'] } }],
     } as unknown as ShortcutProfile
     const options = {
       getProfile: () => profile,
@@ -183,7 +183,7 @@ describe('global keyboard router', () => {
     } as Parameters<typeof createGlobalKeyboardRouter>[1]
     const dispose = createGlobalKeyboardRouter(target, options)
 
-    listener({ key: 'n', altKey: false, ctrlKey: true, metaKey: false, shiftKey: false, isComposing: false, repeat: false, keyCode: 78, target: null, preventDefault: vi.fn(), stopPropagation: vi.fn() })
+    listener({ key: 'n', altKey: false, ctrlKey: false, metaKey: false, shiftKey: false, isComposing: false, repeat: false, keyCode: 78, target: null, preventDefault: vi.fn(), stopPropagation: vi.fn() })
     expect(callback).not.toHaveBeenCalled()
     listener({ key: 'n', altKey: false, ctrlKey: false, metaKey: true, shiftKey: false, isComposing: false, repeat: false, keyCode: 78, target: null, preventDefault: vi.fn(), stopPropagation: vi.fn() })
     expect(callback).toHaveBeenCalledOnce()
@@ -255,11 +255,11 @@ describe('global keyboard router', () => {
 
     const profile = {
       id: 'real-prefix', label: 'real-prefix', description: 'real-prefix',
-      bindings: [{ command: 'forkSession', scope: 'global', sequences: [[{ key: 'b', modifiers: ['Mod', 'Shift'] }, { key: 's', modifiers: [] }]] }],
+      bindings: [{ command: 'forkSession', scope: 'global', sequences: [[{ key: 'b', modifiers: ['Meta', 'Shift'] }, { key: 's', modifiers: [] }]] }],
     } as unknown as ShortcutProfile
     const dispose = createGlobalKeyboardRouter(window, { getProfile: () => profile, getActions: () => ({ forkSession: action }) })
 
-    const first = new KeyboardEvent('keydown', { key: 'B', code: 'KeyB', ctrlKey: true, shiftKey: true, bubbles: true, cancelable: true })
+    const first = new KeyboardEvent('keydown', { key: 'B', code: 'KeyB', ctrlKey: false, metaKey: true, shiftKey: true, bubbles: true, cancelable: true })
     target.dispatchEvent(first)
 
     expect(action).not.toHaveBeenCalled()
@@ -280,16 +280,16 @@ describe('global keyboard router', () => {
     const action = vi.fn()
     const profile = {
       id: 'mismatch', label: 'mismatch', description: 'mismatch',
-      bindings: [{ command: 'forkSession', scope: 'global', sequences: [[{ key: 'b', modifiers: ['Mod', 'Shift'] }, { key: 's', modifiers: [] }]] }],
+      bindings: [{ command: 'forkSession', scope: 'global', sequences: [[{ key: 'b', modifiers: ['Meta', 'Shift'] }, { key: 's', modifiers: [] }]] }],
     } as unknown as ShortcutProfile
     const dispose = createGlobalKeyboardRouter(target, { getProfile: () => profile, getActions: () => ({ forkSession: action }) })
-    const event = () => ({ key: 'b', altKey: false, ctrlKey: true, metaKey: false, shiftKey: true, isComposing: false, repeat: false, keyCode: 66, target: null, preventDefault: vi.fn(), stopPropagation: vi.fn(), stopImmediatePropagation: vi.fn() })
+    const event = () => ({ key: 'b', altKey: false, ctrlKey: false, metaKey: true, shiftKey: true, isComposing: false, repeat: false, keyCode: 66, target: null, preventDefault: vi.fn(), stopPropagation: vi.fn(), stopImmediatePropagation: vi.fn() })
     listener(event())
     listener({ ...event(), key: 'x', ctrlKey: false, shiftKey: false, keyCode: 88 })
     listener({ ...event(), key: 's', ctrlKey: false, shiftKey: false, keyCode: 83 })
     expect(action).not.toHaveBeenCalled()
     listener(event())
-    listener({ ...event(), key: 's', ctrlKey: false, shiftKey: false, keyCode: 83 })
+    listener({ ...event(), key: 's', ctrlKey: false, metaKey: false, shiftKey: false, keyCode: 83 })
     expect(action).toHaveBeenCalledOnce()
     dispose()
   })
@@ -361,10 +361,10 @@ describe('global keyboard router', () => {
     }
     const profile = {
       id: 'chord', label: 'chord', description: 'chord',
-      bindings: [{ command: 'forkSession', scope: 'global', sequences: [[{ key: 'b', modifiers: ['Mod', 'Shift'] }, { key: 's', modifiers: [] }]] }],
+      bindings: [{ command: 'forkSession', scope: 'global', sequences: [[{ key: 'b', modifiers: ['Meta', 'Shift'] }, { key: 's', modifiers: [] }]] }],
     } as unknown as ShortcutProfile
     const dispose = createGlobalKeyboardRouter(target, { getProfile: () => profile, getActions: () => ({ forkSession: vi.fn() }) })
-    listener({ key: 'B', altKey: false, ctrlKey: true, metaKey: false, shiftKey: true, isComposing: false, repeat: false, keyCode: 66, target: null, preventDefault: vi.fn(), stopPropagation: vi.fn() })
+    listener({ key: 'B', altKey: false, ctrlKey: false, metaKey: true, shiftKey: true, isComposing: false, repeat: false, keyCode: 66, target: null, preventDefault: vi.fn(), stopPropagation: vi.fn() })
     expect(setTimeout).toHaveBeenCalledWith(expect.any(Function), GLOBAL_SEQUENCE_TIMEOUT_MS)
     dispose()
   })
@@ -381,13 +381,13 @@ describe('global keyboard router', () => {
     const action = vi.fn()
     const profile = {
       id: 'chord-continuity', label: 'chord-continuity', description: 'chord-continuity',
-      bindings: [{ command: 'forkSession', scope: 'global', sequences: [[{ key: 'b', modifiers: ['Mod', 'Shift'] }, { key: 's', modifiers: [] }]] }],
+      bindings: [{ command: 'forkSession', scope: 'global', sequences: [[{ key: 'b', modifiers: ['Meta', 'Shift'] }, { key: 's', modifiers: [] }]] }],
     } as unknown as ShortcutProfile
     const dispose = createGlobalKeyboardRouter(target, { getProfile: () => profile, getActions: () => ({ forkSession: action }) })
     const first = { preventDefault: vi.fn(), stopPropagation: vi.fn(), stopImmediatePropagation: vi.fn() }
     const second = { preventDefault: vi.fn(), stopPropagation: vi.fn(), stopImmediatePropagation: vi.fn() }
 
-    listener({ key: 'B', altKey: false, ctrlKey: true, metaKey: false, shiftKey: true, isComposing: false, repeat: false, keyCode: 66, target: null, ...first })
+    listener({ key: 'B', altKey: false, ctrlKey: false, metaKey: true, shiftKey: true, isComposing: false, repeat: false, keyCode: 66, target: null, ...first })
     listener({ key: 's', altKey: false, ctrlKey: false, metaKey: false, shiftKey: false, isComposing: false, repeat: false, keyCode: 83, target: null, ...second })
 
     expect(first.preventDefault).toHaveBeenCalledOnce()
@@ -417,7 +417,7 @@ describe('global keyboard router', () => {
       getActions: () => ({ startSession: vi.fn() }),
       isInteractionPending: () => true,
     })
-    const makeEvent = (overrides: Partial<RouterEvent> = {}) => ({ key: 'n', altKey: false, ctrlKey: true, metaKey: false, shiftKey: false, isComposing: false, repeat: false, keyCode: 78, target: null, preventDefault: vi.fn(), stopPropagation: vi.fn(), ...overrides })
+    const makeEvent = (overrides: Partial<RouterEvent> = {}) => ({ key: 'n', altKey: false, ctrlKey: false, metaKey: true, shiftKey: false, isComposing: false, repeat: false, keyCode: 78, target: null, preventDefault: vi.fn(), stopPropagation: vi.fn(), ...overrides })
     const input = { tagName: 'INPUT', isContentEditable: false, parentElement: null } as unknown as EventTarget
     const guarded = makeEvent({ target: input })
     const composing = makeEvent({ isComposing: true })
@@ -450,10 +450,10 @@ describe('global keyboard router', () => {
     const action = vi.fn()
     const profile = {
       id: 'timeout', label: 'timeout', description: 'timeout',
-      bindings: [{ command: 'forkSession', scope: 'global', sequences: [[{ key: 'b', modifiers: ['Mod', 'Shift'] }, { key: 's', modifiers: [] }]] }],
+      bindings: [{ command: 'forkSession', scope: 'global', sequences: [[{ key: 'b', modifiers: ['Meta', 'Shift'] }, { key: 's', modifiers: [] }]] }],
     } as unknown as ShortcutProfile
     const dispose = createGlobalKeyboardRouter(target, { getProfile: () => profile, getActions: () => ({ forkSession: action }) })
-    const event = { key: 'B', altKey: false, ctrlKey: true, metaKey: false, shiftKey: true, isComposing: false, repeat: false, keyCode: 66, target: null, preventDefault: vi.fn(), stopPropagation: vi.fn(), stopImmediatePropagation: vi.fn() }
+    const event = { key: 'B', altKey: false, ctrlKey: false, metaKey: true, shiftKey: true, isComposing: false, repeat: false, keyCode: 66, target: null, preventDefault: vi.fn(), stopPropagation: vi.fn(), stopImmediatePropagation: vi.fn() }
     listener(event)
     timeoutCallback()
     listener({ key: 's', altKey: false, ctrlKey: false, metaKey: false, shiftKey: false, isComposing: false, repeat: false, keyCode: 83, target: null, preventDefault: vi.fn(), stopPropagation: vi.fn(), stopImmediatePropagation: vi.fn() })
@@ -475,7 +475,7 @@ describe('global keyboard router', () => {
       bindings: [{
         command: 'forkSession',
         scope: 'global',
-        sequences: [[{ key: 'b', modifiers: ['Mod', 'Shift'] }, { key: 's', modifiers: [] }]],
+        sequences: [[{ key: 'b', modifiers: ['Meta', 'Shift'] }, { key: 's', modifiers: [] }]],
       }],
     } as unknown as ShortcutProfile
     const preventDefault = vi.fn()
@@ -485,7 +485,7 @@ describe('global keyboard router', () => {
       getActions: () => ({ forkSession: vi.fn() }),
     })
 
-    listener({ key: 'B', altKey: false, ctrlKey: true, metaKey: false, shiftKey: true, isComposing: false, repeat: false, keyCode: 66, target: null, preventDefault, stopPropagation })
+    listener({ key: 'B', altKey: false, ctrlKey: false, metaKey: true, shiftKey: true, isComposing: false, repeat: false, keyCode: 66, target: null, preventDefault, stopPropagation })
 
     expect(preventDefault).toHaveBeenCalledOnce()
     expect(stopPropagation).toHaveBeenCalledOnce()

@@ -1,6 +1,6 @@
 export const SHORTCUT_COMMANDS = ['focusPrevious', 'focusNext', 'activate', 'cancelTask', 'openCommandPalette', 'openSettings', 'startSession', 'previousSession', 'nextSession', 'previousWorkspace', 'nextWorkspace', 'forkSession', 'toggleTheme'] as const
 export const SHORTCUT_SCOPES = ['global', 'question', 'approval'] as const
-export const SHORTCUT_MODIFIERS = ['Mod', 'Ctrl', 'Meta', 'Alt', 'Shift'] as const
+export const SHORTCUT_MODIFIERS = ['Ctrl', 'Meta', 'Alt', 'Shift'] as const
 
 export type PersistedShortcutBinding = { readonly [key: string]: unknown }
 export type ShortcutModifier = (typeof SHORTCUT_MODIFIERS)[number]
@@ -12,7 +12,7 @@ export type CanonicalShortcutBinding = {
   readonly sequences: readonly CanonicalShortcutSequence[]
 }
 
-const MODIFIER_ORDER: readonly ShortcutModifier[] = ['Mod', 'Ctrl', 'Meta', 'Alt', 'Shift']
+const MODIFIER_ORDER: readonly ShortcutModifier[] = ['Ctrl', 'Meta', 'Alt', 'Shift']
 
 /** Normalize and validate persisted bindings at the Host/Client contract boundary. */
 export function normalizePersistedShortcutBindings(bindings: readonly PersistedShortcutBinding[]): readonly CanonicalShortcutBinding[] {
@@ -110,14 +110,12 @@ function normalizePersistedStroke(value: unknown): CanonicalShortcutStroke {
       throw new Error('declarative stroke cannot contain physical modifier flags')
     }
     const modifiers = stroke.modifiers.map(modifier => {
-      if (typeof modifier !== 'string' || !SHORTCUT_MODIFIERS.includes(modifier as never)) throw new Error('invalid custom shortcut modifier')
-      return modifier as ShortcutModifier
+      if (typeof modifier !== 'string') throw new Error('invalid custom shortcut modifier')
+      const migrated = modifier === 'Mod' ? 'Meta' : modifier
+      if (!SHORTCUT_MODIFIERS.includes(migrated as never)) throw new Error('invalid custom shortcut modifier')
+      return migrated as ShortcutModifier
     })
     if (new Set(modifiers).size !== modifiers.length) throw new Error('duplicate custom shortcut modifier')
-    if (modifiers.includes('Ctrl') && modifiers.includes('Meta')) throw new Error('invalid custom shortcut modifier')
-    if (modifiers.includes('Mod') && modifiers.some(modifier => modifier === 'Ctrl' || modifier === 'Meta')) {
-      throw new Error('invalid custom shortcut modifier')
-    }
     return { key, modifiers: sortModifiers(modifiers) }
   }
   if (!isPhysicalStroke(stroke)) throw new Error('invalid custom shortcut modifiers')

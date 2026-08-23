@@ -43,12 +43,11 @@ function bindingPlatformCompatible(binding: ShortcutBinding, platform: ShortcutP
   return strokes.every(stroke => stroke !== undefined && isBindingPlatformCompatible(stroke, platform))
 }
 
-function platformSequences(binding: ShortcutBinding, platform: ShortcutPlatform): NormalizedSequence[] {
-  return normalizeBindingSequences(binding).map(sequence => ({ strokes: sequence.strokes.map(stroke => platformStroke(stroke, platform)) }))
+function platformSequences(binding: ShortcutBinding, _platform: ShortcutPlatform): NormalizedSequence[] {
+  return normalizeBindingSequences(binding).map(sequence => ({ strokes: sequence.strokes.map(stroke => platformStroke(stroke)) }))
 }
 
-function platformStroke(stroke: NormalizedStroke, platform: ShortcutPlatform): NormalizedStroke {
-  if (stroke.modifier === 'Mod') return { ...stroke, modifier: undefined, ctrl: platform !== 'mac', meta: platform === 'mac' }
+function platformStroke(stroke: NormalizedStroke): NormalizedStroke {
   return { ...stroke, modifier: undefined }
 }
 

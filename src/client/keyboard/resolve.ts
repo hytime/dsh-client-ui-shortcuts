@@ -50,18 +50,19 @@ function resolveWithState(
       entry,
        sequence: sequence.map(stroke => ({ ...stroke, modifier: ('modifier' in stroke ? stroke.modifier : undefined) })),
     })))
-  const exact = candidates.find(candidate => sameSequence(candidate.sequence, next, platform))
+  const exact = candidates.find(candidate => sameSequence(candidate.sequence, next))
   if (exact) return { decision: { kind: 'command', command: exact.entry.command }, state: undefined }
 
   const prefix = candidates.some(candidate => candidate.sequence.length > next.length
-    && sameSequence(candidate.sequence.slice(0, next.length), next, platform))
+    && sameSequence(candidate.sequence.slice(0, next.length), next))
   return prefix
     ? { decision: { kind: 'pass' }, state: { profile, scope, strokes: next } }
     : { decision: { kind: 'pass' }, state: undefined }
 }
 
 function sequencesFor(binding: ShortcutBinding): readonly (readonly KeyStroke[])[] {
-  const legacyModifier = (binding as ShortcutBinding & { readonly modifier?: ShortcutModifier }).modifier
+  const legacyModifier = (binding as ShortcutBinding & { readonly modifier?: string }).modifier
+  const normalizedLegacyModifier = legacyModifier === 'Mod' ? 'Meta' : legacyModifier as ShortcutModifier | undefined
   const convert = (stroke: KeyStroke | ShortcutStroke): KeyStroke & { readonly modifier?: ShortcutModifier } => {
     if ('modifiers' in stroke) {
       const modifiers = stroke.modifiers
@@ -71,10 +72,10 @@ function sequencesFor(binding: ShortcutBinding): readonly (readonly KeyStroke[])
         ctrl: modifiers.includes('Ctrl'),
         meta: modifiers.includes('Meta'),
         shift: modifiers.includes('Shift'),
-        modifier: modifiers.includes('Mod') ? 'Mod' : undefined,
+        modifier: modifiers.includes('Ctrl') ? 'Ctrl' : modifiers.includes('Meta') ? 'Meta' : undefined,
       }
     }
-    return { ...stroke, modifier: legacyModifier }
+    return { ...stroke, modifier: normalizedLegacyModifier }
   }
   if (binding.sequences) return binding.sequences.map(sequence => sequence.map(convert))
   if (binding.sequence) return [binding.sequence.map(convert)]
@@ -93,26 +94,16 @@ function normalizeKey(key: string): string {
 function sameSequence(
   left: readonly KeyStroke[] | readonly KeyInput[],
   right: readonly KeyStroke[] | readonly KeyInput[],
-  platform: ShortcutPlatform,
 ): boolean {
-  return left.length === right.length && left.every((stroke, index) => sameStroke(stroke, right[index]!, platform))
+  return left.length === right.length && left.every((stroke, index) => sameStroke(stroke, right[index]!))
 }
 
-function sameStroke(left: KeyStroke | KeyInput, right: KeyStroke | KeyInput, platform: ShortcutPlatform): boolean {
-  const leftModifier = 'modifier' in left ? left.modifier : undefined
-  const effectiveLeftModifier = leftModifier ?? (left.ctrl ? 'Ctrl' : left.meta ? 'Meta' : undefined)
+function sameStroke(left: KeyStroke | KeyInput, right: KeyStroke | KeyInput): boolean {
+  const leftCtrl = 'modifier' in left && left.modifier === 'Ctrl' ? true : left.ctrl
+  const leftMeta = 'modifier' in left && left.modifier === 'Meta' ? true : left.meta
   const rightCtrl = right.ctrl
   const rightMeta = right.meta
-  if (rightCtrl && rightMeta) return false
-  if (effectiveLeftModifier === 'Ctrl' && platform === 'mac') return false
-  if (effectiveLeftModifier === 'Meta' && platform !== 'mac') return false
-  const modifierMatches = effectiveLeftModifier === 'Mod'
-    ? platform === 'mac' ? rightMeta && !rightCtrl : rightCtrl && !rightMeta
-    : effectiveLeftModifier === 'Ctrl'
-      ? rightCtrl && !rightMeta
-      : effectiveLeftModifier === 'Meta'
-        ? rightMeta && !rightCtrl
-        : left.ctrl === right.ctrl && left.meta === right.meta
+  const modifierMatches = leftCtrl === rightCtrl && leftMeta === rightMeta
   return normalizeKey(left.key) === normalizeKey(right.key)
     && left.alt === right.alt
     && modifierMatches
@@ -121,5 +112,5 @@ function sameStroke(left: KeyStroke | KeyInput, right: KeyStroke | KeyInput, pla
 
 export function modifierForStroke(binding: ShortcutBinding): ShortcutModifier | undefined {
   const stroke = binding.key
-  return stroke !== undefined && 'modifiers' in stroke ? stroke.modifiers.find(modifier => modifier === 'Mod') : undefined
+  return stroke !== undefined && 'modifiers' in stroke ? stroke.modifiers.find(modifier => modifier === 'Meta' || modifier === 'Ctrl') : undefined
 }

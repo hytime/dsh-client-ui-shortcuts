@@ -3,25 +3,33 @@ import { ShortcutKeyIcon } from '../src/client/contract/keyboard-visual.js'
 import { detectShortcutPlatform, isBindingPlatformCompatible, visualizeStroke } from '../src/client/keyboard/visuals.js'
 
 describe('keyboard visuals', () => {
-  it('maps Mod to Command on macOS and Control elsewhere', () => {
-    expect(visualizeStroke({ key: 'n', modifiers: ['Mod'] }, 'mac')).toEqual([
+  it('renders physical modifiers consistently while adapting Meta and macOS Alt labels', () => {
+    expect(visualizeStroke({ key: 'n', modifiers: ['Meta'] }, 'mac')).toEqual([
       { icon: ShortcutKeyIcon.Command, label: '⌘', ariaLabel: 'Command' },
       { icon: ShortcutKeyIcon.Character, label: 'N', ariaLabel: 'N' },
     ])
-    expect(visualizeStroke({ key: 'n', modifiers: ['Mod'] }, 'windows')).toEqual([
+    expect(visualizeStroke({ key: 'n', modifiers: ['Meta'] }, 'windows')).toEqual([
+      { icon: ShortcutKeyIcon.Windows, label: '⊞', ariaLabel: 'Windows key' },
+      { icon: ShortcutKeyIcon.Character, label: 'N', ariaLabel: 'N' },
+    ])
+    expect(visualizeStroke({ key: 'n', modifiers: ['Ctrl'] }, 'mac')).toEqual([
       { icon: ShortcutKeyIcon.Control, label: 'Ctrl', ariaLabel: 'Control' },
+      { icon: ShortcutKeyIcon.Character, label: 'N', ariaLabel: 'N' },
+    ])
+    expect(visualizeStroke({ key: 'n', modifiers: ['Alt'] }, 'mac')).toEqual([
+      { icon: ShortcutKeyIcon.Option, label: '⌥', ariaLabel: 'Option' },
       { icon: ShortcutKeyIcon.Character, label: 'N', ariaLabel: 'N' },
     ])
   })
 
-  it('maps platform-specific physical modifiers only on their compatible platform', () => {
-    expect(isBindingPlatformCompatible({ key: 'p', modifiers: ['Ctrl'] }, 'mac')).toBe(false)
-    expect(isBindingPlatformCompatible({ key: 'p', modifiers: ['Meta'] }, 'windows')).toBe(false)
-    expect(isBindingPlatformCompatible({ key: 'p', modifiers: ['Mod'] }, 'linux')).toBe(true)
+  it('keeps every explicit physical modifier compatible on every platform', () => {
+    expect(isBindingPlatformCompatible({ key: 'p', modifiers: ['Ctrl'] }, 'mac')).toBe(true)
+    expect(isBindingPlatformCompatible({ key: 'p', modifiers: ['Meta'] }, 'windows')).toBe(true)
+    expect(isBindingPlatformCompatible({ key: 'p', modifiers: ['Alt'] }, 'linux')).toBe(true)
   })
 
   it('maps control keys and arrows to semantic icons', () => {
-    expect(visualizeStroke({ key: 'ArrowUp', modifiers: ['Mod', 'Alt'] }, 'mac')).toEqual([
+    expect(visualizeStroke({ key: 'ArrowUp', modifiers: ['Meta', 'Alt'] }, 'mac')).toEqual([
       expect.objectContaining({ icon: ShortcutKeyIcon.Command }),
       expect.objectContaining({ icon: ShortcutKeyIcon.Option }),
       expect.objectContaining({ icon: ShortcutKeyIcon.ArrowUp }),
@@ -31,11 +39,13 @@ describe('keyboard visuals', () => {
     )
   })
 
-  it('does not visualize incompatible explicit modifiers', () => {
+  it('visualizes explicit modifiers instead of hiding them by platform', () => {
     expect(visualizeStroke({ key: 'p', modifiers: ['Ctrl'] }, 'mac')).toEqual([
+      { icon: ShortcutKeyIcon.Control, label: 'Ctrl', ariaLabel: 'Control' },
       { icon: ShortcutKeyIcon.Character, label: 'P', ariaLabel: 'P' },
     ])
     expect(visualizeStroke({ key: 'p', modifiers: ['Meta'] }, 'linux')).toEqual([
+      { icon: ShortcutKeyIcon.Windows, label: '⊞', ariaLabel: 'Windows key' },
       { icon: ShortcutKeyIcon.Character, label: 'P', ariaLabel: 'P' },
     ])
   })

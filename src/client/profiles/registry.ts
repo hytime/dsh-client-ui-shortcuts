@@ -23,7 +23,7 @@ const COMMANDS: readonly ShortcutCommand[] = [
 ]
 
 const SCOPES: readonly ShortcutScope[] = ['global', 'question', 'approval']
-const MODIFIERS: readonly ShortcutModifier[] = ['Mod', 'Alt', 'Ctrl', 'Meta', 'Shift']
+const MODIFIERS: readonly ShortcutModifier[] = ['Alt', 'Ctrl', 'Meta', 'Shift']
 
 export interface NormalizedSequence {
   readonly strokes: readonly NormalizedStroke[]
@@ -170,7 +170,8 @@ function validateAndNormalizeProfile(
 }
 
 function normalizeBinding(binding: ShortcutBinding): NormalizedSequence[] {
-  const legacyModifier = (binding as ShortcutBinding & { readonly modifier?: ShortcutModifier }).modifier
+  const legacyModifier = (binding as ShortcutBinding & { readonly modifier?: string }).modifier
+  const normalizedLegacyModifier = legacyModifier === 'Mod' ? 'Meta' : legacyModifier
   const shapeCount = Number(binding.sequence !== undefined)
     + Number(binding.sequences !== undefined)
   if (shapeCount > 0 && binding.key !== undefined) {
@@ -185,7 +186,7 @@ function normalizeBinding(binding: ShortcutBinding): NormalizedSequence[] {
   if (!SCOPES.includes(binding.scope)) {
     throw new Error(`invalid shortcut scope: ${String(binding.scope)}`)
   }
-  if (legacyModifier !== undefined && !MODIFIERS.includes(legacyModifier)) {
+  if (normalizedLegacyModifier !== undefined && !MODIFIERS.includes(normalizedLegacyModifier as ShortcutModifier)) {
     throw new Error(`invalid shortcut modifier: ${String(legacyModifier)}`)
   }
   const rawSequences = binding.sequences !== undefined
@@ -200,7 +201,7 @@ function normalizeBinding(binding: ShortcutBinding): NormalizedSequence[] {
     throw new Error(`invalid shortcut key in profile: ${binding.scope}`)
   }
   return rawSequences.map(sequence => ({
-    strokes: sequence.map(stroke => normalizeStroke(stroke, legacyModifier)),
+    strokes: sequence.map(stroke => normalizeStroke(stroke, normalizedLegacyModifier as ShortcutModifier | undefined)),
   }))
 }
 
@@ -232,9 +233,8 @@ function normalizeProfileBindings(
 
 function symbolicModifiers(stroke: NormalizedStroke): ShortcutModifier[] {
   return [
-    ...(stroke.modifier === 'Mod' ? ['Mod' as const] : []),
-    ...(stroke.ctrl && !stroke.modifier ? ['Ctrl' as const] : []),
-    ...(stroke.meta && !stroke.modifier ? ['Meta' as const] : []),
+    ...(stroke.ctrl ? ['Ctrl' as const] : []),
+    ...(stroke.meta ? ['Meta' as const] : []),
     ...(stroke.alt ? ['Alt' as const] : []),
     ...(stroke.shift ? ['Shift' as const] : []),
   ]
@@ -249,20 +249,19 @@ function normalizeStroke(stroke: KeyStroke | ShortcutStroke, modifier?: Shortcut
       ctrl: modifiers.includes('Ctrl'),
       meta: modifiers.includes('Meta'),
       shift: modifiers.includes('Shift'),
-      ...(modifiers.includes('Mod') ? { modifier: 'Mod' as const } : {}),
+      ...(modifiers.includes('Ctrl') ? { modifier: 'Ctrl' as const } : modifiers.includes('Meta') ? { modifier: 'Meta' as const } : {}),
     }
   }
   if (!isKeyStroke(stroke)) {
     throw new Error('invalid shortcut key')
   }
-  if (modifier === 'Mod' && stroke.ctrl && stroke.meta) {
+  if (modifier === 'Meta' && stroke.ctrl && stroke.meta) {
     throw new Error('invalid shortcut modifier')
   }
-  if (modifier === 'Mod' && (stroke.alt || stroke.shift || stroke.ctrl || stroke.meta)
-    || modifier === 'Alt' && (!stroke.alt || stroke.ctrl || stroke.meta || stroke.shift)
-    || modifier === 'Shift' && (!stroke.shift || stroke.ctrl || stroke.meta || stroke.alt)
-    || modifier === 'Ctrl' && (!stroke.ctrl || stroke.meta || stroke.alt || stroke.shift)
-    || modifier === 'Meta' && (!stroke.meta || stroke.ctrl || stroke.alt || stroke.shift)) {
+  if ((modifier === 'Alt' && (!stroke.alt || stroke.ctrl || stroke.meta || stroke.shift))
+    || (modifier === 'Shift' && (!stroke.shift || stroke.ctrl || stroke.meta || stroke.alt))
+    || (modifier === 'Ctrl' && (!stroke.ctrl || stroke.meta || stroke.alt || stroke.shift))
+    || (modifier === 'Meta' && (!stroke.meta || stroke.ctrl || stroke.alt || stroke.shift))) {
     throw new Error('invalid shortcut modifier')
   }
   return {
@@ -274,13 +273,12 @@ function normalizeStroke(stroke: KeyStroke | ShortcutStroke, modifier?: Shortcut
 
 function normalizeModifiers(modifiers: readonly ShortcutModifier[]): ShortcutModifier[] {
   if (!Array.isArray(modifiers) || modifiers.length === 0) throw new Error('invalid shortcut modifier')
-  const normalized = [...modifiers]
+  const normalized = modifiers.map(modifier => {
+    const legacy = modifier as string
+    return (legacy === 'Mod' ? 'Meta' : legacy) as ShortcutModifier
+  })
   if (normalized.some(modifier => !MODIFIERS.includes(modifier))) throw new Error('invalid shortcut modifier')
   if (new Set(normalized).size !== normalized.length) throw new Error('invalid shortcut modifier')
-  if (normalized.includes('Ctrl') && normalized.includes('Meta')) throw new Error('invalid shortcut modifier')
-  if (normalized.includes('Mod') && (normalized.includes('Ctrl') || normalized.includes('Meta'))) {
-    throw new Error('invalid shortcut modifier')
-  }
   return normalized
 }
 
@@ -321,18 +319,11 @@ function equivalentStroke(first: NormalizedStroke, second: NormalizedStroke): bo
 }
 
 function equivalentModifier(first: NormalizedStroke, second: NormalizedStroke): boolean {
-  if (first.modifier === 'Mod' || second.modifier === 'Mod') {
-    return (first.modifier === 'Mod' && second.modifier === 'Mod')
-      || (first.modifier === 'Mod' && second.ctrl !== second.meta)
-      || (second.modifier === 'Mod' && first.ctrl !== first.meta)
-  }
   return first.ctrl === second.ctrl && first.meta === second.meta
 }
 
 function canonicalStrokeKey(stroke: NormalizedStroke): string {
-  const modifier = stroke.modifier === 'Mod'
-    ? 'ctrl'
-    : [stroke.ctrl ? 'ctrl' : '', stroke.meta ? 'meta' : ''].join('|')
+  const modifier = [stroke.ctrl ? 'ctrl' : '', stroke.meta ? 'meta' : ''].join('|')
   return [stroke.alt ? 'alt' : '', modifier, stroke.shift ? 'shift' : '', stroke.key].join('|')
 }
 

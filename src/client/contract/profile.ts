@@ -30,7 +30,7 @@ export interface KeyStroke {
 }
 
 /** Symbolic modifier accepted by profile declarations. */
-export type ShortcutModifier = 'Mod' | 'Alt' | 'Ctrl' | 'Meta' | 'Shift'
+export type ShortcutModifier = 'Alt' | 'Ctrl' | 'Meta' | 'Shift'
 
 /** Declarative shortcut stroke with symbolic modifiers. */
 export interface ShortcutStroke {

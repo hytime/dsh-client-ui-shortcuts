@@ -59,7 +59,7 @@ active profile 现在提供 global router。内置全局绑定如下：
 
 | 动作 | 默认键位 | 能力要求 |
 | --- | --- | --- |
-| 新建会话 | `Mod+Alt+Shift+N` | `workspaces.startSession()` |
+| 新建会话 | `Meta+Alt+Shift+N` | `workspaces.startSession()` |
 | 上一个会话 | `Mod+Alt+Shift+J` | 当前 Workspace 的会话顺序、`sessions.open()`，以及非空白会话元数据 |
 | 下一个会话 | `Mod+Alt+Shift+K` | 当前 Workspace 的会话顺序、`sessions.open()`，以及非空白会话元数据 |
 | 上一个 Workspace | `Mod+Alt+Shift+H` | Workspace 列表、目标 Workspace 中已有的非空白会话，以及 `sessions.open()` |
@@ -67,7 +67,7 @@ active profile 现在提供 global router。内置全局绑定如下：
 | 创建当前会话分支 | `Mod+Alt+Shift+B` | `sessions.fork()` 和 `sessions.open()` |
 | 切换浅色/深色主题 | `Mod+Alt+Shift+T` | `theme.getTheme()` 和 `theme.setTheme()` |
 
-`Mod+,` 设置绑定仍保留在 profile 数据中，但由于 DSH 没有公开设置 opener，它保持隐藏且不激活。能力过滤会同时从路由和快捷键列表中移除不可用的全局动作，不留下 dead row，也不模拟 DSH 私有 UI 行为。
+`Meta+,` 设置绑定仍保留在 profile 数据中，但由于 DSH 没有公开设置 opener，它保持隐藏且不激活。能力过滤会同时从路由和快捷键列表中移除不可用的全局动作，不留下 dead row，也不模拟 DSH 私有 UI 行为。
 
 ### 值得预留的 DSH 常用动作
 
@@ -86,7 +86,7 @@ active profile 现在提供 global router。内置全局绑定如下：
 
 Custom profile 会参考 Claude Code 和 Codex 熟悉的修饰键习惯，但不会声称完整复制它们的默认键位：
 
-全局 router 使用 `Mod` 作为逻辑主修饰键：macOS 映射为 `Meta`/Command，Windows 和 Linux 映射为 `Control`。平台同时决定 keycap 展示和 resolver 的物理修饰键匹配。默认全局组合准确为 `Mod+Alt+Shift+N/J/K/H/L/B/T`，依次对应新建会话、上一个会话、下一个会话、上一个 Workspace、下一个 Workspace、创建分支和切换主题。这样 profile 数据保持跨平台，同时避开 `Cmd+N` 等常见浏览器保留键。
+全局 router 使用显式物理修饰键。`Meta` 在所有平台都只匹配 `metaKey`，macOS 显示 Command，Windows/Linux 显示 Windows/窗口键；`Ctrl` 只匹配 `ctrlKey`，所有平台都显示 Control；macOS 将 `Alt` 显示为 Option。默认全局组合为 `Meta+Alt+Shift+N/J/K/H/L/B/T`。读取旧持久化数据时会把 `Mod` 迁移为 `Meta`，保存时绝不写回 `Mod`。
 
 在 macOS 上，Option 和 Shift 可能让 `KeyboardEvent.key` 产生布局字符（例如 `Option+Shift+N` 可能得到 `˜`）。快捷键 resolver 使用 `KeyboardEvent.code`（例如 `KeyN`），并将其归一化为逻辑键 `n`；诊断仍可能显示原始 `key` 值。
 
@@ -95,7 +95,7 @@ Custom profile 会参考 Claude Code 和 Codex 熟悉的修饰键习惯，但不
 - global router 在 capture 阶段处理事件。即使焦点位于 `input`、`textarea`、`select` 或 `contenteditable`，匹配的全局动作仍会执行并阻止事件。普通未匹配文本、IME composition、重复事件和 pending `Enter`/`Escape` takeover 会继续让位。
 - capture listener 只能阻止浏览器已经分发到页面的 DOM 事件。浏览器或 OS 保留的快捷键可能根本不会到达页面，而 Web 平台也没有查询任意 OS/浏览器快捷键占用情况的通用 API。
 - browser denylist 用于提示已知的 Chrome、Safari、Firefox 和 Edge 组合冲突，不是查询任意 OS/浏览器快捷键占用的权威机制。
-- UI 会根据平台显示 `Cmd` 或 `Ctrl`。一个 binding 支持单键或两段 chord，例如 `Ctrl+X Ctrl+S`。
+- UI 会将 `Meta` 显示为 macOS 的 Command 或其他平台的 Windows/窗口键，将 `Ctrl` 显示为 Control，macOS 的 `Alt` 显示为 Option。一个 binding 支持单键或两段 chord，例如 `Ctrl+X Ctrl+S`。
 - 一个 command 可以拥有多个候选绑定，用于平台兼容或用户选择备用键。
 - 比较前会归一化常见别名，包括 `Esc`/`Escape` 和 `Return`/`Enter`。
 - chord 最多两段；同一 scope 中不能让一个 binding 成为另一个 binding 的前缀。
@@ -120,7 +120,7 @@ global router 在 capture 阶段注册。它会让位于未匹配的文本输入
 
 - 在 DSH conversation composer 内显示紧凑 question 和 approval 卡片。
 - Standard、Vim 和可编辑 Custom profile，且同一时间只启用一个 profile。
-- 持久化 Custom binding，支持 `Mod`、显式修饰键、候选绑定和两段 chord。
+- 持久化 Custom binding，支持显式 `Meta`、`Ctrl`、`Alt`、`Shift` 修饰键、候选绑定和两段 chord。
 - capability-aware global action adapter 和由 Client fiber 管理的 keyboard router。
 - 使用 session 和 Workspace list snapshot 实现导航。
 - 创建分支后自动打开新的 child session。

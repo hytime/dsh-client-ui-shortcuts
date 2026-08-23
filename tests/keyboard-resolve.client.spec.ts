@@ -73,15 +73,21 @@ describe('profile-aware keyboard resolver', () => {
     expect(conflicts[0]).toEqual({ scope: 'question', key: '||||Enter', first, second })
   })
 
-  it('resolves global commands with Mod on the active platform modifier', () => {
+  it('resolves Meta and Ctrl as independent physical modifiers on every platform', () => {
     const profile: ShortcutProfile = {
       ...standardProfile,
-      id: 'global',
-      bindings: [{ command: 'openCommandPalette', scope: 'global', key: input('p'), modifier: 'Mod' }],
+      id: 'physical',
+      bindings: [
+        { command: 'openSettings', scope: 'global', key: input('p'), modifier: 'Meta' },
+        { command: 'openCommandPalette', scope: 'global', key: input('c'), modifier: 'Ctrl' },
+      ],
     }
-
-    expect(resolveKey(profile, 'global', input('p', { meta: true }), 'mac')).toEqual({ kind: 'command', command: 'openCommandPalette' })
-    expect(resolveKey(profile, 'global', input('p', { ctrl: true }), 'linux')).toEqual({ kind: 'command', command: 'openCommandPalette' })
+    for (const platform of ['mac', 'windows', 'linux'] as const) {
+      expect(resolveKey(profile, 'global', input('p', { meta: true }), platform)).toEqual({ kind: 'command', command: 'openSettings' })
+      expect(resolveKey(profile, 'global', input('p', { ctrl: true }), platform)).toEqual({ kind: 'pass' })
+      expect(resolveKey(profile, 'global', input('c', { ctrl: true }), platform)).toEqual({ kind: 'command', command: 'openCommandPalette' })
+      expect(resolveKey(profile, 'global', input('c', { meta: true }), platform)).toEqual({ kind: 'pass' })
+    }
   })
 
   it('uses browser-safe platform alternatives for global defaults', () => {
@@ -89,27 +95,27 @@ describe('profile-aware keyboard resolver', () => {
     expect(start).toEqual({
       command: 'startSession',
       scope: 'global',
-      key: { key: 'n', modifiers: ['Mod', 'Alt', 'Shift'] },
+      key: { key: 'n', modifiers: ['Meta', 'Alt', 'Shift'] },
     })
     expect(resolveKey(standardProfile, 'global', input('n', { meta: true, alt: true, shift: true }), 'mac')).toEqual({ kind: 'command', command: 'startSession' })
-    expect(resolveKey(standardProfile, 'global', input('n', { ctrl: true, alt: true, shift: true }), 'windows')).toEqual({ kind: 'command', command: 'startSession' })
+    expect(resolveKey(standardProfile, 'global', input('n', { meta: true, alt: true, shift: true }), 'windows')).toEqual({ kind: 'command', command: 'startSession' })
     expect(resolveKey(standardProfile, 'global', input('n', { ctrl: true, alt: true, shift: true }), 'mac')).toEqual({ kind: 'pass' })
   })
 
   it('resolves shifted global defaults with browser key casing', () => {
-    expect(resolveKey(standardProfile, 'global', input('B', { ctrl: true, alt: true, shift: true }), 'windows')).toEqual({ kind: 'command', command: 'forkSession' })
+    expect(resolveKey(standardProfile, 'global', input('B', { meta: true, alt: true, shift: true }), 'windows')).toEqual({ kind: 'command', command: 'forkSession' })
     expect(resolveKey(standardProfile, 'global', input('T', { meta: true, alt: true, shift: true }), 'mac')).toEqual({ kind: 'command', command: 'toggleTheme' })
   })
 
   it('resolves declarative Mod and Alt combinations', () => {
-    const stroke: ShortcutStroke = { key: 'p', modifiers: ['Mod', 'Alt'] }
+    const stroke: ShortcutStroke = { key: 'p', modifiers: ['Meta', 'Alt'] }
     const profile: ShortcutProfile = {
       ...standardProfile,
       id: 'declarative-mod',
       bindings: [{ command: 'openSettings', scope: 'global', key: stroke }],
     }
 
-    expect(resolveKey(profile, 'global', input('p', { ctrl: true, alt: true }), 'linux')).toEqual({ kind: 'command', command: 'openSettings' })
+    expect(resolveKey(profile, 'global', input('p', { meta: true, alt: true }), 'mac')).toEqual({ kind: 'command', command: 'openSettings' })
     expect(resolveKey(profile, 'global', input('p', { meta: true, alt: true }), 'mac')).toEqual({ kind: 'command', command: 'openSettings' })
     expect(resolveKey(profile, 'global', input('p', { ctrl: true, meta: true, alt: true }), 'linux')).toEqual({ kind: 'pass' })
   })
@@ -147,7 +153,7 @@ describe('profile-aware keyboard resolver', () => {
     const modProfile: ShortcutProfile = {
       ...standardProfile,
       id: 'mod',
-      bindings: [{ command: 'openSettings', scope: 'global', key: input('p'), modifier: 'Mod' }],
+      bindings: [{ command: 'openSettings', scope: 'global', key: input('p'), modifier: 'Meta' }],
     }
     const ctrlProfile: ShortcutProfile = {
       ...standardProfile,
@@ -155,7 +161,7 @@ describe('profile-aware keyboard resolver', () => {
       bindings: [{ command: 'openSettings', scope: 'global', key: input('p', { ctrl: true }) }],
     }
 
-    expect(resolveKey(modProfile, 'global', input('p', { ctrl: true }), 'linux')).toEqual({ kind: 'command', command: 'openSettings' })
+    expect(resolveKey(modProfile, 'global', input('p', { ctrl: true }), 'linux')).toEqual({ kind: 'pass' })
     expect(resolveKey(modProfile, 'global', input('p', { meta: true }), 'mac')).toEqual({ kind: 'command', command: 'openSettings' })
     expect(resolveKey(ctrlProfile, 'global', input('p', { meta: true }), 'mac')).toEqual({ kind: 'pass' })
   })
@@ -164,7 +170,7 @@ describe('profile-aware keyboard resolver', () => {
     const profile: ShortcutProfile = {
       ...standardProfile,
       id: 'dual-mod',
-      bindings: [{ command: 'openSettings', scope: 'global', key: input('p'), modifier: 'Mod' }],
+      bindings: [{ command: 'openSettings', scope: 'global', key: input('p'), modifier: 'Meta' }],
     }
     expect(resolveKey(profile, 'global', input('p', { ctrl: true, meta: true }), 'linux')).toEqual({ kind: 'pass' })
   })

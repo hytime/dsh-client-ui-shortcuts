@@ -12,7 +12,7 @@ import styles from '../styles/Shortcuts.module.css'
 
 export interface ShortcutBindingEditorProps { readonly bindings: readonly ShortcutBinding[]; readonly availableGlobalActions?: readonly GlobalShortcutCommand[]; readonly t: (key: ShortcutLocaleKey | string) => string; readonly onSave: (bindings: readonly ShortcutBinding[]) => Promise<void>; readonly onCancel?: () => void; readonly platform: ShortcutPlatform }
 const scopes: readonly ShortcutScope[] = ['question', 'approval', 'global']
-const modifiers: readonly ShortcutModifier[] = ['Mod', 'Ctrl', 'Alt', 'Meta', 'Shift']
+const modifiers: readonly ShortcutModifier[] = ['Meta', 'Ctrl', 'Alt', 'Shift']
 const icons: Partial<Record<ShortcutCommand, ShortcutIconName>> = { focusPrevious: 'arrow-up', focusNext: 'arrow-down', activate: 'check', cancelTask: 'x', openCommandPalette: 'keyboard', openSettings: 'settings-2' }
 const isSymbolic = (stroke: KeyStroke | ShortcutStroke): stroke is ShortcutStroke => 'modifiers' in stroke
 const toStroke = (stroke: KeyStroke | ShortcutStroke): ShortcutStroke => isSymbolic(stroke) ? { key: stroke.key, modifiers: [...stroke.modifiers] } : { key: stroke.key, modifiers: [stroke.ctrl && 'Ctrl', stroke.meta && 'Meta', stroke.alt && 'Alt', stroke.shift && 'Shift'].filter(Boolean) as ShortcutModifier[] }

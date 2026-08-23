@@ -16,15 +16,15 @@ function globalBinding(command: GlobalBindingCommand, key: string, modifiers: re
 }
 
 const globalBindings = [
-  globalBinding('openCommandPalette', 'p', ['Mod']),
-  globalBinding('openSettings', ',', ['Mod']),
-  globalBinding('startSession', 'n', ['Mod', 'Alt', 'Shift']),
-  globalBinding('previousSession', 'j', ['Mod', 'Alt', 'Shift']),
-  globalBinding('nextSession', 'k', ['Mod', 'Alt', 'Shift']),
-  globalBinding('previousWorkspace', 'h', ['Mod', 'Alt', 'Shift']),
-  globalBinding('nextWorkspace', 'l', ['Mod', 'Alt', 'Shift']),
-  globalBinding('forkSession', 'b', ['Mod', 'Alt', 'Shift']),
-  globalBinding('toggleTheme', 't', ['Mod', 'Alt', 'Shift']),
+  globalBinding('openCommandPalette', 'p', ['Meta']),
+  globalBinding('openSettings', ',', ['Meta']),
+  globalBinding('startSession', 'n', ['Meta', 'Alt', 'Shift']),
+  globalBinding('previousSession', 'j', ['Meta', 'Alt', 'Shift']),
+  globalBinding('nextSession', 'k', ['Meta', 'Alt', 'Shift']),
+  globalBinding('previousWorkspace', 'h', ['Meta', 'Alt', 'Shift']),
+  globalBinding('nextWorkspace', 'l', ['Meta', 'Alt', 'Shift']),
+  globalBinding('forkSession', 'b', ['Meta', 'Alt', 'Shift']),
+  globalBinding('toggleTheme', 't', ['Meta', 'Alt', 'Shift']),
 ]
 
 export const standardProfile: ShortcutProfile = {
