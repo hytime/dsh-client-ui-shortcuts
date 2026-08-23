@@ -1,8 +1,6 @@
 import type { ShortcutBinding, ShortcutProfile, ShortcutScope } from '../contract/profile.js'
-import type { ShortcutPlatform } from '../contract/keyboard-visual.js'
 import { canonicalSequenceKey, normalizeBindingSequences } from '../profiles/registry.js'
 import type { NormalizedSequence, NormalizedStroke } from '../profiles/registry.js'
-import { isBindingPlatformCompatible } from './visuals.js'
 
 export interface ShortcutConflict { readonly scope: ShortcutScope; readonly key: string; readonly first: ShortcutBinding; readonly second: ShortcutBinding }
 type Entry = { readonly binding: ShortcutBinding; readonly index: number; readonly sequence: NormalizedSequence }
@@ -11,19 +9,18 @@ export function findShortcutConflicts(profile: ShortcutProfile): ShortcutConflic
   return compareEntries(profile.bindings.flatMap(binding => normalizeBindingSequences(binding).map(sequence => ({ binding, index: -1, sequence }))), false)
 }
 
-export function findNewShortcutConflicts(baseline: readonly ShortcutBinding[], draftEntries: readonly { readonly binding: ShortcutBinding; readonly index: number }[], platform: ShortcutPlatform): ShortcutConflict[] {
+export function findNewShortcutConflicts(baseline: readonly ShortcutBinding[], draftEntries: readonly { readonly binding: ShortcutBinding; readonly index: number }[]): ShortcutConflict[] {
   const entries = draftEntries
-    .filter(entry => bindingPlatformCompatible(entry.binding, platform))
-    .flatMap(entry => platformSequences(entry.binding, platform).map(sequence => ({ ...entry, sequence })))
+    .flatMap(entry => normalizeBindingSequences(entry.binding).map(sequence => ({ ...entry, sequence })))
   const baselineEntries = baseline
-    .flatMap((binding, index) => bindingPlatformCompatible(binding, platform) ? platformSequences(binding, platform).map(sequence => ({ binding, index, sequence })) : [])
+    .flatMap((binding, index) => normalizeBindingSequences(binding).map(sequence => ({ binding, index, sequence })))
   const conflicts: ShortcutConflict[] = []
   const reported = new Set<string>()
   for (let index = 0; index < entries.length; index += 1) for (let otherIndex = index + 1; otherIndex < entries.length; otherIndex += 1) {
     const first = entries[index]!
     const second = entries[otherIndex]!
     if (first.binding.scope === second.binding.scope || !isPrefix(first.sequence, second.sequence)) continue
-    if (isInheritedConflict(baseline, baselineEntries, first, second, platform)) continue
+    if (isInheritedConflict(baseline, baselineEntries, first, second)) continue
     const sequenceKey = canonicalSequenceKey(first.sequence)
     const newEntry = first.index >= baseline.length ? first : second.index >= baseline.length ? second : first
     const key = [newEntry.index, newEntry.binding.command, newEntry.binding.scope, sequenceKey].join('|')
@@ -34,37 +31,20 @@ export function findNewShortcutConflicts(baseline: readonly ShortcutBinding[], d
   return conflicts
 }
 
-function bindingPlatformCompatible(binding: ShortcutBinding, platform: ShortcutPlatform): boolean {
-  const strokes = binding.sequence !== undefined
-    ? binding.sequence
-    : binding.sequences !== undefined
-      ? binding.sequences.flat()
-      : [binding.key]
-  return strokes.every(stroke => stroke !== undefined && isBindingPlatformCompatible(stroke, platform))
-}
-
-function platformSequences(binding: ShortcutBinding, _platform: ShortcutPlatform): NormalizedSequence[] {
-  return normalizeBindingSequences(binding).map(sequence => ({ strokes: sequence.strokes.map(stroke => platformStroke(stroke)) }))
-}
-
-function platformStroke(stroke: NormalizedStroke): NormalizedStroke {
-  return { ...stroke, modifier: undefined }
-}
-
-function isInheritedConflict(baseline: readonly ShortcutBinding[], baselineEntries: readonly Entry[], first: Entry, second: Entry, platform: ShortcutPlatform): boolean {
+function isInheritedConflict(baseline: readonly ShortcutBinding[], baselineEntries: readonly Entry[], first: Entry, second: Entry): boolean {
   const baselineFirst = baseline[first.index]
   const baselineSecond = baseline[second.index]
   if (baselineFirst === undefined || baselineSecond === undefined) return false
-  if (!sameBindingSequences(baselineFirst, first.binding, platform) || !sameBindingSequences(baselineSecond, second.binding, platform)) return false
+  if (!sameBindingSequences(baselineFirst, first.binding) || !sameBindingSequences(baselineSecond, second.binding)) return false
   const firstBase = baselineEntries.filter(entry => entry.index === first.index)
   const secondBase = baselineEntries.filter(entry => entry.index === second.index)
   return firstBase.some(left => secondBase.some(right => isPrefix(left.sequence, right.sequence)))
 }
 
-function sameBindingSequences(first: ShortcutBinding, second: ShortcutBinding, platform: ShortcutPlatform): boolean {
+function sameBindingSequences(first: ShortcutBinding, second: ShortcutBinding): boolean {
   if (first.command !== second.command || first.scope !== second.scope) return false
-  const left = platformSequences(first, platform).map(canonicalSequenceKey)
-  const right = platformSequences(second, platform).map(canonicalSequenceKey)
+  const left = normalizeBindingSequences(first).map(canonicalSequenceKey)
+  const right = normalizeBindingSequences(second).map(canonicalSequenceKey)
   return left.length === right.length && left.every((value, index) => value === right[index])
 }
 

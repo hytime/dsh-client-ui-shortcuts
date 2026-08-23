@@ -26,12 +26,11 @@ The previous `settings.update` monkey patch was removed because the provider's i
 
 - `CI=true pnpm exec vitest run --dir tests host-settings.spec.ts package-shape.spec.ts profile-registry.client.spec.ts`: passed, 56 tests.
 - `CI=true pnpm exec vitest run --dir tests`: passed, 226 tests.
-- `CI=true pnpm run typecheck`: blocked by an existing unrelated error in `src/client/keyboard/conflicts.ts:12`: `Cannot find name 'ShortcutPlatform'`.
+- `CI=true pnpm run typecheck`: passed.
 - `git diff --check`: passed.
-- Hash before final commit: `e8dea05af8a6b52b4e76ed40a6dd153e672ce7c2`.
+- Conflict identity is normalized without platform filtering or modifier conversion; Meta and Ctrl remain distinct physical modifiers on every platform.
 
 ## Commit
 
-Pending: `fix: persist migrated Meta shortcut bindings`
-
-Hash: `8fcf3f76a3d55ccceab90c631e9aec1a159db028`
+- `fix: remove platform from physical conflict identity`
+- Hash: `87f5220`

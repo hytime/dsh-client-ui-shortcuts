@@ -269,37 +269,34 @@ describe('shortcut settings card', () => {
       { command: 'activate' as const, scope: 'question' as const, key: { key: 'Enter', alt: false, ctrl: false, meta: false, shift: false } },
       { command: 'activate' as const, scope: 'approval' as const, key: { key: 'Enter', alt: false, ctrl: false, meta: false, shift: false } },
     ]
-    expect(findNewShortcutConflicts(baseline, baseline.map((binding, index) => ({ binding, index })), 'linux')).toEqual([])
-    expect(findNewShortcutConflicts(baseline, [...baseline.map((binding, index) => ({ binding, index })), { binding: { command: 'focusNext' as const, scope: 'global' as const, key: { key: 'Enter', alt: false, ctrl: false, meta: false, shift: false } }, index: 2 }], 'linux')).toHaveLength(1)
-    expect(findNewShortcutConflicts(baseline, [...baseline.map((binding, index) => ({ binding, index })), { binding: { command: 'focusNext' as const, scope: 'global' as const, key: { key: 'Enter', alt: false, ctrl: false, meta: false, shift: false } }, index: 2 }, { binding: { command: 'focusNext' as const, scope: 'global' as const, key: { key: 'Enter', alt: false, ctrl: false, meta: false, shift: false } }, index: 3 }], 'linux')).toHaveLength(2)
+    expect(findNewShortcutConflicts(baseline, baseline.map((binding, index) => ({ binding, index })))).toEqual([])
+    expect(findNewShortcutConflicts(baseline, [...baseline.map((binding, index) => ({ binding, index })), { binding: { command: 'focusNext' as const, scope: 'global' as const, key: { key: 'Enter', alt: false, ctrl: false, meta: false, shift: false } }, index: 2 }])).toHaveLength(1)
+    expect(findNewShortcutConflicts(baseline, [...baseline.map((binding, index) => ({ binding, index })), { binding: { command: 'focusNext' as const, scope: 'global' as const, key: { key: 'Enter', alt: false, ctrl: false, meta: false, shift: false } }, index: 2 }, { binding: { command: 'focusNext' as const, scope: 'global' as const, key: { key: 'Enter', alt: false, ctrl: false, meta: false, shift: false } }, index: 3 }])).toHaveLength(2)
     expect(findNewShortcutConflicts(baseline, [
       ...baseline.map((binding, index) => ({ binding, index })),
       { binding: { command: 'focusNext' as const, scope: 'global' as const, key: { key: 'Enter', alt: false, ctrl: false, meta: false, shift: false } }, index: 2 },
       { binding: { command: 'focusPrevious' as const, scope: 'global' as const, key: { key: 'Enter', alt: false, ctrl: false, meta: false, shift: false } }, index: 3 },
-    ], 'linux')).toHaveLength(2)
+    ])).toHaveLength(2)
     expect(findNewShortcutConflicts(baseline, [
       ...baseline.map((binding, index) => ({ binding, index })),
       { binding: { command: 'focusNext' as const, scope: 'question' as const, sequence: [{ key: 'Enter', modifiers: ['Shift'] as const }, { key: 'x', modifiers: ['Shift'] as const }] }, index: 2 },
       { binding: { command: 'focusPrevious' as const, scope: 'approval' as const, sequence: [{ key: 'Enter', modifiers: ['Shift'] as const }, { key: 'y', modifiers: ['Shift'] as const }] }, index: 3 },
-    ], 'linux')).toHaveLength(0)
+    ])).toHaveLength(0)
     expect(findNewShortcutConflicts(baseline, [
       { binding: { ...baseline[0]!, command: 'focusNext' }, index: 0 },
       { binding: baseline[1]!, index: 1 },
-    ], 'linux')).toHaveLength(1)
+    ])).toHaveLength(1)
   })
 
-  it('compares explicit physical modifiers across platforms', () => {
+  it('compares explicit physical modifiers independently of platform', () => {
     const make = (scope: 'question' | 'approval', key: unknown) => ({ command: 'activate' as const, scope, key })
-
-    for (const [platform, physical] of [['mac', { key: 'k', alt: false, ctrl: false, meta: true, shift: false }], ['windows', { key: 'k', alt: false, ctrl: true, meta: false, shift: false }], ['linux', { key: 'k', alt: false, ctrl: true, meta: false, shift: false }]] as const) {
-      const baseline = [make('question', { key: 'k', modifiers: ['Meta'] as const }), make('approval', physical)]
-      const changedChord = { command: 'activate' as const, scope: 'question' as const, sequence: [{ key: 'k', modifiers: ['Meta'] as const }, { key: 'x', modifiers: ['Alt'] as const }] }
-      expect(findNewShortcutConflicts(baseline, baseline.map((binding, index) => ({ binding, index })), platform)).toEqual([])
-      expect(findNewShortcutConflicts(baseline, [{ binding: { ...baseline[0]!, key: { key: 'k', modifiers: ['Meta'] as const } }, index: 0 }, { binding: { ...baseline[1]!, key: { key: 'k', modifiers: ['Alt'] as const } }, index: 1 }], platform)).toHaveLength(0)
-      expect(findNewShortcutConflicts(baseline, [{ binding: changedChord, index: 0 }, { binding: baseline[1]!, index: 1 }], platform)).toHaveLength(platform === 'mac' ? 1 : 0)
-    }
+    const baseline = [make('question', { key: 'k', modifiers: ['Meta'] as const }), make('approval', { key: 'k', alt: false, ctrl: false, meta: true, shift: false })]
+    const changedChord = { command: 'activate' as const, scope: 'question' as const, sequence: [{ key: 'k', modifiers: ['Meta'] as const }, { key: 'x', modifiers: ['Alt'] as const }] }
+    expect(findNewShortcutConflicts(baseline, baseline.map((binding, index) => ({ binding, index })))).toEqual([])
+    expect(findNewShortcutConflicts(baseline, [{ binding: { ...baseline[0]!, key: { key: 'k', modifiers: ['Meta'] as const } }, index: 0 }, { binding: { ...baseline[1]!, key: { key: 'k', modifiers: ['Alt'] as const } }, index: 1 }])).toHaveLength(0)
+    expect(findNewShortcutConflicts(baseline, [{ binding: changedChord, index: 0 }, { binding: baseline[1]!, index: 1 }])).toHaveLength(1)
   })
-  it('filters explicit platform modifiers across symbolic, physical, sequence, and sequences bindings', () => {
+  it('normalizes symbolic and physical modifiers into the same platform-independent identity', () => {
     const symbolicCtrl = { command: 'activate' as const, scope: 'question' as const, key: { key: 'a', modifiers: ['Ctrl'] as const } }
     const physicalMeta = { command: 'activate' as const, scope: 'approval' as const, key: { key: 'a', alt: false, ctrl: false, meta: true, shift: false } }
     const sequenceCtrl = { command: 'activate' as const, scope: 'question' as const, sequence: [{ key: 'c', modifiers: ['Shift'] as const }, { key: 'd', modifiers: ['Ctrl'] as const }] }
@@ -308,35 +305,35 @@ describe('shortcut settings card', () => {
     expect(findNewShortcutConflicts([], [
       { binding: symbolicCtrl, index: 0 },
       { binding: { ...symbolicCtrl, scope: 'approval' }, index: 1 },
-    ], 'mac')).toHaveLength(1)
+    ])).toHaveLength(1)
     expect(findNewShortcutConflicts([], [
       { binding: symbolicCtrl, index: 0 },
       { binding: { ...symbolicCtrl, scope: 'approval' }, index: 1 },
-    ], 'linux')).toHaveLength(1)
+    ])).toHaveLength(1)
     expect(findNewShortcutConflicts([], [
       { binding: physicalMeta, index: 0 },
       { binding: { ...physicalMeta, scope: 'question' }, index: 1 },
-    ], 'linux')).toHaveLength(1)
+    ])).toHaveLength(1)
     expect(findNewShortcutConflicts([], [
       { binding: physicalMeta, index: 0 },
       { binding: { ...physicalMeta, scope: 'question' }, index: 1 },
-    ], 'mac')).toHaveLength(1)
+    ])).toHaveLength(1)
     expect(findNewShortcutConflicts([], [
       { binding: sequenceCtrl, index: 0 },
       { binding: { ...sequenceCtrl, scope: 'approval' }, index: 1 },
-    ], 'mac')).toHaveLength(1)
+    ])).toHaveLength(1)
     expect(findNewShortcutConflicts([], [
       { binding: sequenceCtrl, index: 0 },
       { binding: { ...sequenceCtrl, scope: 'approval' }, index: 1 },
-    ], 'windows')).toHaveLength(1)
+    ])).toHaveLength(1)
     expect(findNewShortcutConflicts([], [
       { binding: sequencesMeta, index: 0 },
       { binding: { ...sequencesMeta, scope: 'question' }, index: 1 },
-    ], 'linux')).toHaveLength(1)
+    ])).toHaveLength(1)
     expect(findNewShortcutConflicts([], [
       { binding: sequencesMeta, index: 0 },
       { binding: { ...sequencesMeta, scope: 'question' }, index: 1 },
-    ], 'mac')).toHaveLength(1)
+    ])).toHaveLength(1)
   })
 
   it('starts collapsed and toggles profile details with an accessible disclosure header', () => {
