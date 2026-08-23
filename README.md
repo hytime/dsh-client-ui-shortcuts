@@ -4,9 +4,18 @@
 
 English | [中文](README.zh.md)
 
-Profile-aware keyboard shortcuts and compact interaction cards for the [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) Web Client.
+Browser-safe, profile-aware keyboard control for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) Web.
 
-Use it when DSH asks you a question, requests approval, or needs a predictable keyboard workflow for repeated session work. The plugin stays inside DSH Web, follows the current conversation composer, and does not modify DSH core, the agent loop, or the model protocol.
+This plugin runs inside DSH Web, adds predictable keyboard control for question and approval flows, and provides capability-aware Session and Workspace navigation. It does not modify DSH core, the agent loop, or the model protocol.
+
+## Why install it
+
+- Answer DSH questions and approvals without leaving the keyboard.
+- Choose Standard, Vim, or Custom profiles for interaction cards and global actions.
+- Navigate Sessions and Workspaces with explicit physical `Meta`, `Ctrl`, `Alt`, and `Shift` modifiers.
+- Automatically expand a collapsed target Workspace before opening an existing eligible Session.
+- Keep unavailable actions out of routing and shortcut lists through capability filtering.
+- Stay within browser and operating-system boundaries: reserved shortcuts may never reach a web page.
 
 ## Install in 60 seconds
 
@@ -21,26 +30,19 @@ The plugin is not a standalone React or Vite application. Do not open `apps/web`
 
 For upgrades, removal, local tarballs, profile inspection, and troubleshooting, see the [installation guide](docs/installation.md).
 
-## What you get
+## What is included
 
-| Capability | Status | What it does |
-| --- | --- | --- |
-| Question cards | Available | Compact single-select, multi-select, custom-answer, skip, previous-question, and submit flows. |
-| Approval cards | Available | Allow once, reject, details, cancel, and keyboard-confirmation flows. |
-| Standard profile | Available | Arrow keys, `Enter`, and `Escape` for question and approval interactions. |
-| Vim profile | Available | `j`/`k`, `Enter`, and `Escape` for question and approval interactions. |
-| Settings card | Available | Switch the active profile through the `dsh-ui-shortcuts` settings namespace. |
-| Custom profile | Available | Edit question, approval, and capability-backed global bindings, including modifiers, alternatives, and two-stroke chords. |
-| Global actions | Available | Route capability-aware session, Workspace, session-branch, and theme actions through the DSH public faces. |
-| Capability filtering | Available | Register and render each global action only when the current DSH composition exposes its required public action face. |
-
-The current release contains interaction takeover, the `standard`/`vim` profiles, the editable `Custom` profile, and the capability-aware global router. The settings opener remains hidden because DSH does not expose a public opener; the plugin does not simulate it through private DOM clicks or guessed routes.
+- Question cards with single-select, multi-select, custom-answer, skip, previous-question, and submit flows.
+- Approval cards with allow once, reject, details, cancel, and keyboard-confirmation flows.
+- Standard, Vim, and editable Custom profiles with one active profile at a time.
+- Explicit physical `Meta`, `Ctrl`, `Alt`, and `Shift` modifiers, alternatives, and two-stroke chords.
+- Browser-reserved shortcut denylist and conflict validation.
+- Capability filtering for unavailable DSH public faces.
+- Session, Workspace, session-branch, and theme actions when their required public faces are available.
 
 ## Shortcut reference
 
-### Available today
-
-The plugin currently exposes four logical interaction commands across two surfaces:
+### Question and approval cards
 
 | Command | Question | Approval |
 | --- | --- | --- |
@@ -49,92 +51,47 @@ The plugin currently exposes four logical interaction commands across two surfac
 | Activate current item | `Enter` | `Enter` |
 | Cancel current task | `Escape` | `Escape` |
 
-The Vim profile replaces the two focus bindings with `k` and `j`; confirmation and cancellation keep `Enter` and `Escape`.
+The Vim profile replaces the two focus bindings with `k` and `j`; confirmation and cancellation keep `Enter` and `Escape`. These bindings are scoped to the active interaction card.
 
-These are four logical commands, eight question/approval bindings, and sixteen built-in profile rows across `standard` and `vim`. They are scoped to the active interaction card and do not become document-wide shortcuts.
+### Global actions
 
-### Global shortcuts
+The active profile's default global bindings are:
 
-The global router is available in the active profile. Its built-in global bindings are:
+| Action | Default binding |
+| --- | --- |
+| Create a Session | `Meta+Alt+Shift+N` |
+| Previous Session | `Meta+Alt+Shift+J` |
+| Next Session | `Meta+Alt+Shift+K` |
+| Previous Workspace | `Meta+Alt+Shift+H` |
+| Next Workspace | `Meta+Alt+Shift+L` |
+| Fork current Session | `Meta+Alt+Shift+B` |
+| Toggle light/dark theme | `Meta+Alt+Shift+T` |
 
-| Action | Default binding | Capability requirement |
-| --- | --- | --- |
-| Create a session | `Meta+Alt+Shift+N` | `workspaces.startSession()` |
-| Previous session | `Meta+Alt+Shift+J` | current Workspace session list, `sessions.open()`, and non-blank session metadata |
-| Next session | `Meta+Alt+Shift+K` | current Workspace session list, `sessions.open()`, and non-blank session metadata |
-| Previous Workspace | `Meta+Alt+Shift+H` | Workspace list, an existing non-blank target session, and `sessions.open()` |
-| Next Workspace | `Meta+Alt+Shift+L` | Workspace list, an existing non-blank target session, and `sessions.open()` |
-| Fork current session | `Meta+Alt+Shift+B` | `sessions.fork()` and `sessions.open()` |
-| Toggle light/dark theme | `Meta+Alt+Shift+T` | `theme.getTheme()` and `theme.setTheme()` |
+Global actions are registered only when DSH exposes the required public capability. The hidden `Meta+,` settings binding is retained in profile data but is not an available feature because DSH exposes no public settings opener.
 
-The `Meta+,` settings binding is retained in the profile data but remains hidden and inactive because no public DSH settings opener is available. Capability filtering removes unavailable global actions from both routing and the shortcut list; it does not leave dead rows or simulate private DSH UI behavior.
+## Profiles and Custom bindings
 
-### DSH actions worth reserving next
+`Standard` uses arrow keys, `Enter`, and `Escape` for question and approval interactions. `Vim` uses `j`/`k`, `Enter`, and `Escape`. `Custom` lets you edit question, approval, and capability-backed global bindings, including explicit modifiers, alternatives, and two-stroke chords.
 
-These are useful future candidates because the current DSH Web composition already exposes related public faces:
+The resolver matches physical `KeyboardEvent.code` values, normalizes aliases such as `Esc`/`Escape` and `Return`/`Enter`, rejects prefix conflicts, and limits chords to two strokes. On macOS, `Meta` is displayed as Command and `Alt` as Option; on other platforms, `Meta` is displayed as Windows key and `Ctrl` as Control.
 
-| Candidate | DSH face | Notes |
-| --- | --- | --- |
-| Toggle sidebar | `layout.toggleSidebar()` | Good fit for a global layout shortcut. |
-| Open details | `layout.openDetails()` | Useful when reviewing a selected tool call. |
-| Close details | `layout.closeDetails()` | Should remain safe when the panel is already closed. |
-| Open a subagent | `sessions.openSubagent(address)` | Useful for agent-task navigation. |
-| Submit the current draft | session `inputActions.submit()` | Must yield to text inputs, IME, and pending takeover cards. |
-| Archive current session | `workspaces.archiveSession(sessionId)` | Destructive; requires confirmation and should not have a default binding. |
+## Browser and platform boundaries
 
-## Key design
+The router uses capture-phase listeners owned by the active Client fiber. It yields to unmatched text input, IME composition, repeated events, pending question or approval takeover, and host-owned popup focus. A matching global action can run from an input or contenteditable element because it is an explicit global binding.
 
-The global router uses explicit physical modifiers. `Meta` matches `metaKey` on every platform and is displayed as Command on macOS or Windows key elsewhere; `Ctrl` matches `ctrlKey` and is displayed as Control everywhere. macOS displays `Alt` as Option. The default global bindings are `Meta+Alt+Shift+N/J/K/H/L/B/T`. Persisted legacy `Mod` values are migrated to `Meta` when read and are never written back.
+The browser denylist covers known Chrome, Safari, Firefox, and Edge combinations. It cannot query arbitrary OS or browser shortcut ownership, and capture listeners can prevent only shortcuts the browser has dispatched to the page.
 
-On macOS, Option and Shift can make `KeyboardEvent.key` produce layout characters (for example, `Option+Shift+N` can produce `˜`). The shortcut resolver uses `KeyboardEvent.code` such as `KeyN` and normalizes it to the logical key `n`; diagnostics may still display the raw `key` value.
+## Workspace and Session navigation
 
-- Session navigation stays within the current Workspace when possible, follows the Workspace's stored `sessionIds` order, and skips archived, subagent, and blank sessions. It opens only an existing non-blank session and does not call `connectWorkspace` to create a navigation target.
-- Workspace navigation opens an existing non-blank session in the target Workspace; it does not create a blank session or a new session as a navigation side effect, and does not call `connectWorkspace` to create the target.
-- The global router handles events during the capture phase. A matching global action runs and prevents the event even when focus is in an `input`, `textarea`, `select`, or `contenteditable` element. Unmatched text input, IME composition, repeated events, and pending `Enter`/`Escape` takeover continue to yield.
-- The capture listener can only prevent DOM events that the browser has already dispatched to the page. Browser- or OS-reserved shortcuts may never reach the page, and the Web platform provides no general API for querying arbitrary OS/browser shortcut ownership.
-- The browser denylist is a prompt for known Chrome, Safari, Firefox, and Edge combinations; it is not an authoritative query of arbitrary OS/browser shortcut usage.
-- The UI displays Command on macOS or Windows key elsewhere for `Meta`, Control for `Ctrl`, and Option for macOS `Alt`.
-- One command may have alternative bindings for platform compatibility or a user-selected backup key.
-- Key aliases are normalized before comparison, including `Esc`/`Escape` and `Return`/`Enter`.
-- A chord cannot have three or more strokes, and one binding cannot be a prefix of another binding in the same scope.
-
-The global router is registered in the capture phase. It yields to unmatched text input, IME composition, repeated key events, pending question/approval takeover, and host-owned popup focus. Every listener is owned by the current Client fiber and is removed when the plugin stops or updates.
+Session navigation follows the current Workspace's stored Session order and skips archived, subagent, and blank Sessions. Workspace navigation opens an existing non-blank Session in the target Workspace. When a target Workspace is collapsed, the plugin expands it automatically before opening the eligible Session; navigation does not create a blank Session or call `connectWorkspace` to manufacture a target.
 
 ## DSH compatibility
 
-The plugin is an out-of-tree DSH Web Client extension. It uses public composition points rather than modifying DSH internals:
+This is an out-of-tree DSH Web Client extension. It uses public composition points for the conversation composer, profile settings card, settings persistence, and locale dictionaries, while keeping DSH live services out of React props and persisted settings. It does not modify DSH core.
 
-- `conversation.composer` for question and approval takeover;
-- `settings.plugin.item` for the profile settings card;
-- `dsh-ui-shortcuts` for Host settings persistence;
-- `dsh-shortcuts` for Client locale dictionaries;
-- fiber-owned effects for slot, settings, locale, and future keyboard registrations.
+The package is loaded only through a real DSH Web composition and DSH boot/module loader. Installing an update does not replace code already running in an open page; reload the Web composition to load the new Client bundle.
 
-The plugin injects the session, Workspace, and theme faces needed by the active global actions. It extracts only plain action callbacks before passing data to React; DSH live services do not cross into React props or persisted settings.
-
-## Roadmap
-
-### Current integration
-
-- Compact question and approval cards inside the DSH conversation composer.
-- Standard, Vim, and editable Custom profiles with one active profile at a time.
-- Custom binding persistence with explicit `Meta`, `Ctrl`, `Alt`, and `Shift` modifiers, alternatives, and two-stroke chords.
-- Capability-aware global action adapter and fiber-owned keyboard router.
-- Session and Workspace navigation based on DSH list snapshots.
-- Branch creation followed by opening the new child session.
-- Light/dark theme switching through the public theme face.
-- Grouped question, approval, and global shortcut legend with unavailable actions hidden.
-- Input, IME, repeat, pending-interaction, and host-popup guards for global routing.
-
-### Waiting for a DSH public face
-
-- Open the settings panel directly; the existing settings binding stays hidden.
-- Open a session switcher or command palette when DSH exposes a public opener.
-- Switch transcript/trajectory views.
-- Open model, permission-mode, Plan Mode, or background-job pickers.
-- Expose queue steering, undo/redo, clipboard, and other InputBar-private operations to extension packages.
-
-## Development
+## Development and verification
 
 These commands develop this package. They are not profile installation commands:
 
@@ -145,23 +102,7 @@ pnpm run typecheck
 pnpm exec vitest run tests
 ```
 
-`pnpm run bundle` emits the Node library, declarations, browser `lib/client.js`, and source map. The browser artifact keeps DSH platform modules external, rejects ordinary non-platform `@deepseek-ai/*` runtime imports, compiles CSS Modules with Lightning CSS, and inlines local Iconify data.
-
 For the full DSH composition workflow, use the [installation guide](docs/installation.md). Browser verification must run through a real DSH Web profile with boot data; the `apps/web` Vite entry is not a standalone validation target.
-
-## Package contract
-
-| Item | Value |
-| --- | --- |
-| Package | `@hytime/dsh-client-ui-shortcuts` |
-| Current version | `0.1.12` |
-| Bundle row | `dsh-ui-shortcuts` |
-| Settings namespace | `dsh-ui-shortcuts` |
-| Persisted fields | `activeProfile`, `customBindings` |
-| Locale namespace | `dsh-shortcuts` |
-| Built-in profiles | `standard`, `vim` |
-| Editable profile | `custom` |
-| Browser entry | `lib/client.js` |
 
 ## FAQ
 
