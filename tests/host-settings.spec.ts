@@ -1,21 +1,40 @@
 import { Context } from '@deepseek-ai/cordis'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { SettingsProvider, type SettingsNamespace } from '@deepseek-ai/dsh-settings'
 import { apply, SHORTCUTS_SETTINGS_NAMESPACE } from '../src/index.js'
 import { normalizePersistedShortcutResult, validatePersistedShortcutBindings } from '../src/settings-validation.js'
 import { defaultShortcutBindings } from '../src/settings.js'
 import type { ShortcutSettings } from '../src/settings.js'
 
+interface MemorySettingsConfig {
+  doc?: Record<string, unknown>
+  failPersistCount?: number
+}
+
 class MemorySettings extends SettingsProvider {
-  readonly writable = true
   readonly persisted: Array<{ ns: SettingsNamespace; section: Record<string, unknown> }> = []
+  private doc: Record<string, unknown>
+  private failures: number
+
+  constructor(ctx: Context, config: MemorySettingsConfig = {}) {
+    super(ctx)
+    this.doc = structuredClone(config.doc ?? {})
+    this.failures = config.failPersistCount ?? 0
+  }
+
+  get writable(): boolean { return true }
 
   protected load(): Promise<Record<string, unknown>> {
-    return Promise.resolve({})
+    return Promise.resolve(structuredClone(this.doc))
   }
 
   protected persist(ns: SettingsNamespace, section: Record<string, unknown>): Promise<void> {
-    this.persisted.push({ ns, section })
+    if (this.failures > 0) {
+      this.failures -= 1
+      return Promise.reject(new Error('persist unavailable'))
+    }
+    this.doc[ns] = structuredClone(section)
+    this.persisted.push({ ns, section: structuredClone(section) })
     return Promise.resolve()
   }
 }
@@ -92,6 +111,158 @@ describe('shortcut Host settings', () => {
     expect(result.bindings).toEqual([
       { command: 'openSettings', scope: 'global', key: { key: 's', modifiers: ['Meta', 'Alt'] } },
     ])
+  })
+
+  it('migrates legacy customBindings on startup without a user write', async () => {
+    const ctx = new Context()
+    const providerFiber = ctx.plugin(MemorySettings, { doc: {
+      [SHORTCUTS_SETTINGS_NAMESPACE]: { activeProfile: 'custom', customBindings: [validCustomBinding] },
+    } })
+    await providerFiber.await()
+    const provider = providerFiber.ctx.settings as unknown as MemorySettings
+    const fiber = ctx.plugin({ apply })
+    await fiber.await()
+    await flushSettingsMigration()
+    expect(provider.persisted.at(-1)?.section).toMatchObject({
+      activeProfile: 'custom',
+      customProfiles: [{ id: 'custom', bindings: [validCustomBinding] }],
+    })
+    await fiber.dispose()
+  })
+
+  it('logs a failed startup migration and retries after a resolved change', async () => {
+    const ctx = new Context()
+    const warn = vi.fn()
+    ctx.logger.warn = warn as never
+    const providerFiber = ctx.plugin(MemorySettings, { doc: {
+      [SHORTCUTS_SETTINGS_NAMESPACE]: { activeProfile: 'custom', customBindings: [validCustomBinding] },
+    }, failPersistCount: 1 })
+    await providerFiber.await()
+    const provider = providerFiber.ctx.settings as unknown as MemorySettings
+    const fiber = ctx.plugin({ apply })
+    await fiber.await()
+    await flushSettingsMigration()
+    const diagnostic = warn.mock.calls.flat().map(String).join(' ')
+    expect(diagnostic).toContain(SHORTCUTS_SETTINGS_NAMESPACE)
+    expect(diagnostic).toContain('persist unavailable')
+    expect(diagnostic).toContain('continuing with legacy projection')
+    expect(provider.persisted).toHaveLength(0)
+    const settings = ctx.settings.get(SHORTCUTS_SETTINGS_NAMESPACE) as ShortcutSettings
+    expect(settings).toMatchObject({
+      activeProfile: 'custom', customBindings: [validCustomBinding],
+    })
+    expect(settings.customProfiles).toBeUndefined()
+    await ctx.settings.update(SHORTCUTS_SETTINGS_NAMESPACE, { activeProfile: 'vim' })
+    await flushSettingsMigration()
+    expect(provider.persisted.at(-1)?.section).toMatchObject({
+      activeProfile: 'vim', customProfiles: [{ id: 'custom', bindings: [validCustomBinding] }],
+    })
+    await fiber.dispose()
+  })
+
+  it('retries a failed migration when the plugin restarts', async () => {
+    const ctx = new Context()
+    const providerFiber = ctx.plugin(MemorySettings, { doc: {
+      [SHORTCUTS_SETTINGS_NAMESPACE]: { activeProfile: 'custom', customBindings: [validCustomBinding] },
+    }, failPersistCount: 1 })
+    await providerFiber.await()
+    const first = ctx.plugin({ apply })
+    await first.await()
+    await flushSettingsMigration()
+    await first.dispose()
+    const second = ctx.plugin({ apply })
+    await second.await()
+    await flushSettingsMigration()
+    const provider = providerFiber.ctx.settings as unknown as MemorySettings
+    expect(provider.persisted.at(-1)?.section).toMatchObject({ customProfiles: [{ id: 'custom' }] })
+    await second.dispose()
+  })
+
+  it('fails namespace registration for an invalid stored new structure', async () => {
+    const ctx = new Context()
+    await ctx.plugin(MemorySettings, { doc: {
+      [SHORTCUTS_SETTINGS_NAMESPACE]: {
+        activeProfile: 'custom-a',
+        customBindings: [validCustomBinding],
+        customProfiles: [{ id: 'custom-a', name: 'Broken', bindings: [] }],
+      },
+    } }).await()
+    const fiber = ctx.plugin({ apply })
+    let failure: unknown
+    try {
+      await fiber.await()
+    } catch (error) {
+      failure = error
+    }
+    expect(failure).toBeInstanceOf(Error)
+    expect((failure as Error).message).toContain('bindings')
+  })
+
+  it.each([
+    ['an explicit empty customProfiles array', []],
+    ['the composition base customProfiles array', [{ id: 'custom-a', name: 'Custom A', bindings: [validCustomBinding] }]],
+  ])('does not migrate %s', async (_label, customProfiles) => {
+    const ctx = new Context()
+    const providerFiber = ctx.plugin(MemorySettings, { doc: {
+      [SHORTCUTS_SETTINGS_NAMESPACE]: { activeProfile: 'standard', customBindings: [validCustomBinding], customProfiles },
+    } })
+    await providerFiber.await()
+    const provider = providerFiber.ctx.settings as unknown as MemorySettings
+    const fiber = ctx.plugin({ apply })
+    await fiber.await()
+    await flushSettingsMigration()
+    expect(provider.persisted).toHaveLength(0)
+    expect(ctx.settings.get(SHORTCUTS_SETTINGS_NAMESPACE)).toMatchObject({ customProfiles })
+    await fiber.dispose()
+  })
+
+  it.each([
+    ['null customProfiles', null, 'customProfiles'],
+    ['non-array customProfiles', {}, 'customProfiles'],
+    ['duplicate profile IDs', [
+      { id: 'custom-a', name: 'Custom A', bindings: [validCustomBinding] },
+      { id: 'custom-a', name: 'Custom B', bindings: [validCustomBinding] },
+    ], 'duplicate custom profile id'],
+    ['reserved profile ID', [{ id: 'vim', name: 'Custom Vim', bindings: [validCustomBinding] }], 'reserved custom profile id'],
+    ['duplicate profile names', [
+      { id: 'custom-a', name: 'Custom', bindings: [validCustomBinding] },
+      { id: 'custom-b', name: 'Custom', bindings: [validCustomBinding] },
+    ], 'duplicate custom profile name'],
+    ['empty bindings', [{ id: 'custom-a', name: 'Custom A', bindings: [] }], 'bindings'],
+  ])('rejects %s in the new structure', async (_label, customProfiles, diagnostic) => {
+    const ctx = new Context()
+    await ctx.plugin(MemorySettings).await()
+    const fiber = ctx.plugin({ apply })
+    await fiber.await()
+    await expect(ctx.settings.update(SHORTCUTS_SETTINGS_NAMESPACE, {
+      activeProfile: 'standard',
+      customProfiles,
+    })).rejects.toThrow(diagnostic)
+    await fiber.dispose()
+  })
+
+  it('rejects an unknown active profile against the new structure', async () => {
+    const ctx = new Context()
+    await ctx.plugin(MemorySettings).await()
+    const fiber = ctx.plugin({ apply })
+    await fiber.await()
+    await expect(ctx.settings.update(SHORTCUTS_SETTINGS_NAMESPACE, {
+      activeProfile: 'custom-missing',
+      customProfiles: [{ id: 'custom-a', name: 'Custom A', bindings: [validCustomBinding] }],
+    })).rejects.toThrow('unknown shortcut profile')
+    await fiber.dispose()
+  })
+
+  it('accepts legacy activeProfile custom while customProfiles is absent', async () => {
+    const ctx = new Context()
+    await ctx.plugin(MemorySettings).await()
+    const fiber = ctx.plugin({ apply })
+    await fiber.await()
+    await expect(ctx.settings.update(SHORTCUTS_SETTINGS_NAMESPACE, {
+      activeProfile: 'custom',
+      customBindings: [validCustomBinding],
+    })).resolves.toBeUndefined()
+    await fiber.dispose()
   })
 
   it('persists migrated Meta bindings and keeps them after updates', async () => {

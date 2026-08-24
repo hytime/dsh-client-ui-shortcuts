@@ -1,5 +1,6 @@
 import type { Context } from '@deepseek-ai/cordis'
-import { isShortcutProfileId } from './profile-catalog.js'
+import { isBuiltinShortcutProfileId } from './profile-catalog.js'
+import { LEGACY_CUSTOM_PROFILE_ID, normalizeCustomProfiles } from './custom-profile-contract.js'
 import { normalizePersistedShortcutResult } from './settings-validation.js'
 import {
   SHORTCUTS_SETTINGS_NAMESPACE,
@@ -20,27 +21,63 @@ export {
 } from './profile-catalog.js'
 
 /** Register the optional Host settings namespace when a provider is composed. */
-export function apply(ctx: Context): void {
-  ctx.inject(['settings'], (settingsCtx) => {
+export async function apply(ctx: Context): Promise<void> {
+  await ctx.inject(['settings'], (settingsCtx) => {
     const scope = settingsCtx.settings.register(SHORTCUTS_SETTINGS_NAMESPACE, ShortcutSettingsSchema, {
       validate(value: ShortcutSettings) {
-        if (!isShortcutProfileId(value.activeProfile)) {
+        normalizePersistedShortcutResult(value.customBindings)
+        if (value.customProfiles === undefined) {
+          if (!['standard', 'vim', LEGACY_CUSTOM_PROFILE_ID].includes(value.activeProfile)) {
+            throw new Error(`unknown shortcut profile "${value.activeProfile}"`)
+          }
+          return
+        }
+        const customProfiles = value.customProfiles
+        if (!Array.isArray(customProfiles)) {
+          normalizeCustomProfiles(customProfiles)
+          return
+        }
+        if (customProfiles.some((profile) => {
+          if (typeof profile !== 'object' || profile === null || Array.isArray(profile)) return false
+          const bindings = (profile as Record<string, unknown>).bindings
+          return Array.isArray(bindings) && bindings.length === 0
+        })) {
+          throw new Error('custom profile bindings must be a non-empty array')
+        }
+        const profiles = normalizeCustomProfiles(customProfiles)
+        if (!isBuiltinShortcutProfileId(value.activeProfile)
+          && profiles.every(profile => profile.id !== value.activeProfile)) {
           throw new Error(`unknown shortcut profile "${value.activeProfile}"`)
         }
-        normalizePersistedShortcutResult(value.customBindings)
       },
     })
-    let migrating = false
-    ctx.on('settings/updated', (namespace, next) => {
-      if (namespace !== SHORTCUTS_SETTINGS_NAMESPACE || migrating) return
-      const resolved = next as ShortcutSettings
-      const normalized = normalizePersistedShortcutResult(resolved.customBindings)
-      if (JSON.stringify(normalized.bindings) === JSON.stringify(resolved.customBindings)) return
-      migrating = true
-      void scope.update({ customBindings: normalized.bindings })
-        .finally(() => {
-          migrating = false
-        })
-    })
+
+    const migrate = async (value: ShortcutSettings): Promise<void> => {
+      const normalizedBindings = normalizePersistedShortcutResult(value.customBindings).bindings
+      const patch: Record<string, unknown> = {}
+      if (JSON.stringify(normalizedBindings) !== JSON.stringify(value.customBindings)) {
+        patch.customBindings = normalizedBindings
+      }
+      if (value.customProfiles === undefined) {
+        patch.customProfiles = [{
+          id: LEGACY_CUSTOM_PROFILE_ID,
+          bindings: normalizedBindings,
+        }]
+      }
+      if (Object.keys(patch).length === 0) return
+      try {
+        await scope.update(patch)
+      } catch (error) {
+        ctx.logger.warn(
+          `dsh-client-ui-shortcuts: legacy settings migration failed for "${SHORTCUTS_SETTINGS_NAMESPACE}"; continuing with legacy projection`,
+          error,
+        )
+      }
+    }
+
+    void migrate(scope.get())
+    ctx.effect(() => scope.watch(next => {
+      void migrate(next)
+    }))
   })
 }
