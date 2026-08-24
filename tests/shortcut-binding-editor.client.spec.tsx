@@ -13,6 +13,19 @@ const t = (key: string) => key
 afterEach(cleanup)
 
 describe('ShortcutBindingEditor', () => {
+  it('labels Alt as Option on macOS and Alt elsewhere', () => {
+    const altBinding = { command: 'openCommandPalette' as const, scope: 'global' as const, key: { key: 'q', modifiers: ['Alt'] as const } }
+    const props = { bindings: [altBinding], availableGlobalActions: ['openCommandPalette'] as const, t, onSave: vi.fn() }
+
+    render(<ShortcutBindingEditor platform="mac" {...props} />)
+    expect(screen.getByText('modifier.Option')).toBeTruthy()
+    expect(screen.queryByText('modifier.Alt')).toBeNull()
+    cleanup()
+
+    render(<ShortcutBindingEditor platform="windows" {...props} />)
+    expect(screen.getByText('modifier.Alt')).toBeTruthy()
+    expect(screen.queryByText('modifier.Option')).toBeNull()
+  })
   it('renders explicit Meta as Command on macOS and preserves hidden bindings on save', async () => {
     const onSave = vi.fn().mockResolvedValue(undefined)
     const hidden = { command: 'openSettings' as const, scope: 'global' as const, key: { key: 's', modifiers: ['Ctrl'] as const } }
