@@ -111,38 +111,182 @@ describe('custom profile JSON codec', () => {
     expect(() => decodeCustomProfileJson(text, text.length)).toThrow('command')
   })
 
-  it('preserves JSON-safe binding and stroke extension fields while normalizing bindings', () => {
-    const text = jsonText(validEnvelope({
-      name: 'Work',
-      bindings: [{
+  it.each([
+    {
+      label: 'key with a declarative stroke',
+      binding: {
         command: 'openSettings',
         scope: 'global',
         key: {
           key: 'S',
-          modifiers: ['Mod'],
-          display: { mac: ['⌘', 'S'] },
+          modifiers: ['Shift', 'Mod'],
+          display: { mac: { glyphs: ['⌘', '⇧', 'S'], accessible: true }, fallback: null },
         },
-        metadata: { source: ['imported'], enabled: true },
-      }],
-    }))
-
-    const expected = {
-      name: 'Work',
-      bindings: [{
+        metadata: { source: { kind: 'imported', tags: ['work', { priority: 1 }] }, enabled: true },
+      },
+      expectedBinding: {
         command: 'openSettings',
         scope: 'global',
         key: {
           key: 's',
-          modifiers: ['Meta'],
-          display: { mac: ['⌘', 'S'] },
+          modifiers: ['Meta', 'Shift'],
+          display: { mac: { glyphs: ['⌘', '⇧', 'S'], accessible: true }, fallback: null },
         },
-        metadata: { source: ['imported'], enabled: true },
-      }],
-    }
+        metadata: { source: { kind: 'imported', tags: ['work', { priority: 1 }] }, enabled: true },
+      },
+    },
+    {
+      label: 'sequence with physical strokes',
+      binding: {
+        command: 'openSettings',
+        scope: 'global',
+        sequence: [
+          {
+            key: 'Esc',
+            alt: false,
+            ctrl: false,
+            meta: true,
+            shift: false,
+            display: { variants: [{ platform: 'mac', glyph: '⌘ Esc' }] },
+          },
+          {
+            key: 'S',
+            alt: true,
+            ctrl: false,
+            meta: false,
+            shift: true,
+            display: { variants: [{ platform: 'other', glyph: 'Alt Shift S' }] },
+          },
+        ],
+        metadata: { source: { kind: 'legacy', revision: 2 }, enabled: true },
+      },
+      expectedBinding: {
+        command: 'openSettings',
+        scope: 'global',
+        sequence: [
+          {
+            key: 'Escape',
+            alt: false,
+            ctrl: false,
+            meta: true,
+            shift: false,
+            display: { variants: [{ platform: 'mac', glyph: '⌘ Esc' }] },
+          },
+          {
+            key: 's',
+            alt: true,
+            ctrl: false,
+            meta: false,
+            shift: true,
+            display: { variants: [{ platform: 'other', glyph: 'Alt Shift S' }] },
+          },
+        ],
+        metadata: { source: { kind: 'legacy', revision: 2 }, enabled: true },
+      },
+    },
+    {
+      label: 'sequences with mixed declarative and physical strokes',
+      binding: {
+        command: 'openSettings',
+        scope: 'global',
+        sequences: [
+          [
+            {
+              key: 'G',
+              modifiers: ['Shift', 'Mod'],
+              display: { chord: { position: 1, labels: ['Meta', 'Shift', 'G'] } },
+            },
+            {
+              key: 'S',
+              alt: false,
+              ctrl: true,
+              meta: false,
+              shift: false,
+              display: { chord: { position: 2, labels: ['Ctrl', 'S'] } },
+            },
+          ],
+          [
+            {
+              key: '/',
+              alt: true,
+              ctrl: false,
+              meta: false,
+              shift: false,
+              display: { chord: { position: 1, labels: ['Alt', '/'] } },
+            },
+            {
+              key: 'Return',
+              modifiers: [],
+              display: { chord: { position: 2, labels: ['Enter'] } },
+            },
+          ],
+        ],
+        metadata: { source: { kind: 'generated', options: { alternate: true } }, enabled: true },
+      },
+      expectedBinding: {
+        command: 'openSettings',
+        scope: 'global',
+        sequences: [
+          [
+            {
+              key: 'g',
+              modifiers: ['Meta', 'Shift'],
+              display: { chord: { position: 1, labels: ['Meta', 'Shift', 'G'] } },
+            },
+            {
+              key: 's',
+              alt: false,
+              ctrl: true,
+              meta: false,
+              shift: false,
+              display: { chord: { position: 2, labels: ['Ctrl', 'S'] } },
+            },
+          ],
+          [
+            {
+              key: '/',
+              alt: true,
+              ctrl: false,
+              meta: false,
+              shift: false,
+              display: { chord: { position: 1, labels: ['Alt', '/'] } },
+            },
+            {
+              key: 'Enter',
+              modifiers: [],
+              display: { chord: { position: 2, labels: ['Enter'] } },
+            },
+          ],
+        ],
+        metadata: { source: { kind: 'generated', options: { alternate: true } }, enabled: true },
+      },
+    },
+  ])('round-trips nested extension fields for $label while normalized known fields win', ({ binding, expectedBinding }) => {
+    const text = jsonText(validEnvelope({ name: 'Work', bindings: [binding] }))
+    const expected = { name: 'Work', bindings: [expectedBinding] }
+
     const decoded = decodeCustomProfileJson(text, new TextEncoder().encode(text).byteLength)
 
     expect(decoded).toEqual(expected)
     expect(JSON.parse(encodeCustomProfileJson(decoded)).profile).toEqual(expected)
+  })
+
+  it.each([
+    [
+      'declarative modifiers combined with physical flags',
+      { key: 's', modifiers: ['Meta'], alt: false, ctrl: false, meta: false, shift: false },
+    ],
+    [
+      'physical Ctrl and Meta flags enabled together',
+      { key: 's', alt: false, ctrl: true, meta: true, shift: false },
+    ],
+  ])('rejects invalid known stroke fields: %s', (_label, key) => {
+    const text = jsonText(validEnvelope({
+      name: 'Work',
+      bindings: [{ command: 'openSettings', scope: 'global', key }],
+    }))
+
+    expect(() => decodeCustomProfileJson(text, text.length)).toThrow('modifier')
   })
 
   it('uses the provided UTF-8 byte count and rejects 1 MiB plus one byte', () => {
