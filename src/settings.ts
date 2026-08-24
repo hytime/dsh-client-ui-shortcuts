@@ -12,6 +12,7 @@ export { SHORTCUTS_SETTINGS_NAMESPACE } from './settings-namespace.js'
 export interface ShortcutSettings {
   readonly activeProfile: string
   readonly customBindings: PersistedShortcutBinding[]
+  readonly customProfiles?: unknown[]
 }
 
 const jsonArray = z.array(z.any())
@@ -65,6 +66,7 @@ function cloneJsonValue(value: unknown): any {
 export const ShortcutSettingsSchema: z<ShortcutSettings> = z.object({
   activeProfile: z.string().default(DEFAULT_SHORTCUT_PROFILE_ID),
   customBindings: jsonArray.default(clonePersistedBindings(defaultCustomBindings)),
+  customProfiles: jsonArray,
 })
 
 export function defaultShortcutBindings(): readonly PersistedShortcutBinding[] {
