@@ -1,6 +1,6 @@
 # DSH Client UI Shortcuts
 
-[![npm version](https://img.shields.io/npm/v/%40hytime%2Fdsh-client-ui-shortcuts?logo=npm&label=npm)](https://www.npmjs.com/package/@hytime/dsh-client-ui-shortcuts) [![license](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/license/mit/)
+[![npm version](https://img.shields.io/npm/v/%40hytime%2Fdsh-client-ui-shortcuts?logo=npm&label=npm)](https://www.npmjs.com/package/@hytime/dsh-client-ui-shortcuts) [![npm downloads](https://img.shields.io/npm/dm/%40hytime%2Fdsh-client-ui-shortcuts?logo=npm&label=downloads)](https://www.npmjs.com/package/@hytime/dsh-client-ui-shortcuts) [![license](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/license/mit/)
 
 English | [中文](README.zh.md)
 
@@ -29,12 +29,20 @@ Global Session and Workspace shortcuts with platform keycaps:
 
 ## Install in 60 seconds
 
-Install the plugin through the DSH CLI, then restart or reload the Web composition:
+The recommended path is the npm release because it includes prebuilt `lib/` artifacts and requires no install-time build. Install it through the DSH CLI, then restart or reload the Web composition:
 
 ```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.12
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.13
 dsh --profile web
 ```
+
+To install the GitHub source instead, pin a release tag or commit rather than the default branch:
+
+```bash
+dsh plugin --profile web add github:hytime/dsh-client-ui-shortcuts#v0.1.13
+```
+
+A Git install runs the package's `prepare` script during installation. pnpm may require the exact package key from its error message to be added to the profile's `allowBuilds`; grant that permission only for trusted, pinned source. The [installation guide](docs/installation.md) has the complete steps.
 
 The plugin is not a standalone React or Vite application. Do not open `apps/web` directly and do not install it into a DSH profile with `npm install`, `pnpm add`, or manual edits to the profile manifest or lockfile.
 

@@ -1,6 +1,6 @@
 {
   "name": "@hytime/dsh-client-ui-shortcuts",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "description": "Profile-aware keyboard shortcuts for the DeepSeek Harness Web Client",
   "keywords": [
     "dsh-plugin",
@@ -10,6 +10,14 @@
     "web-client",
     "react"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hytime/dsh-client-ui-shortcuts.git"
+  },
+  "homepage": "https://github.com/hytime/dsh-client-ui-shortcuts#readme",
+  "bugs": {
+    "url": "https://github.com/hytime/dsh-client-ui-shortcuts/issues"
+  },
   "type": "module",
   "main": "lib/index.js",
   "types": "lib/types/index.d.ts",
@@ -49,6 +57,7 @@
   "scripts": {
     "build:types": "tsc",
     "bundle": "pnpm run build:types && tsdown",
+    "prepare": "pnpm run bundle",
     "watch": "tsdown --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"

@@ -2,6 +2,17 @@
 
 `@hytime/dsh-client-ui-shortcuts` 的重要变更记录如下。
 
+## 0.1.13 - Git 源码安装与包元数据
+
+### 修复
+
+- 新增 `prepare` 生命周期脚本并复用独立的 `bundle` 构建，使固定 GitHub source 的安装能够生成全部发布用 `lib/` 入口。
+- 补齐规范的仓库、主页和 issue tracker 元数据，使 npm 消费者及插件目录能够将包映射到对应 GitHub 源码仓库。
+
+### 变更
+
+- 文档明确推荐安装预构建的 npm 包，并说明固定 GitHub source 安装及 pnpm `allowBuilds` 要求。
+
 ## 0.1.12 - 物理修饰键与可靠的全局导航
 
 ### 新增

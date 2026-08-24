@@ -10,15 +10,36 @@
 
 DSH CLI 负责 profile 的插件安装、升级和移除。本包声明的 pnpm 版本只适用于开发或打包源码，不是将插件安装到 DSH profile 的命令。不要执行 `npm install`、`pnpm add`，也不要直接修改 profile manifest 或 lockfile。这些 package manager 命令和直接编辑 lockfile 只属于开发或打包上下文，不属于消费者安装流程。
 
-## 安装已发布的包
+## 安装已发布的 npm 包
+
+推荐安装 npm 发布包。包内已经包含构建完成的 `lib/` 入口，因此安装时不需要执行包构建。
 
 使用 DSH plugin command 安装到 Web profile：
 
 ```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.12
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.13
 ```
 
 该命令会把包安装到 profile，并根据包中声明的 `dsh.bundle.patch` 将它加入 `dsh.profile.bundles`。
+
+## 安装固定版本的 GitHub 源码
+
+安装源码时必须使用 release tag 或完整 commit SHA，不要安装会持续变化的默认分支：
+
+```bash
+dsh plugin --profile web add github:hytime/dsh-client-ui-shortcuts#v0.1.13
+```
+
+Git dependency 包含源码，不包含仓库提交的 `lib/` 产物。pnpm 会在用户机器的 package installation 阶段执行 `prepare`，由它调用 `pnpm run bundle` 并生成发布入口。这是在 Agent 沙箱之外执行的安装期代码。
+
+pnpm 最初可能会拒绝执行该构建。请按照 DSH 或 pnpm 错误信息，将其中报告的精确 package key 加入 Web profile 的 `pnpm-workspace.yaml`；本包预期使用以下条目：
+
+```yaml
+allowBuilds:
+  '@hytime/dsh-client-ui-shortcuts': true
+```
+
+然后重新执行同一条固定版本的 `dsh plugin` 命令。只为可信源码授予构建权限，并保留 release tag 或 commit 后缀，避免默认分支的后续变更改变实际安装代码。
 
 ## 安装本地 tarball
 
@@ -37,7 +58,7 @@ pnpm pack --pack-destination /tmp/dsh-client-ui-shortcuts-pack
 export DSH_HOME="$(mktemp -d)"
 
 dsh plugin --profile web add \\
-  /tmp/dsh-client-ui-shortcuts-pack/hytime-dsh-client-ui-shortcuts-0.1.12.tgz
+  /tmp/dsh-client-ui-shortcuts-pack/hytime-dsh-client-ui-shortcuts-0.1.13.tgz
 ```
 
 如果希望 profile 在 shell 退出后继续存在，请将 `mktemp -d` 换成持久目录。发布 tarball 必须包含 `lib/client.js`、`lib/index.js`、`lib/invariant.js`、类型声明和 `cordis.patch.yml`。
@@ -109,6 +130,7 @@ pnpm pack --pack-destination /tmp/dsh-client-ui-shortcuts-pack
 
 ## 排错
 
+- **固定版本的 Git source 构建被拒绝：** 将 DSH 或 pnpm 错误信息中的精确 package key 加入 profile 的 `allowBuilds`，再重新执行同一条固定版本安装命令。
 - **找不到 `lib/client.js`：** 在打包前执行 `pnpm run bundle`。
 - **看不到 bundle row：** 确认 tarball 包含 `cordis.patch.yml`，并且 profile manifest 列出了 `@hytime/dsh-client-ui-shortcuts`。
 - **浏览器入口没有激活：** 使用 DSH Web profile，不要单独打开 Vite entry，并确认 peer packages 与 DSH 安装匹配。

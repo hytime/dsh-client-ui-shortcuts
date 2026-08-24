@@ -10,15 +10,36 @@ This guide installs `@hytime/dsh-client-ui-shortcuts` into a DSH Web profile. Th
 
 The DSH CLI owns profile installation, upgrade, and removal. The package's pnpm declaration applies only when developing or packing this source checkout; it is not an installation command for a DSH profile. Do not invoke `npm install`, `pnpm add`, or edit a profile manifest or lockfile directly. These package-manager commands and direct lockfile edits belong only to the development or packing context, not the consumer installation flow.
 
-## Install a published package
+## Install the published npm package
+
+The npm release is the recommended installation path. It already contains the built `lib/` entries, so installation does not need to execute a package build.
 
 Use the DSH plugin command with the Web profile:
 
 ```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.12
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.13
 ```
 
 The command forwards the package installation to the profile and reconciles packages that declare `dsh.bundle.patch` into `dsh.profile.bundles`.
+
+## Install pinned GitHub source
+
+Use a release tag or full commit SHA when installing source. Do not install the moving default branch:
+
+```bash
+dsh plugin --profile web add github:hytime/dsh-client-ui-shortcuts#v0.1.13
+```
+
+A Git dependency contains source rather than committed `lib/` output. During package installation on your machine, pnpm runs `prepare`, which calls `pnpm run bundle` and generates the published entries. This is install-time code execution outside any Agent sandbox.
+
+pnpm may initially refuse to run that build. Follow the DSH or pnpm error and add the exact package key it reports to the Web profile's `pnpm-workspace.yaml`; for this package the entry is expected to be:
+
+```yaml
+allowBuilds:
+  '@hytime/dsh-client-ui-shortcuts': true
+```
+
+Then rerun the same pinned `dsh plugin` command. Only grant build permission to source you trust, and retain the release tag or commit suffix so later changes to the default branch cannot alter the installed code.
 
 ## Install a local tarball
 
@@ -37,7 +58,7 @@ Then install the generated tarball into the DSH Web profile:
 export DSH_HOME="$(mktemp -d)"
 
 dsh plugin --profile web add \\
-  /tmp/dsh-client-ui-shortcuts-pack/hytime-dsh-client-ui-shortcuts-0.1.12.tgz
+  /tmp/dsh-client-ui-shortcuts-pack/hytime-dsh-client-ui-shortcuts-0.1.13.tgz
 ```
 
 Use a persistent `DSH_HOME` instead of `mktemp -d` when the profile should survive the shell session. The package tarball must contain `lib/client.js`, `lib/index.js`, `lib/invariant.js`, type declarations, and `cordis.patch.yml`.
@@ -109,6 +130,7 @@ For browser activation, start `dsh --profile web` and inspect the actual DSH Web
 
 ## Troubleshooting
 
+- **A pinned Git source build is blocked:** copy the exact package key from the DSH or pnpm error into the profile's `allowBuilds`, then rerun the same pinned install command.
 - **`lib/client.js` is missing:** run `pnpm run bundle` before packing.
 - **The bundle row is absent:** check that the tarball contains `cordis.patch.yml` and that the profile manifest lists `@hytime/dsh-client-ui-shortcuts`.
 - **The browser entry does not activate:** use a DSH Web profile, not the Vite entry by itself, and confirm that the peer packages match the DSH installation.

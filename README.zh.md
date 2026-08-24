@@ -1,6 +1,6 @@
 # DSH Client UI Shortcuts
 
-[![npm version](https://img.shields.io/npm/v/%40hytime%2Fdsh-client-ui-shortcuts?logo=npm&label=npm)](https://www.npmjs.com/package/@hytime/dsh-client-ui-shortcuts) [![license](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/license/mit/)
+[![npm version](https://img.shields.io/npm/v/%40hytime%2Fdsh-client-ui-shortcuts?logo=npm&label=npm)](https://www.npmjs.com/package/@hytime/dsh-client-ui-shortcuts) [![npm downloads](https://img.shields.io/npm/dm/%40hytime%2Fdsh-client-ui-shortcuts?logo=npm&label=downloads)](https://www.npmjs.com/package/@hytime/dsh-client-ui-shortcuts) [![license](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/license/mit/)
 
 [English](README.md) | 中文
 
@@ -29,12 +29,20 @@ Question 和 Approval 交互快捷键：
 
 ## 60 秒安装
 
-通过 DSH CLI 安装插件，然后重启或重新加载 Web composition：
+推荐安装 npm 发布包，因为其中已经包含预构建的 `lib/` 产物，不需要在安装阶段执行构建。通过 DSH CLI 安装插件，然后重启或重新加载 Web composition：
 
 ```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.12
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.13
 dsh --profile web
 ```
+
+如需改为安装 GitHub 源码，请固定 release tag 或 commit，不要直接安装默认分支：
+
+```bash
+dsh plugin --profile web add github:hytime/dsh-client-ui-shortcuts#v0.1.13
+```
+
+Git 安装会在安装阶段执行包的 `prepare` 脚本。pnpm 可能要求将错误信息给出的精确 package key 加入 profile 的 `allowBuilds`；只应为可信且已固定的源码授予该权限。完整步骤见[安装指南](docs/installation.zh.md)。
 
 本插件不是独立的 React 或 Vite 应用。不要直接打开 `apps/web`，也不要使用 `npm install`、`pnpm add` 或手动修改 DSH profile manifest、lockfile 的方式安装到 profile。
 

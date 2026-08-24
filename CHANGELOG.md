@@ -2,6 +2,17 @@
 
 All notable changes to `@hytime/dsh-client-ui-shortcuts` are documented here.
 
+## 0.1.13 - Git source installation and package metadata
+
+### Fixed
+
+- Added a `prepare` lifecycle script that reuses the standalone `bundle` build so pinned GitHub source installs generate every published `lib/` entry point.
+- Added canonical repository, homepage, and issue tracker metadata so npm consumers and plugin catalogs can map the package to its GitHub source.
+
+### Changed
+
+- Documented prebuilt npm installation as the recommended path and pinned GitHub source installation with pnpm `allowBuilds` requirements.
+
 ## 0.1.12 - Physical modifiers and reliable global navigation
 
 ### Added

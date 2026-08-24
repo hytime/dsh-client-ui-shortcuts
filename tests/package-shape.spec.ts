@@ -5,13 +5,23 @@ import YAML from 'yaml'
 
 type Manifest = {
   name: string
-  exports: Record<string, { default?: string }>
+  main: string
+  exports: {
+    '.': { types: string; default: string }
+    './invariant': { types: string; default: string }
+    './client': { types: string; default: string }
+    './src/*': string
+    './package.json': string
+  }
   dsh: {
     client: { platform: string; inject: string[] }
     bundle: { patch: string }
   }
   files: string[]
   scripts: Record<string, string>
+  repository?: { type: string; url: string }
+  homepage?: string
+  bugs?: { url: string }
   dependencies: Record<string, string>
   devDependencies: Record<string, string>
   peerDependencies: Record<string, string>
@@ -26,7 +36,23 @@ describe('package manifest', () => {
 
   it('publishes the DSH Client package and browser entry', () => {
     expect(manifest.name).toBe('@hytime/dsh-client-ui-shortcuts')
-    expect(manifest.exports['./client']?.default).toBe('./lib/client.js')
+    expect(manifest.main).toBe('lib/index.js')
+    expect(manifest.exports).toEqual({
+      '.': {
+        types: './lib/types/index.d.ts',
+        default: './lib/index.js',
+      },
+      './invariant': {
+        types: './lib/types/invariant.d.ts',
+        default: './lib/invariant.js',
+      },
+      './client': {
+        types: './lib/types/client/index.d.ts',
+        default: './lib/client.js',
+      },
+      './src/*': './src/*',
+      './package.json': './package.json',
+    })
     expect(manifest.dsh.client.platform).toBe('web')
     expect(manifest.dsh.client.inject).toEqual([
       '@deepseek-ai/dsh-client-locale',
@@ -66,6 +92,21 @@ describe('package manifest', () => {
       expect(manifest.peerDependencies[packageName]).toBe('>=0.1.0-rc.8 <1.0.0')
       expect(manifest.dependencies[packageName]).toBeUndefined()
     }
+  })
+
+  it('builds published entry points after a Git source install', () => {
+    expect(manifest.scripts.prepare).toBe('pnpm run bundle')
+  })
+
+  it('maps the npm package to its canonical GitHub repository', () => {
+    expect(manifest.repository).toEqual({
+      type: 'git',
+      url: 'git+https://github.com/hytime/dsh-client-ui-shortcuts.git',
+    })
+    expect(manifest.homepage).toBe('https://github.com/hytime/dsh-client-ui-shortcuts#readme')
+    expect(manifest.bugs).toEqual({
+      url: 'https://github.com/hytime/dsh-client-ui-shortcuts/issues',
+    })
   })
 
   it('keeps package, roster, settings, locale and profile identifiers layered', async () => {
