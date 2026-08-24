@@ -6,6 +6,7 @@ import {
   normalizeCustomProfiles,
   resolveUniqueCustomProfileName,
 } from '../src/custom-profile-contract.js'
+import { ShortcutSettingsSchema } from '../src/settings.js'
 
 const binding = {
   command: 'openSettings',
@@ -14,6 +15,20 @@ const binding = {
 }
 
 describe('custom profile contract', () => {
+  it('leaves customProfiles absent when the setting is not provided', () => {
+    const resolved = ShortcutSettingsSchema({})
+
+    expect(resolved.customProfiles).toBeUndefined()
+    expect(resolved).not.toHaveProperty('customProfiles')
+  })
+
+  it('preserves an explicitly empty customProfiles array', () => {
+    const resolved = ShortcutSettingsSchema({ customProfiles: [] })
+
+    expect(resolved.customProfiles).toEqual([])
+    expect(resolved).toHaveProperty('customProfiles')
+  })
+
   it('owns normalized profile data without mutating the caller', () => {
     const metadata = { source: ['imported'] }
     const input = [{ id: 'custom-a', name: ' Work ', bindings: [{ ...binding, metadata }] }]

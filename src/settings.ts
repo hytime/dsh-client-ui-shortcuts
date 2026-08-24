@@ -16,6 +16,7 @@ export interface ShortcutSettings {
 }
 
 const jsonArray = z.array(z.any())
+const optionalJsonArray = z({ ...jsonArray, meta: { ...jsonArray.meta, default: undefined } })
 
 function defaultGlobalBinding(command: string, key: string, modifiers: readonly string[] = []): PersistedShortcutBinding {
   return {
@@ -66,7 +67,7 @@ function cloneJsonValue(value: unknown): any {
 export const ShortcutSettingsSchema: z<ShortcutSettings> = z.object({
   activeProfile: z.string().default(DEFAULT_SHORTCUT_PROFILE_ID),
   customBindings: jsonArray.default(clonePersistedBindings(defaultCustomBindings)),
-  customProfiles: jsonArray,
+  customProfiles: optionalJsonArray,
 })
 
 export function defaultShortcutBindings(): readonly PersistedShortcutBinding[] {
