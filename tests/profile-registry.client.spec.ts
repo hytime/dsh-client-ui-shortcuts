@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { canonicalBindingKey, createBuiltinProfileRegistry, createProfileRegistry } from '../src/client/profiles/registry.js'
 import type { ShortcutProfile, ShortcutStroke } from '../src/client/contract/profile.js'
 
@@ -177,6 +177,111 @@ describe('shortcut profile registry', () => {
        { command: 'forkSession', scope: 'global', key: { key: 'b', modifiers: ['Meta', 'Alt', 'Shift'] } },
        { command: 'toggleTheme', scope: 'global', key: { key: 't', modifiers: ['Meta', 'Alt', 'Shift'] } },
     ]))
+  })
+
+  it('replaces all persisted custom profiles in order and publishes one snapshot', () => {
+    const workBinding = { command: 'openSettings' as const, scope: 'global' as const, key: stroke('s', { meta: true }) }
+    const reviewBinding = { command: 'openCommandPalette' as const, scope: 'global' as const, key: stroke('p', { meta: true }) }
+    const registry = createBuiltinProfileRegistry()
+    const listener = vi.fn()
+    registry.subscribe(listener)
+
+    registry.replaceCustomProfiles([
+      { id: 'custom-a', name: 'Work', bindings: [workBinding] },
+      { id: 'custom-b', name: 'Review', bindings: [reviewBinding] },
+    ])
+
+    expect(registry.list().map(profile => profile.id)).toEqual(['standard', 'vim', 'custom-a', 'custom-b'])
+    expect(registry.customProfiles().map(profile => profile.name)).toEqual(['Work', 'Review'])
+    expect(listener).toHaveBeenCalledTimes(1)
+  })
+
+  it('falls back to standard when the active custom profile disappears', () => {
+    const workBinding = { command: 'openSettings' as const, scope: 'global' as const, key: stroke('s', { meta: true }) }
+    const registry = createBuiltinProfileRegistry()
+    registry.replaceCustomProfiles([{ id: 'custom-a', name: 'Work', bindings: [workBinding] }])
+    registry.setActive('custom-a')
+
+    registry.replaceCustomProfiles([])
+
+    expect(registry.active().id).toBe('standard')
+  })
+
+  it('isolates custom profiles from caller mutation', () => {
+    const profiles = [{
+      id: 'custom-a',
+      name: ' Work ',
+      bindings: [{ command: 'openSettings' as const, scope: 'global' as const, key: stroke('s', { meta: true }) }],
+    }]
+    const registry = createBuiltinProfileRegistry()
+    registry.replaceCustomProfiles(profiles)
+
+    profiles[0]!.name = 'Mutated'
+    profiles[0]!.bindings[0]!.key.key = 'x'
+
+    expect(registry.get('custom-a')?.label).toBe('Work')
+    expect(registry.get('custom-a')?.bindings[0]?.key).toEqual(stroke('s', { meta: true }))
+    expect(registry.customProfiles()[0]?.name).toBe('Work')
+  })
+
+  it('retains stable label metadata for the nameless legacy custom profile', () => {
+    const workBinding = { command: 'openSettings' as const, scope: 'global' as const, key: stroke('s', { meta: true }) }
+    const registry = createBuiltinProfileRegistry()
+
+    registry.replaceCustomProfiles([{ id: 'custom', bindings: [workBinding] }])
+
+    expect(registry.get('custom')?.label).toBe('profile.custom.label')
+    expect(registry.customProfiles()[0]?.name).toBeUndefined()
+  })
+
+  it.each([
+    [
+      'duplicate ids',
+      [
+        { id: 'custom-a', name: 'Work', bindings: [{ command: 'openSettings' as const, scope: 'global' as const, key: stroke('s') }] },
+        { id: 'custom-a', name: 'Review', bindings: [{ command: 'openCommandPalette' as const, scope: 'global' as const, key: stroke('p') }] },
+      ],
+      'duplicate custom profile id',
+    ],
+    [
+      'reserved ids',
+      [{ id: 'standard', name: 'Work', bindings: [{ command: 'openSettings' as const, scope: 'global' as const, key: stroke('s') }] }],
+      'reserved custom profile id',
+    ],
+  ])('rejects custom profile collections with %s atomically', (_name, profiles, message) => {
+    const registry = createBuiltinProfileRegistry()
+    const listener = vi.fn()
+    registry.subscribe(listener)
+    registry.replaceCustomProfiles([{
+      id: 'custom-existing',
+      name: 'Existing',
+      bindings: [{ command: 'openSettings', scope: 'global', key: stroke('e') }],
+    }])
+    registry.setActive('custom-existing')
+    const previousList = registry.list()
+    const previousCustomProfiles = registry.customProfiles()
+    listener.mockClear()
+
+    expect(() => registry.replaceCustomProfiles(profiles)).toThrow(message)
+    expect(registry.list()).toBe(previousList)
+    expect(registry.customProfiles()).toBe(previousCustomProfiles)
+    expect(registry.active().id).toBe('custom-existing')
+    expect(listener).not.toHaveBeenCalled()
+  })
+
+  it('keeps registered profiles and their disposers across custom profile replacement', () => {
+    const registry = createBuiltinProfileRegistry()
+    const dispose = registry.register({ ...alphaProfile, id: 'registered' })
+
+    registry.replaceCustomProfiles([{
+      id: 'custom-a',
+      name: 'Work',
+      bindings: [{ command: 'openSettings', scope: 'global', key: stroke('s') }],
+    }])
+    expect(registry.list().map(profile => profile.id)).toEqual(['standard', 'vim', 'registered', 'custom-a'])
+
+    dispose()
+    expect(registry.list().map(profile => profile.id)).toEqual(['standard', 'vim', 'custom-a'])
   })
 
   it('replaces a custom profile while keeping the registry snapshot isolated', () => {

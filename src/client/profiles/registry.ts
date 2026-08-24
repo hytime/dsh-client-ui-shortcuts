@@ -1,6 +1,8 @@
 import type {
   KeyStroke, ShortcutBinding, ShortcutCommand, ShortcutModifier, ShortcutProfile, ShortcutScope, ShortcutStroke,
 } from '../contract/profile.js'
+import { LEGACY_CUSTOM_PROFILE_ID, normalizeCustomProfiles } from '../../custom-profile-contract.js'
+import type { PersistedCustomShortcutProfile } from '../../custom-profile-contract.js'
 import { DEFAULT_SHORTCUT_PROFILE_ID } from '../../profile-catalog.js'
 import type { ShortcutProfileRegistry } from './types.js'
 import { standardProfile, vimProfile } from './builtins.js'
@@ -24,6 +26,8 @@ const COMMANDS: readonly ShortcutCommand[] = [
 
 const SCOPES: readonly ShortcutScope[] = ['global', 'question', 'approval']
 const MODIFIERS: readonly ShortcutModifier[] = ['Alt', 'Ctrl', 'Meta', 'Shift']
+const LEGACY_CUSTOM_PROFILE_LABEL = 'profile.custom.label'
+const CUSTOM_PROFILE_DESCRIPTION = 'profile.custom.description'
 
 export interface NormalizedSequence {
   readonly strokes: readonly NormalizedStroke[]
@@ -64,22 +68,28 @@ export function createProfileRegistry(
   }
 
   const initialIds = new Set<string>()
-  const profiles = initialProfiles.map(profile => {
+  const normalizedInitialProfiles = initialProfiles.map(profile => {
     const normalized = validateAndNormalizeProfile(profile, initialIds)
     initialIds.add(profile.id)
     return normalized
   })
-  const defaultProfileId = defaultId ?? profiles[0]!.id
+  const defaultProfileId = defaultId ?? normalizedInitialProfiles[0]!.id
   if (!initialIds.has(defaultProfileId)) {
     throw new Error(`unknown default shortcut profile: ${defaultProfileId}`)
   }
 
-  let snapshot: readonly ShortcutProfile[] = Object.freeze(profiles)
+  let registeredProfiles: readonly ShortcutProfile[] = Object.freeze(normalizedInitialProfiles)
+  let persistedCustomProfiles: readonly PersistedCustomShortcutProfile[] = Object.freeze([])
+  let projectedCustomProfiles: readonly ShortcutProfile[] = Object.freeze([])
+  let snapshot: readonly ShortcutProfile[] = registeredProfiles
   const standard = snapshot.find(profile => profile.id === DEFAULT_SHORTCUT_PROFILE_ID) ?? snapshot[0]!
   let activeId = persistedId !== undefined && initialIds.has(persistedId)
     ? persistedId
     : defaultProfileId
   const listeners = new Set<() => void>()
+  const publishSnapshot = (): void => {
+    snapshot = Object.freeze([...registeredProfiles, ...projectedCustomProfiles])
+  }
   const notify = (): void => {
     for (const listener of [...listeners]) listener()
   }
@@ -87,14 +97,16 @@ export function createProfileRegistry(
   const registry: ShortcutProfileRegistry = {
     register(profile) {
       const normalized = validateAndNormalizeProfile(profile, new Set(snapshot.map(entry => entry.id)))
-      snapshot = Object.freeze([...snapshot, normalized])
+      registeredProfiles = Object.freeze([...registeredProfiles, normalized])
+      publishSnapshot()
       notify()
       let disposed = false
       return () => {
         if (disposed) return
         disposed = true
-        if (!snapshot.some(entry => entry.id === profile.id)) return
-        snapshot = Object.freeze(snapshot.filter(entry => entry.id !== profile.id))
+        if (!registeredProfiles.some(entry => entry.id === profile.id)) return
+        registeredProfiles = Object.freeze(registeredProfiles.filter(entry => entry.id !== profile.id))
+        publishSnapshot()
         if (activeId === profile.id) activeId = defaultProfileId
         notify()
       }
@@ -125,11 +137,37 @@ export function createProfileRegistry(
       notify()
     },
 
-    replaceCustom(bindings) {
-      const result = normalizePersistedShortcutResult(bindings as unknown as readonly Record<string, unknown>[])
-      const custom = validateAndNormalizeProfile({ id: 'custom', label: 'custom', description: 'custom', bindings: result.bindings as unknown as readonly ShortcutBinding[] }, new Set(snapshot.filter(profile => profile.id !== 'custom').map(profile => profile.id)))
-      snapshot = Object.freeze([...snapshot.filter(profile => profile.id !== 'custom'), custom])
+    replaceCustomProfiles(profiles) {
+      const normalized = normalizeCustomProfiles(profiles)
+      const nextPersistedProfiles = Object.freeze(normalized.map(freezePersistedCustomProfile))
+      const existingIds = new Set(registeredProfiles.map(profile => profile.id))
+      const nextProjectedProfiles = Object.freeze(nextPersistedProfiles.map(profile => {
+        const projected = validateAndNormalizeProfile({
+          id: profile.id,
+          label: profile.name ?? LEGACY_CUSTOM_PROFILE_LABEL,
+          description: CUSTOM_PROFILE_DESCRIPTION,
+          bindings: profile.bindings as unknown as readonly ShortcutBinding[],
+        }, existingIds)
+        existingIds.add(profile.id)
+        return projected
+      }))
+
+      persistedCustomProfiles = nextPersistedProfiles
+      projectedCustomProfiles = nextProjectedProfiles
+      publishSnapshot()
+      if (snapshot.every(profile => profile.id !== activeId)) activeId = standard.id
       notify()
+    },
+
+    customProfiles() {
+      return persistedCustomProfiles
+    },
+
+    replaceCustom(bindings) {
+      registry.replaceCustomProfiles([{
+        id: LEGACY_CUSTOM_PROFILE_ID,
+        bindings: bindings as unknown as PersistedCustomShortcutProfile['bindings'],
+      }])
     },
 
     custom() {
@@ -148,6 +186,20 @@ export function createProfileRegistry(
   }
 
   return registry
+}
+
+function freezePersistedCustomProfile(profile: PersistedCustomShortcutProfile): PersistedCustomShortcutProfile {
+  return freezeJsonValue(profile)
+}
+
+function freezeJsonValue<T>(value: T): T {
+  if (Array.isArray(value)) return Object.freeze(value.map(freezeJsonValue)) as T
+  if (typeof value === 'object' && value !== null) {
+    return Object.freeze(Object.fromEntries(
+      Object.entries(value).map(([key, child]) => [key, freezeJsonValue(child)]),
+    )) as T
+  }
+  return value
 }
 
 function validateAndNormalizeProfile(
