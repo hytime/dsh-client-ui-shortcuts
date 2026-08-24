@@ -1,7 +1,7 @@
 import React from 'react'
 import type { ShortcutLocaleKey } from '../locales.js'
 import type { ShortcutProfile } from '../contract/profile.js'
-import type { ShortcutSettingsFace } from '../settings/controller.js'
+import type { ShortcutSettingsFace } from '../contract/settings.js'
 
 export interface ProfileCardProps {
   readonly settings: ShortcutSettingsFace
@@ -16,6 +16,6 @@ export function ProfileCard({ settings, profiles, t = key => key }: ProfileCardP
     <select aria-label={t('settings.profile')} value={active} onChange={event => void settings.setActiveProfile(event.target.value)}>
       {profiles.map(profile => <option key={profile.id} value={profile.id}>{t(profile.label)}</option>)}
     </select>
-    {settings.error() ? <p role="alert">{settings.error()}</p> : null}
+    {settings.error() ? <p role="alert">{settings.error()?.message}</p> : null}
   </section>
 }

@@ -17,7 +17,7 @@ export type ShortcutProfileCardProps = Omit<SlotShortcutProfileCardProps, keyof 
 const fallbackT = (key: string): string => key
 
 /** Settings UI uses the latest runtime snapshot as authoritative after every save attempt. */
-export function ShortcutProfileCard({ settings, profiles, availableGlobalActions, platform, t = fallbackT }: ShortcutProfileCardProps): React.ReactElement {
+export function ShortcutProfileCard({ settings, availableGlobalActions, platform, t = fallbackT }: ShortcutProfileCardProps): React.ReactElement {
   const [, refresh] = useState(0)
   const [open, setOpen] = useState(false)
   const [pending, setPending] = useState<string>()
@@ -28,9 +28,21 @@ export function ShortcutProfileCard({ settings, profiles, availableGlobalActions
   const id = useId()
   const titleId = `shortcut-settings-title-${id}`
   const bodyId = `shortcut-settings-body-${id}`
-  const registryProfiles = profiles.some(profile => profile.id === 'custom') ? profiles : [...profiles, { id: 'custom', label: 'profile.custom.label', description: 'profile.custom.description', bindings: settings.customBindings() }]
-  const translatedProfiles = registryProfiles.map(profile => profile.id === 'custom' ? { ...profile, label: 'profile.custom.label' } : profile)
-  const currentProfile = registryProfiles.find(profile => profile.id === selection) ?? registryProfiles.find(profile => profile.id === settings.activeProfileId())
+  const registryProfiles = settings.profiles()
+  const currentProfile = registryProfiles.find(profile => profile.id === selection)
+    ?? registryProfiles.find(profile => profile.id === settings.activeProfileId())
+  const settingsFailure = settings.error()
+
+  const saveCustomBindings = async (profileId: string, bindings: readonly ShortcutProfile['bindings'][number][]): Promise<void> => {
+    const managed = settings.profiles().find(profile => profile.id === profileId)
+    if (managed?.kind !== 'custom') throw new Error(`custom shortcut profile is unavailable: ${profileId}`)
+    await settings.saveCustomProfile(
+      managed.id,
+      managed.fingerprint,
+      managed.persistedName,
+      bindings,
+    )
+  }
 
   useEffect(() => settings.subscribe(() => {
     setSelection(settings.activeProfileId())
@@ -67,13 +79,13 @@ export function ShortcutProfileCard({ settings, profiles, availableGlobalActions
           <label className={styles.profileSelect}>
             <span>{t('settings.currentProfile')}</span>
             <select aria-label={t('settings.profile')} value={selection} onChange={event => void choose(event.target.value)}>
-              {translatedProfiles.map(profile => <option key={profile.id} value={profile.id}>{t(profile.label)}</option>)}
+              {registryProfiles.map(profile => <option key={profile.id} value={profile.id}>{profile.kind === 'custom' ? profile.displayName : t(profile.label)}</option>)}
             </select>
             {pending !== undefined ? <span role="status">{t('settings.saving')}</span> : null}
           </label>
         </fieldset>
-        {error !== undefined || settings.error() !== undefined ? <p role="alert" className={styles.error}>{t('settings.error').replace('{message}', error ?? settings.error() ?? '')}</p> : null}
-        {currentProfile === undefined ? <p role="status" className={styles.empty}>{t('settings.conflict')}</p> : currentProfile.id === 'custom' ? <ShortcutBindingEditor bindings={settings.customBindings()} availableGlobalActions={availableGlobalActions as readonly GlobalShortcutCommand[]} platform={platform} t={t} onSave={bindings => settings.setCustomBindings(bindings)} /> : <>
+        {error !== undefined || settingsFailure !== undefined ? <p role="alert" className={styles.error}>{t('settings.error').replace('{message}', error ?? settingsFailure?.message ?? '')}</p> : null}
+        {currentProfile === undefined ? <p role="status" className={styles.empty}>{t('settings.conflict')}</p> : currentProfile.kind === 'custom' ? <ShortcutBindingEditor bindings={currentProfile.bindings} availableGlobalActions={availableGlobalActions as readonly GlobalShortcutCommand[]} platform={platform} t={t} onSave={bindings => saveCustomBindings(currentProfile.id, bindings)} /> : <>
           <p className={styles.summary}>{currentProfile.description ? t(currentProfile.description) : ''}</p>
           <ShortcutLegend bindings={currentProfile.bindings} availableGlobalActions={availableGlobalActions as readonly GlobalShortcutCommand[]} platform={platform} t={t} />
         </>}

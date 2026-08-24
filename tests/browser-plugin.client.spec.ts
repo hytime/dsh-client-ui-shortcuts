@@ -3,7 +3,8 @@ import { Context } from '@deepseek-ai/cordis'
 import { describe, expect, it, vi } from 'vitest'
 import { apply, inject } from '../src/client/index.ts'
 import type { SettingsScope } from '@deepseek-ai/dsh-client-runtime/client'
-import type { ShortcutSettings } from '../src/settings.ts'
+import { defaultShortcutBindings, type ShortcutSettings } from '../src/settings.ts'
+import type { ShortcutSettingsFace } from '../src/client/contract/settings.ts'
 
 type SlotEntry = {
   readonly options: Record<string, unknown>
@@ -74,7 +75,11 @@ class FakeLocale {
   }
 }
 
-function makeScope(value: ShortcutSettings = { activeProfile: 'standard' }) {
+function makeScope(value: ShortcutSettings = {
+  activeProfile: 'standard',
+  customProfiles: [],
+  customBindings: [...defaultShortcutBindings()],
+}) {
   let snapshot = {
     status: 'ready' as const,
     value,
@@ -88,8 +93,12 @@ function makeScope(value: ShortcutSettings = { activeProfile: 'standard' }) {
   const scope: SettingsScope<ShortcutSettings> = {
     getSnapshot: () => snapshot,
     subscribe: listener => { listeners.add(listener); return () => listeners.delete(listener) },
-    set: vi.fn(async (_field: string, next: unknown) => {
-      snapshot = { ...snapshot, value: { activeProfile: String(next) } }
+    set: vi.fn(async (field: string, next: unknown) => {
+      snapshot = {
+        ...snapshot,
+        revision: snapshot.revision + 1,
+        value: { ...snapshot.value, [field]: structuredClone(next) },
+      }
       for (const listener of listeners) listener()
     }),
     unset: vi.fn(async () => {}),
@@ -171,31 +180,31 @@ describe('shortcut client slot wiring', () => {
     const listener = vi.fn()
     const card = b.slots.entries('settings.plugin.item')[0]!
     const injected = (card.options.inject as () => {
-      settings: {
-        activeProfileId: () => string
-        subscribe: (listener: () => void) => () => void
-        setActiveProfile: (id: string) => Promise<void>
-        error: () => string | undefined
-      }
+      settings: ShortcutSettingsFace
       profiles: readonly unknown[]
+      availableGlobalActions: readonly string[]
     })()
     const face = injected.settings
-    expect(injected.profiles.map(profile => (profile as { id: string }).id)).toEqual(['standard', 'vim', 'custom'])
+    expect(injected.profiles.map(profile => (profile as { id: string }).id)).toEqual(['standard', 'vim'])
+    expect(face.profiles().map(profile => profile.id)).toEqual(['standard', 'vim'])
     expect(injected.availableGlobalActions).toEqual(expect.arrayContaining(['startSession', 'forkSession', 'toggleTheme']))
     const off = face.subscribe(listener)
     await face.setActiveProfile('vim')
     expect(face.activeProfileId()).toBe('vim')
     expect(b.settings.scope.set).toHaveBeenCalledWith('activeProfile', 'vim')
     expect(listener).toHaveBeenCalled()
-    await expect(face.setActiveProfile('custom')).resolves.toBeUndefined()
-     expect(face.activeProfileId()).toBe('custom')
-     await expect(face.setActiveProfile('missing')).rejects.toThrow('unknown shortcut profile: missing')
-    expect(face.error()).toContain('unknown shortcut profile')
+    await expect(face.setActiveProfile('missing')).rejects.toThrow('unknown shortcut profile: missing')
+    expect(face.error()).toMatchObject({
+      code: 'PROFILE_MISSING',
+      operation: 'select',
+      phase: 'selection',
+      message: 'unknown shortcut profile: missing',
+    })
     await b.feature.dispose()
     off()
     expect(b.slots.entries('conversation.composer')).toHaveLength(0)
     expect(b.slots.entries('settings.plugin.item')).toHaveLength(0)
     expect(b.locale.bind('dsh-shortcuts')('profile.standard.label')).toBe('profile.standard.label')
-    expect(b.settings.scope.set).toHaveBeenCalledTimes(2)
+    expect(b.settings.scope.set).toHaveBeenCalledTimes(1)
   })
 })

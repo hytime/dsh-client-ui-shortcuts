@@ -7,4 +7,12 @@ export type {
   ApprovalWait, QuestionWait, ShortcutWait, ShortcutComposerProps,
   ShortcutProfileCardProps,
 } from './contract/slots.js'
-export type { ShortcutSettingsFace } from './settings/controller.js'
+export type {
+  ManagedShortcutProfile,
+  PortableCustomProfile,
+  ShortcutSettingsErrorCode,
+  ShortcutSettingsFace,
+  ShortcutSettingsFailure,
+  ShortcutSettingsOperation,
+  ShortcutSettingsPartialResult,
+} from './contract/settings.js'

@@ -8,9 +8,14 @@ import { findNewShortcutConflicts } from '../src/client/keyboard/conflicts.js'
 import { ShortcutIcon } from '../src/client/components/ShortcutIcon.js'
 import { createProfileRegistry } from '../src/client/profiles/registry.js'
 import { standardProfile, vimProfile } from '../src/client/profiles/builtins.js'
-import type { ShortcutSettingsFace } from '../src/client/settings/controller.js'
+import type {
+  ManagedShortcutProfile,
+  ShortcutSettingsFace,
+  ShortcutSettingsFailure,
+} from '../src/client/contract/settings.js'
 import type { ShortcutProfile } from '../src/client/contract/profile.js'
 import type { SettingsScope, SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-runtime/client'
+import { customProfileFingerprint } from '../src/custom-profile-contract.js'
 
 const customBindings = [{
   command: 'openSettings' as const,
@@ -20,7 +25,10 @@ const customBindings = [{
 
 function controllerScope(initial: { activeProfile: string; customBindings?: typeof customBindings }, fail = false): SettingsScope<import('../src/settings.js').ShortcutSettings> {
   let snapshot: SettingsScopeSnapshot<import('../src/settings.js').ShortcutSettings> = {
-    status: 'ready', value: { customBindings: initial.customBindings ?? standardProfile.bindings, activeProfile: initial.activeProfile },
+    status: 'ready', value: {
+      customBindings: initial.customBindings ?? standardProfile.bindings,
+      activeProfile: initial.activeProfile,
+    },
     base: undefined, user: undefined, revision: 0, writable: true, mode: 'host',
   }
   return {
@@ -32,6 +40,25 @@ function controllerScope(initial: { activeProfile: string; customBindings?: type
     }),
     unset: vi.fn(async () => {}),
   }
+}
+
+const controllerOptions = {
+  createId: () => 'test-id',
+  legacyName: () => 'Custom',
+}
+
+function managedProfiles(profiles: readonly ShortcutProfile[]): ManagedShortcutProfile[] {
+  return profiles.map(profile => {
+    const custom = profile.id === 'custom'
+    return {
+      ...profile,
+      kind: custom ? 'custom' : 'builtin',
+      displayName: custom ? 'Custom' : profile.label,
+      fingerprint: custom
+        ? customProfileFingerprint({ id: profile.id, bindings: profile.bindings as never })
+        : `builtin:${profile.id}`,
+    }
+  })
 }
 
 const labels: Record<string, string> = {
@@ -55,22 +82,70 @@ const labels: Record<string, string> = {
 const t = (key: string) => labels[key] ?? key
 const openCard = () => fireEvent.click(screen.getByRole('button', { name: 'Expand: Shortcuts' }))
 
-function settingsFace(initial = 'standard') {
+function settingsFace(initial = 'standard', initialProfiles: readonly ShortcutProfile[] = [standardProfile, vimProfile]) {
   let active = initial
   let failure: Error | undefined
+  let latestFailure: ShortcutSettingsFailure | undefined
+  let profiles = managedProfiles(initialProfiles)
   const listeners = new Set<() => void>()
-  const face: ShortcutSettingsFace & { emit: () => void; failNext: (message: string) => void; setExternal: (id: string) => void } = {
+  const emit = () => listeners.forEach(listener => listener())
+  const face: ShortcutSettingsFace & {
+    emit: () => void
+    failNext: (message: string) => void
+    setExternal: (id: string) => void
+    setFailure: (failure: ShortcutSettingsFailure | undefined) => void
+    setProfiles: (next: readonly ShortcutProfile[]) => void
+  } = {
+    writable: () => true,
+    profiles: () => profiles,
     activeProfileId: () => active,
+    isCustomProfile: id => profiles.some(profile => profile.id === id && profile.kind === 'custom'),
+    createCustomProfile: async () => 'custom-created',
+    importCustomProfile: async () => 'custom-imported',
+    saveCustomProfile: async (id, _baseline, name, bindings) => {
+      profiles = profiles.map(profile => profile.id === id ? {
+        ...profile,
+        displayName: name ?? 'Custom',
+        ...(name !== undefined ? { persistedName: name } : {}),
+        bindings,
+        fingerprint: customProfileFingerprint({ id, ...(name !== undefined ? { name } : {}), bindings: bindings as never }),
+      } : profile)
+      emit()
+    },
+    deleteCustomProfile: async () => {},
+    exportActiveCustomProfile: () => { throw new Error('not configured') },
     subscribe: listener => { listeners.add(listener); return () => listeners.delete(listener) },
-    setActiveProfile: async id => { if (failure) { const error = failure; failure = undefined; throw error } active = id; listeners.forEach(listener => listener()) },
-    error: () => undefined,
-    customBindings: () => standardProfile.bindings,
-    setCustomBindings: async () => {},
-    emit: () => listeners.forEach(listener => listener()),
+    setActiveProfile: async id => {
+      if (failure) {
+        const error = failure
+        failure = undefined
+        throw error
+      }
+      active = id
+      emit()
+    },
+    error: () => latestFailure,
+    emit,
     failNext: message => { failure = new Error(message) },
-    setExternal: id => { active = id; listeners.forEach(listener => listener()) },
+    setExternal: id => { active = id; emit() },
+    setFailure: next => { latestFailure = next; emit() },
+    setProfiles: next => { profiles = managedProfiles(next); emit() },
   }
   return face
+}
+
+function legacyProfile(settings: ShortcutSettingsFace): ManagedShortcutProfile {
+  return settings.profiles().find(profile => profile.id === 'custom')!
+}
+
+function saveLegacyProfile(settings: ShortcutSettingsFace, bindings: readonly ShortcutProfile['bindings'][number][]): Promise<void> {
+  const profile = legacyProfile(settings)
+  return settings.saveCustomProfile(
+    profile.id,
+    profile.fingerprint,
+    profile.persistedName,
+    bindings,
+  )
 }
 
 afterEach(cleanup)
@@ -80,9 +155,9 @@ describe('shortcut settings controller custom profile', () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     const scope = controllerScope({ activeProfile: 'standard', customBindings })
     const { createShortcutSettingsController } = await import('../src/client/settings/controller.js')
-    const controller = createShortcutSettingsController(scope, registry)
+    const controller = createShortcutSettingsController(scope, registry, controllerOptions)
 
-    expect(controller.customBindings()).toEqual(customBindings)
+    expect(legacyProfile(controller).bindings).toEqual(customBindings)
     expect(registry.get('custom')?.bindings).toEqual(customBindings)
     controller.dispose()
   })
@@ -94,9 +169,9 @@ describe('shortcut settings controller custom profile', () => {
       customBindings: [{ command: 'openSettings', scope: 'global', sequence: [] }] as never,
     })
     const { createShortcutSettingsController } = await import('../src/client/settings/controller.js')
-    const controller = createShortcutSettingsController(scope, registry)
+    const controller = createShortcutSettingsController(scope, registry, controllerOptions)
 
-    expect(controller.customBindings()).toEqual(standardProfile.bindings)
+    expect(legacyProfile(controller).bindings).toEqual(standardProfile.bindings)
     expect(registry.get('custom')?.bindings).toEqual(standardProfile.bindings)
     await expect(controller.setActiveProfile('custom')).resolves.toBeUndefined()
     expect(controller.activeProfileId()).toBe('custom')
@@ -107,14 +182,14 @@ describe('shortcut settings controller custom profile', () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     const scope = controllerScope({ activeProfile: 'standard' })
     const { createShortcutSettingsController } = await import('../src/client/settings/controller.js')
-    const controller = createShortcutSettingsController(scope, registry)
+    const controller = createShortcutSettingsController(scope, registry, controllerOptions)
 
-    expect(controller.customBindings()).toEqual(standardProfile.bindings)
-    await controller.setCustomBindings(customBindings)
-    expect(controller.customBindings()).toEqual(customBindings)
+    expect(legacyProfile(controller).bindings).toEqual(standardProfile.bindings)
+    await saveLegacyProfile(controller, customBindings)
+    expect(legacyProfile(controller).bindings).toEqual(customBindings)
     expect(registry.get('custom')?.bindings).toEqual(customBindings)
-    expect(scope.set).toHaveBeenCalledWith('customBindings', expect.any(Array))
-    expect(scope.set.mock.calls[0]?.[1]).not.toBe(customBindings)
+    expect(scope.set).toHaveBeenCalledWith('customProfiles', expect.any(Array))
+    expect((scope.set.mock.calls[0]?.[1] as unknown[])[0]).not.toBe(customBindings)
     controller.dispose()
   })
 
@@ -166,9 +241,20 @@ describe('shortcut settings controller custom profile', () => {
       await new Promise<void>(resolve => { resolvers.push(resolve) })
     })
     const { createShortcutSettingsController } = await import('../src/client/settings/controller.js')
-    const controller = createShortcutSettingsController(scope, registry)
-    const first = controller.setCustomBindings(customBindings)
-    const second = controller.setCustomBindings([{ command: 'openCommandPalette', scope: 'global', key: { key: 'p', modifiers: ['Meta'] } }])
+    const controller = createShortcutSettingsController(scope, registry, controllerOptions)
+    const baseline = legacyProfile(controller)
+    const first = controller.saveCustomProfile(
+      baseline.id,
+      baseline.fingerprint,
+      baseline.persistedName,
+      customBindings,
+    )
+    const second = controller.saveCustomProfile(
+      baseline.id,
+      baseline.fingerprint,
+      baseline.persistedName,
+      [{ command: 'openCommandPalette', scope: 'global', key: { key: 'p', modifiers: ['Meta'] } }],
+    )
     await Promise.resolve()
     expect(resolvers).toHaveLength(1)
     controller.dispose()
@@ -178,19 +264,19 @@ describe('shortcut settings controller custom profile', () => {
     await expect(first).resolves.toBeUndefined()
     await expect(second).resolves.toBeUndefined()
     expect(scope.set).toHaveBeenCalledTimes(1)
-    expect((scope.set.mock.calls[0]?.[1] as { command: string }[])[0]?.command).toBe('openSettings')
+    expect((scope.set.mock.calls[0]?.[1] as Array<{ bindings: Array<{ command: string }> }>)[0]?.bindings[0]?.command).toBe('openSettings')
   })
 
   it('keeps the active profile and old custom bindings when persistence fails', async () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     const scope = controllerScope({ activeProfile: 'vim', customBindings }, true)
     const { createShortcutSettingsController } = await import('../src/client/settings/controller.js')
-    const controller = createShortcutSettingsController(scope, registry)
+    const controller = createShortcutSettingsController(scope, registry, controllerOptions)
 
     expect(controller.activeProfileId()).toBe('vim')
-    await expect(controller.setCustomBindings(standardProfile.bindings)).rejects.toThrow('permission denied')
+    await expect(saveLegacyProfile(controller, standardProfile.bindings)).rejects.toThrow('permission denied')
     expect(controller.activeProfileId()).toBe('vim')
-    expect(controller.customBindings()).toEqual(customBindings)
+    expect(legacyProfile(controller).bindings).toEqual(customBindings)
     expect(registry.get('custom')?.bindings).toEqual(customBindings)
     controller.dispose()
   })
@@ -199,17 +285,17 @@ describe('shortcut settings controller custom profile', () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     const scope = controllerScope({ activeProfile: 'standard' })
     const { createShortcutSettingsController } = await import('../src/client/settings/controller.js')
-    const controller = createShortcutSettingsController(scope, registry)
+    const controller = createShortcutSettingsController(scope, registry, controllerOptions)
     const submitted = [{
       command: 'openSettings' as const,
       scope: 'global' as const,
       key: { key: 's', modifiers: ['Meta'] as const },
     }]
 
-    await controller.setCustomBindings(submitted)
+    await saveLegacyProfile(controller, submitted)
     ;(submitted[0]!.key as { modifiers: string[] }).modifiers.push('Alt')
 
-    expect(controller.customBindings()).toEqual([{
+    expect(legacyProfile(controller).bindings).toEqual([{
       command: 'openSettings',
       scope: 'global',
       key: { key: 's', modifiers: ['Meta'] },
@@ -217,29 +303,33 @@ describe('shortcut settings controller custom profile', () => {
     controller.dispose()
   })
 
-  it('publishes only the latest custom binding after serialized saves', async () => {
+  it('publishes only the latest state after serialized generations', async () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     const scope = controllerScope({ activeProfile: 'standard' })
+    const persist = vi.mocked(scope.set).getMockImplementation()!
     const resolvers: Array<() => void> = []
-    vi.mocked(scope.set).mockImplementation(async () => {
+    vi.mocked(scope.set).mockImplementation(async (field: string, value: unknown) => {
       await new Promise<void>(resolve => { resolvers.push(resolve) })
+      await persist(field, value)
     })
     const { createShortcutSettingsController } = await import('../src/client/settings/controller.js')
-    const controller = createShortcutSettingsController(scope, registry)
-    const first = [{ command: 'openSettings' as const, scope: 'global' as const, key: { key: 's', modifiers: ['Meta'] as const } }]
-    const second = [{ command: 'openCommandPalette' as const, scope: 'global' as const, key: { key: 'p', modifiers: ['Meta'] as const } }]
+    const controller = createShortcutSettingsController(scope, registry, controllerOptions)
+    const listener = vi.fn()
+    controller.subscribe(listener)
 
-    const firstSave = controller.setCustomBindings(first)
-    const secondSave = controller.setCustomBindings(second)
+    const firstWrite = controller.setActiveProfile('vim')
+    const secondWrite = controller.setActiveProfile('standard')
     await Promise.resolve()
     expect(resolvers).toHaveLength(1)
     resolvers.shift()!()
     await new Promise<void>(resolve => { setTimeout(resolve, 0) })
     expect(resolvers).toHaveLength(1)
+    expect(listener).not.toHaveBeenCalled()
     resolvers.shift()!()
-    await Promise.all([firstSave, secondSave])
+    await Promise.all([firstWrite, secondWrite])
 
-    expect(controller.customBindings()).toEqual(second)
+    expect(controller.activeProfileId()).toBe('standard')
+    expect(listener).toHaveBeenCalledTimes(1)
     controller.dispose()
   })
 })
@@ -403,6 +493,23 @@ describe('shortcut settings card', () => {
     await waitFor(() => expect((screen.getByRole('combobox', { name: 'Profile' }) as HTMLSelectElement).value).toBe('vim'))
   })
 
+  it('renders the message from the latest structured controller failure', () => {
+    const registry = createProfileRegistry([standardProfile, vimProfile])
+    const settings = settingsFace()
+    settings.setFailure({
+      code: 'NOT_APPLIED',
+      operation: 'save',
+      phase: 'collection',
+      message: 'permission denied',
+    })
+
+    render(<ShortcutProfileCard settings={settings} profiles={registry.list()} availableGlobalActions={[]} platform="linux" t={t} />)
+    openCard()
+
+    expect(screen.getByRole('alert').textContent).toContain('permission denied')
+    expect(screen.getByRole('alert').textContent).not.toContain('[object Object]')
+  })
+
   it('uses the latest external snapshot after pending failure and success', async () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     const settings = settingsFace()
@@ -429,9 +536,7 @@ describe('shortcut settings card', () => {
       { command: 'activate', scope: 'question', key: { key: 'Enter', alt: false, ctrl: false, meta: false, shift: false } },
       { command: 'openCommandPalette', scope: 'global', key: { key: 'n', modifiers: ['Meta'] } },
     ])
-    const settings = settingsFace()
-    settings.customBindings = () => registry.custom()
-    settings.setCustomBindings = vi.fn(async bindings => { registry.replaceCustom(bindings); settings.emit() })
+    const settings = settingsFace('standard', registry.list())
     render(<ShortcutProfileCard settings={settings} profiles={[...registry.list()]} platform="linux" t={t} />)
     openCard()
     expect(screen.getByRole('option', { name: 'Custom' })).toBeTruthy()
@@ -444,10 +549,9 @@ describe('shortcut settings card', () => {
 
   it('shows capability-backed global shortcuts and exposes them in Custom editing', async () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
-    const settings = settingsFace()
-    settings.customBindings = () => registry.custom()
-    settings.setCustomBindings = vi.fn(async bindings => { registry.replaceCustom(bindings); settings.emit() })
     registry.replaceCustom([{ command: 'startSession', scope: 'global', key: { key: 'n', modifiers: ['Meta', 'Alt', 'Shift'] } }])
+    const settings = settingsFace('standard', registry.list())
+    settings.saveCustomProfile = vi.fn(settings.saveCustomProfile)
     const availableGlobalActions = [
       'startSession', 'previousSession', 'nextSession', 'previousWorkspace', 'nextWorkspace', 'forkSession', 'toggleTheme',
     ] as const
@@ -467,21 +571,26 @@ describe('shortcut settings card', () => {
     fireEvent.click(record!)
     fireEvent.keyDown(record!, { key: 'x', ctrlKey: true })
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
-    await waitFor(() => expect(settings.setCustomBindings).toHaveBeenCalled())
-    expect(settings.setCustomBindings).toHaveBeenCalledWith(expect.arrayContaining([
-      expect.objectContaining({
-        command: 'startSession',
-        scope: 'global',
-        key: { key: 'x', modifiers: ['Ctrl'] },
-      }),
-    ]))
+    await waitFor(() => expect(settings.saveCustomProfile).toHaveBeenCalled())
+    expect(settings.saveCustomProfile).toHaveBeenCalledWith(
+      'custom',
+      expect.any(String),
+      undefined,
+      expect.arrayContaining([
+        expect.objectContaining({
+          command: 'startSession',
+          scope: 'global',
+          key: { key: 'x', modifiers: ['Ctrl'] },
+        }),
+      ]),
+    )
   })
 
   it('saves a recorded Custom binding through the real settings controller', async () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     const scope = controllerScope({ activeProfile: 'standard' })
     const { createShortcutSettingsController } = await import('../src/client/settings/controller.js')
-    const controller = createShortcutSettingsController(scope, registry)
+    const controller = createShortcutSettingsController(scope, registry, controllerOptions)
 
     render(<ShortcutProfileCard settings={controller} profiles={registry.list()} availableGlobalActions={[]} platform="linux" t={t} />)
     openCard()
@@ -494,7 +603,9 @@ describe('shortcut settings card', () => {
     fireEvent.keyDown(record!, { key: 'x', ctrlKey: true })
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
-    await waitFor(() => expect(scope.set).toHaveBeenCalledWith('customBindings', expect.any(Array)))
+    await waitFor(() => expect(scope.set).toHaveBeenCalledWith('customProfiles', expect.any(Array)))
+    const savedProfiles = vi.mocked(scope.set).mock.calls.find(call => call[0] === 'customProfiles')?.[1] as Array<{ name?: string }>
+    expect(savedProfiles[0]?.name).toBeUndefined()
     expect(screen.queryByText('Could not save custom shortcuts: Cannot read properties of undefined (reading \'disposed\')')).toBeNull()
     controller.dispose()
   })

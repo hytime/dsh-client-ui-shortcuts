@@ -6,7 +6,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import type { ShortcutProfile } from './profile.js'
 import type { ShortcutPlatform } from './keyboard-visual.js'
-import type { ShortcutSettingsFace } from '../settings/controller.js'
+import type { ShortcutSettingsFace } from './settings.js'
 
 /** DSH question carrier narrowed for shortcut consumers. */
 export type QuestionWait = PendingWait<'question'>
