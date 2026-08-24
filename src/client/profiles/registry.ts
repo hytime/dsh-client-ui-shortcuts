@@ -386,16 +386,23 @@ function isKeyStroke(value: unknown): value is KeyStroke {
     && typeof stroke.shift === 'boolean'
 }
 
+function freezeStroke(stroke: KeyStroke | ShortcutStroke): KeyStroke | ShortcutStroke {
+  if (isShortcutStroke(stroke)) {
+    return Object.freeze({ ...stroke, modifiers: Object.freeze([...stroke.modifiers]) })
+  }
+  return Object.freeze({ ...stroke })
+}
+
 function freezeProfile(profile: ShortcutProfile): ShortcutProfile {
   const bindings = profile.bindings.map(binding => Object.freeze({
     ...binding,
-    ...(binding.key ? { key: Object.freeze({ ...binding.key }) } : {}),
+    ...(binding.key ? { key: freezeStroke(binding.key) } : {}),
     ...(binding.sequence ? {
-      sequence: Object.freeze(binding.sequence.map(stroke => Object.freeze({ ...stroke }))),
+      sequence: Object.freeze(binding.sequence.map(stroke => freezeStroke(stroke))),
     } : {}),
     ...(binding.sequences ? {
       sequences: Object.freeze(binding.sequences.map(sequence => Object.freeze(
-        sequence.map(stroke => Object.freeze({ ...stroke })),
+        sequence.map(stroke => freezeStroke(stroke)),
       ))),
     } : {}),
   }))

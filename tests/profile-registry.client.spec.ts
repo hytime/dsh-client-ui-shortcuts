@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { canonicalBindingKey, createBuiltinProfileRegistry, createProfileRegistry } from '../src/client/profiles/registry.js'
-import type { ShortcutProfile, ShortcutStroke } from '../src/client/contract/profile.js'
+import type { KeyStroke, ShortcutModifier, ShortcutProfile, ShortcutStroke } from '../src/client/contract/profile.js'
 
 const stroke = (key: string, modifiers: Partial<ShortcutProfile['bindings'][number]['key']> = {}) => ({
   key,
@@ -224,6 +224,54 @@ describe('shortcut profile registry', () => {
     expect(registry.customProfiles()[0]?.name).toBe('Work')
   })
 
+  it('deep-freezes runtime custom profile strokes from list and get snapshots', () => {
+    const registry = createBuiltinProfileRegistry()
+    registry.replaceCustomProfiles([{
+      id: 'custom-frozen',
+      name: 'Frozen',
+      bindings: [
+        { command: 'openSettings', scope: 'global', key: { key: 's', modifiers: ['Meta'] } },
+        {
+          command: 'openCommandPalette',
+          scope: 'global',
+          sequence: [{ key: 'g', modifiers: ['Ctrl'] }, stroke('p', { alt: true })],
+        },
+        {
+          command: 'startSession',
+          scope: 'global',
+          sequences: [[{ key: 'n', modifiers: ['Meta', 'Shift'] }], [stroke('x', { ctrl: true })]],
+        },
+      ],
+    }])
+
+    const listSnapshot = registry.list()
+    const listedProfile = listSnapshot.find(profile => profile.id === 'custom-frozen')!
+    const fetchedProfile = registry.get('custom-frozen')!
+    const keyStroke = listedProfile.bindings[0]!.key as ShortcutStroke
+    const sequenceStroke = fetchedProfile.bindings[1]!.sequence![0] as ShortcutStroke
+    const sequencePhysicalStroke = fetchedProfile.bindings[1]!.sequence![1] as KeyStroke
+    const alternativeStroke = listedProfile.bindings[2]!.sequences![0]![0] as ShortcutStroke
+    const alternativePhysicalStroke = listedProfile.bindings[2]!.sequences![1]![0] as KeyStroke
+
+    expect(() => (keyStroke.modifiers as unknown as ShortcutModifier[]).push('Alt')).toThrow(TypeError)
+    expect(() => (sequenceStroke.modifiers as unknown as ShortcutModifier[]).push('Shift')).toThrow(TypeError)
+    expect(() => (alternativeStroke.modifiers as unknown as ShortcutModifier[]).push('Ctrl')).toThrow(TypeError)
+    expect(() => {
+      (sequencePhysicalStroke as unknown as { alt: boolean }).alt = false
+    }).toThrow(TypeError)
+
+    expect(Object.isFrozen(listedProfile.bindings[2]!.sequences)).toBe(true)
+    expect(Object.isFrozen(listedProfile.bindings[2]!.sequences![0])).toBe(true)
+    expect(Object.isFrozen(alternativePhysicalStroke)).toBe(true)
+    expect(registry.list()).toBe(listSnapshot)
+    expect(registry.get('custom-frozen')).toBe(fetchedProfile)
+    expect(keyStroke.modifiers).toEqual(['Meta'])
+    expect(sequenceStroke.modifiers).toEqual(['Ctrl'])
+    expect(sequencePhysicalStroke.alt).toBe(true)
+    expect(alternativeStroke.modifiers).toEqual(['Meta', 'Shift'])
+    expect(alternativePhysicalStroke.ctrl).toBe(true)
+  })
+
   it('retains stable label metadata for the nameless legacy custom profile', () => {
     const workBinding = { command: 'openSettings' as const, scope: 'global' as const, key: stroke('s', { meta: true }) }
     const registry = createBuiltinProfileRegistry()
@@ -266,6 +314,33 @@ describe('shortcut profile registry', () => {
     expect(registry.list()).toBe(previousList)
     expect(registry.customProfiles()).toBe(previousCustomProfiles)
     expect(registry.active().id).toBe('custom-existing')
+    expect(listener).not.toHaveBeenCalled()
+  })
+
+  it('keeps registry state unchanged when custom projection conflicts with a registered profile', () => {
+    const registry = createBuiltinProfileRegistry()
+    const listener = vi.fn()
+    registry.subscribe(listener)
+    registry.replaceCustomProfiles([{
+      id: 'custom-existing',
+      name: 'Existing',
+      bindings: [{ command: 'openSettings', scope: 'global', key: stroke('e') }],
+    }])
+    registry.setActive('custom-existing')
+    registry.register({ ...alphaProfile, id: 'registered' })
+    const previousList = registry.list()
+    const previousCustomProfiles = registry.customProfiles()
+    const previousActive = registry.active()
+    listener.mockClear()
+
+    expect(() => registry.replaceCustomProfiles([{
+      id: 'registered',
+      name: 'Projection conflict',
+      bindings: [{ command: 'openCommandPalette', scope: 'global', key: stroke('p') }],
+    }])).toThrow('duplicate shortcut profile: registered')
+    expect(registry.list()).toBe(previousList)
+    expect(registry.customProfiles()).toBe(previousCustomProfiles)
+    expect(registry.active()).toBe(previousActive)
     expect(listener).not.toHaveBeenCalled()
   })
 
