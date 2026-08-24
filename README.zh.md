@@ -17,6 +17,16 @@
 - 当 DSH 不提供所需能力时，不将不可用动作加入路由和快捷键列表。
 - 遵守浏览器和操作系统边界：浏览器保留的快捷键可能不会到达网页。
 
+## 展示图
+
+Question 和 Approval 交互快捷键：
+
+![Question 和 Approval 快捷键设置](https://raw.githubusercontent.com/hytime/dsh-client-ui-shortcuts/main/docs/ScreenShot_2026-08-24_011032_061.png)
+
+带平台键帽的全局 Session 和 Workspace 快捷键：
+
+![全局 Session 和 Workspace 快捷键设置](https://raw.githubusercontent.com/hytime/dsh-client-ui-shortcuts/main/docs/ScreenShot_2026-08-24_011111_040.png)
+
 ## 60 秒安装
 
 通过 DSH CLI 安装插件，然后重启或重新加载 Web composition：

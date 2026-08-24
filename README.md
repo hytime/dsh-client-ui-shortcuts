@@ -17,6 +17,16 @@ This plugin runs inside DSH Web, adds predictable keyboard control for question 
 - Keep unavailable actions out of routing and shortcut lists when DSH does not provide the required capability.
 - Stay within browser and operating-system boundaries: reserved shortcuts may never reach a web page.
 
+## Screenshots
+
+Question and approval interaction shortcuts:
+
+![Question and approval shortcut settings](https://raw.githubusercontent.com/hytime/dsh-client-ui-shortcuts/main/docs/ScreenShot_2026-08-24_011032_061.png)
+
+Global Session and Workspace shortcuts with platform keycaps:
+
+![Global Session and Workspace shortcut settings](https://raw.githubusercontent.com/hytime/dsh-client-ui-shortcuts/main/docs/ScreenShot_2026-08-24_011111_040.png)
+
 ## Install in 60 seconds
 
 Install the plugin through the DSH CLI, then restart or reload the Web composition:
