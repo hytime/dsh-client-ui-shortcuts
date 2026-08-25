@@ -2,7 +2,7 @@
 
 `@hytime/dsh-client-ui-shortcuts` 的重要变更记录如下。
 
-## Unreleased - 命名自定义方案与 JSON 迁移
+## 0.1.14 - 命名自定义方案与 JSON 迁移
 
 ### 新增
 

@@ -2,7 +2,7 @@
 
 All notable changes to `@hytime/dsh-client-ui-shortcuts` are documented here.
 
-## Unreleased - Named custom profiles and JSON portability
+## 0.1.14 - Named custom profiles and JSON portability
 
 ### Added
 

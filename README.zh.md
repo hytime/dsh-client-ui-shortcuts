@@ -32,14 +32,14 @@ Question 和 Approval 交互快捷键：
 推荐安装 npm 发布包，因为其中已经包含预构建的 `lib/` 产物，不需要在安装阶段执行构建。通过 DSH CLI 安装插件，然后重启或重新加载 Web composition：
 
 ```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.13
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.14
 dsh --profile web
 ```
 
 如需改为安装 GitHub 源码，请固定 release tag 或 commit，不要直接安装默认分支：
 
 ```bash
-dsh plugin --profile web add github:hytime/dsh-client-ui-shortcuts#v0.1.13
+dsh plugin --profile web add github:hytime/dsh-client-ui-shortcuts#v0.1.14
 ```
 
 Git 安装会在安装阶段执行包的 `prepare` 脚本。pnpm 可能要求将错误信息给出的精确 package key 加入 profile 的 `allowBuilds`；只应为可信且已固定的源码授予该权限。完整步骤见[安装指南](docs/installation.zh.md)。

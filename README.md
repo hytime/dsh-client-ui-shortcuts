@@ -32,14 +32,14 @@ Global Session and Workspace shortcuts with platform keycaps:
 The recommended path is the npm release because it includes prebuilt `lib/` artifacts and requires no install-time build. Install it through the DSH CLI, then restart or reload the Web composition:
 
 ```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.13
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.14
 dsh --profile web
 ```
 
 To install the GitHub source instead, pin a release tag or commit rather than the default branch:
 
 ```bash
-dsh plugin --profile web add github:hytime/dsh-client-ui-shortcuts#v0.1.13
+dsh plugin --profile web add github:hytime/dsh-client-ui-shortcuts#v0.1.14
 ```
 
 A Git install runs the package's `prepare` script during installation. pnpm may require the exact package key from its error message to be added to the profile's `allowBuilds`; grant that permission only for trusted, pinned source. The [installation guide](docs/installation.md) has the complete steps.

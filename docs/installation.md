@@ -17,7 +17,7 @@ The npm release is the recommended installation path. It already contains the bu
 Use the DSH plugin command with the Web profile:
 
 ```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.13
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.14
 ```
 
 The command forwards the package installation to the profile and reconciles packages that declare `dsh.bundle.patch` into `dsh.profile.bundles`.
@@ -27,7 +27,7 @@ The command forwards the package installation to the profile and reconciles pack
 Use a release tag or full commit SHA when installing source. Do not install the moving default branch:
 
 ```bash
-dsh plugin --profile web add github:hytime/dsh-client-ui-shortcuts#v0.1.13
+dsh plugin --profile web add github:hytime/dsh-client-ui-shortcuts#v0.1.14
 ```
 
 A Git dependency contains source rather than committed `lib/` output. During package installation on your machine, pnpm runs `prepare`, which calls `pnpm run bundle` and generates the published entries. This is install-time code execution outside any Agent sandbox.
@@ -58,7 +58,7 @@ Then install the generated tarball into the DSH Web profile:
 export DSH_HOME="$(mktemp -d)"
 
 dsh plugin --profile web add \\
-  /tmp/dsh-client-ui-shortcuts-pack/hytime-dsh-client-ui-shortcuts-0.1.13.tgz
+  /tmp/dsh-client-ui-shortcuts-pack/hytime-dsh-client-ui-shortcuts-0.1.14.tgz
 ```
 
 Use a persistent `DSH_HOME` instead of `mktemp -d` when the profile should survive the shell session. The package tarball must contain `lib/client.js`, `lib/index.js`, `lib/invariant.js`, type declarations, and `cordis.patch.yml`.
