@@ -5,7 +5,7 @@ import type { ShortcutProfile, GlobalShortcutCommand } from '../contract/profile
 import type { ShortcutPlatform } from '../contract/keyboard-visual.js'
 import type { ShortcutProfileCardProps as SlotShortcutProfileCardProps } from '../contract/slots.js'
 import { ShortcutIcon } from './ShortcutIcon.js'
-import { CustomProfileEditor } from './CustomProfileEditor.js'
+import { CustomProfileEditor, type EditableCustomProfile } from './CustomProfileEditor.js'
 import { ShortcutLegend } from './ShortcutLegend.js'
 import styles from '../styles/Shortcuts.module.css'
 
@@ -23,6 +23,7 @@ export function ShortcutProfileCard({ settings, availableGlobalActions, platform
   const [pending, setPending] = useState<string>()
   const [selection, setSelection] = useState(() => settings.activeProfileId())
   const [error, setError] = useState<string>()
+  const [editorSaving, setEditorSaving] = useState(false)
   const requestId = useRef(0)
   const pendingRef = useRef<string>()
   const id = useId()
@@ -33,8 +34,16 @@ export function ShortcutProfileCard({ settings, availableGlobalActions, platform
     ?? registryProfiles.find(profile => profile.id === settings.activeProfileId())
   const settingsFailure = settings.error()
 
-  const saveCustomProfile = async (profileId: string, baselineFingerprint: string, name: string, bindings: readonly ShortcutProfile['bindings'][number][]): Promise<void> => {
+  const saveCustomProfile = async (profileId: string, baselineFingerprint: string, name: string, bindings: readonly ShortcutProfile['bindings'][number][]): Promise<EditableCustomProfile> => {
     await settings.saveCustomProfile(profileId, baselineFingerprint, name, bindings)
+    const saved = settings.profiles().find(profile => profile.id === profileId && profile.kind === 'custom')
+    if (saved === undefined) throw new Error(`custom shortcut profile is unavailable: ${profileId}`)
+    return {
+      id: saved.id,
+      name: saved.persistedName ?? saved.displayName,
+      bindings: saved.bindings,
+      fingerprint: saved.fingerprint,
+    }
   }
 
   useEffect(() => settings.subscribe(() => {
@@ -67,7 +76,7 @@ export function ShortcutProfileCard({ settings, availableGlobalActions, platform
     ? <p role="status" className={styles.empty}>{t('settings.empty')}</p>
     : (
       <>
-        <fieldset className={styles.profileSelectGroup} disabled={pending !== undefined}>
+        <fieldset className={styles.profileSelectGroup} disabled={pending !== undefined || editorSaving}>
           <legend>{t('settings.profile')}</legend>
           <label className={styles.profileSelect}>
             <span>{t('settings.currentProfile')}</span>
@@ -78,7 +87,7 @@ export function ShortcutProfileCard({ settings, availableGlobalActions, platform
           </label>
         </fieldset>
         {error !== undefined || settingsFailure !== undefined ? <p role="alert" className={styles.error}>{t('settings.error').replace('{message}', error ?? settingsFailure?.message ?? '')}</p> : null}
-        {currentProfile === undefined ? <p role="status" className={styles.empty}>{t('settings.conflict')}</p> : currentProfile.kind === 'custom' ? <CustomProfileEditor profile={{ id: currentProfile.id, name: currentProfile.persistedName ?? currentProfile.displayName, bindings: currentProfile.bindings, fingerprint: currentProfile.fingerprint }} availableGlobalActions={availableGlobalActions as readonly GlobalShortcutCommand[] | undefined} platform={platform} t={t} disabled={!settings.writable()} onSave={saveCustomProfile} onStateChange={() => {}} /> : <>
+        {currentProfile === undefined ? <p role="status" className={styles.empty}>{t('settings.conflict')}</p> : currentProfile.kind === 'custom' ? <CustomProfileEditor key={currentProfile.id} profile={{ id: currentProfile.id, name: currentProfile.persistedName ?? currentProfile.displayName, bindings: currentProfile.bindings, fingerprint: currentProfile.fingerprint }} availableGlobalActions={availableGlobalActions as readonly GlobalShortcutCommand[] | undefined} platform={platform} t={t} disabled={!settings.writable()} onSave={saveCustomProfile} onStateChange={state => { setEditorSaving(state.saving) }} /> : <>
           <p className={styles.summary}>{currentProfile.description ? t(currentProfile.description) : ''}</p>
           <ShortcutLegend bindings={currentProfile.bindings} availableGlobalActions={availableGlobalActions as readonly GlobalShortcutCommand[] | undefined} platform={platform} t={t} />
         </>}

@@ -12,6 +12,7 @@ const bindings = [
 const t = (key: string) => ({
   'editor.profileName': 'Profile name', 'editor.nameCount': '{count} / 64', 'editor.save': 'Save', 'editor.cancel': 'Cancel',
   'editor.saveSucceeded': 'Saved', 'editor.saveFailed': 'Failed: {message}', 'editor.externalChange': 'EXTERNAL_CHANGE', 'editor.loadLatest': 'Load latest',
+  'editor.nameRequired': 'Enter a profile name.', 'editor.nameTooLong': 'Profile names are limited to 64 characters.',
 }[key] ?? key)
 
 afterEach(cleanup)
@@ -32,6 +33,40 @@ describe('ShortcutBindingEditor', () => {
     const hidden = { command: 'openSettings' as const, scope: 'global' as const, key: { key: 's', modifiers: ['Meta'] as const } }
     render(<ShortcutBindingEditor platform="mac" bindings={[bindings[0]!, hidden]} availableGlobalActions={['openCommandPalette']} t={t} onChange={onChange} />)
     expect(screen.queryByText('keyboard.openSettings')).toBeNull()
+    fireEvent.click(screen.getAllByRole('checkbox')[1]!)
+    expect(onChange).toHaveBeenCalledWith([expect.objectContaining({ command: 'openCommandPalette' }), hidden])
+  })
+
+  it.each(['linux', 'windows'] as const)('keeps hidden Meta distinct from visible Ctrl on %s', platform => {
+    const onChange = vi.fn()
+    const hidden = { command: 'openSettings' as const, scope: 'global' as const, key: { key: 'x', modifiers: ['Meta'] as const } }
+    const visible = { command: 'openCommandPalette' as const, scope: 'global' as const, key: { key: 'x', modifiers: ['Ctrl'] as const } }
+    render(<ShortcutBindingEditor platform={platform} bindings={[hidden, visible]} availableGlobalActions={['openCommandPalette']} t={t} onChange={onChange} />)
+    expect(screen.queryByRole('alert')).toBeNull()
+    fireEvent.click(screen.getAllByRole('checkbox')[2]!)
+    expect(onChange).toHaveBeenCalledWith([hidden, expect.objectContaining({ command: 'openCommandPalette' })])
+  })
+
+  it('keeps hidden Ctrl distinct from visible Meta on macOS', () => {
+    const onChange = vi.fn()
+    const hidden = { command: 'openSettings' as const, scope: 'global' as const, key: { key: 'x', modifiers: ['Ctrl'] as const } }
+    const visible = { command: 'openCommandPalette' as const, scope: 'global' as const, key: { key: 'x', modifiers: ['Meta'] as const } }
+    render(<ShortcutBindingEditor platform="mac" bindings={[hidden, visible]} availableGlobalActions={['openCommandPalette']} t={t} onChange={onChange} />)
+    expect(screen.queryByRole('alert')).toBeNull()
+    fireEvent.click(screen.getAllByRole('checkbox')[3]!)
+    expect(onChange).toHaveBeenCalledWith([hidden, expect.objectContaining({ command: 'openCommandPalette' })])
+  })
+
+  it.each(['linux', 'mac'] as const)('does not block a hidden browser-reserved Ctrl binding on %s', platform => {
+    const hidden = { command: 'openSettings' as const, scope: 'global' as const, key: { key: 'n', modifiers: ['Ctrl'] as const } }
+    render(<ShortcutBindingEditor platform={platform} bindings={[bindings[0]!, hidden]} availableGlobalActions={['openCommandPalette']} t={t} onChange={vi.fn()} />)
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  it('preserves the complete hidden payload in controlled changes', () => {
+    const onChange = vi.fn()
+    const hidden = { command: 'openSettings' as const, scope: 'global' as const, key: { key: 's', modifiers: ['Meta'] as const }, sequence: [{ key: 'x', modifiers: ['Ctrl'] as const }] }
+    render(<ShortcutBindingEditor platform="linux" bindings={[bindings[0]!, hidden as never]} availableGlobalActions={['openCommandPalette']} t={t} onChange={onChange} />)
     fireEvent.click(screen.getAllByRole('checkbox')[1]!)
     expect(onChange).toHaveBeenCalledWith([expect.objectContaining({ command: 'openCommandPalette' }), hidden])
   })
@@ -78,7 +113,8 @@ describe('CustomProfileEditor', () => {
   const props = { availableGlobalActions: ['openCommandPalette', 'openSettings'] as const, platform: 'linux' as const, t }
 
   it('saves the literal name and bindings in one operation', async () => {
-    const onSave = vi.fn(async () => {})
+    const saved = { ...profile, name: 'Review', fingerprint: 'baseline-b' }
+    const onSave = vi.fn(async () => saved)
     render(<CustomProfileEditor profile={profile} {...props} onSave={onSave} onStateChange={vi.fn()} />)
     fireEvent.change(screen.getByRole('textbox', { name: 'Profile name' }), { target: { value: 'Review' } })
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
@@ -97,6 +133,20 @@ describe('CustomProfileEditor', () => {
     expect((screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement).disabled).toBe(true)
   })
 
+  it('describes empty and overlong profile names accessibly', () => {
+    render(<CustomProfileEditor profile={profile} {...props} onSave={vi.fn()} onStateChange={vi.fn()} />)
+    const name = screen.getByRole('textbox', { name: 'Profile name' })
+    fireEvent.change(name, { target: { value: '' } })
+    expect(name.getAttribute('aria-invalid')).toBe('true')
+    const requiredDescription = name.getAttribute('aria-describedby')
+    expect(requiredDescription).toBeTruthy()
+    expect(document.getElementById(requiredDescription!)?.textContent).toBe('Enter a profile name.')
+    fireEvent.change(name, { target: { value: 'x'.repeat(65) } })
+    expect(name.getAttribute('aria-invalid')).toBe('true')
+    const overlongDescription = name.getAttribute('aria-describedby')
+    expect(document.getElementById(overlongDescription!)?.textContent).toBe('Profile names are limited to 64 characters.')
+  })
+
   it('cancels both name and binding changes', () => {
     render(<CustomProfileEditor profile={profile} {...props} onSave={vi.fn()} onStateChange={vi.fn()} />)
     fireEvent.change(screen.getByRole('textbox', { name: 'Profile name' }), { target: { value: 'Review' } })
@@ -107,14 +157,14 @@ describe('CustomProfileEditor', () => {
   })
 
   it('reports dirty, saving, and save success', async () => {
-    let resolve!: () => void
+    let resolve!: (saved: typeof profile) => void
     const onStateChange = vi.fn()
-    render(<CustomProfileEditor profile={profile} {...props} onSave={() => new Promise<void>(done => { resolve = done })} onStateChange={onStateChange} />)
+    render(<CustomProfileEditor profile={profile} {...props} onSave={() => new Promise(done => { resolve = done })} onStateChange={onStateChange} />)
     fireEvent.change(screen.getByRole('textbox', { name: 'Profile name' }), { target: { value: 'Review' } })
     await waitFor(() => expect(onStateChange).toHaveBeenLastCalledWith({ dirty: true, saving: false, externalChange: false }))
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
     await waitFor(() => expect(onStateChange).toHaveBeenLastCalledWith({ dirty: true, saving: true, externalChange: false }))
-    resolve()
+    resolve({ ...profile, name: 'Review', fingerprint: 'baseline-b' })
     await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Saved'))
   })
 
@@ -126,22 +176,71 @@ describe('CustomProfileEditor', () => {
     expect((screen.getByRole('textbox', { name: 'Profile name' }) as HTMLInputElement).value).toBe('Review')
   })
 
-  it('adopts the authoritative fingerprint after save and uses it for the next CAS write', async () => {
-    const onStateChange = vi.fn()
-    const onSave = vi.fn(async () => {})
-    const { rerender } = render(<CustomProfileEditor profile={profile} {...props} onSave={onSave} onStateChange={onStateChange} />)
+  it('adopts the authoritative save result when the promise resolves before the prop update', async () => {
+    const onSave = vi.fn(async (_id, _fingerprint, name, nextBindings) => ({ id: profile.id, name, bindings: nextBindings, fingerprint: 'baseline-b' }))
+    render(<CustomProfileEditor profile={profile} {...props} onSave={onSave} onStateChange={vi.fn()} />)
     fireEvent.change(screen.getByRole('textbox', { name: 'Profile name' }), { target: { value: 'First' } })
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
-    rerender(<CustomProfileEditor profile={{ ...profile, name: 'First', fingerprint: 'baseline-b' }} {...props} onSave={onSave} onStateChange={onStateChange} />)
-    await waitFor(() => expect(screen.queryByText('EXTERNAL_CHANGE')).toBeNull())
+    await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Saved'))
     fireEvent.change(screen.getByRole('textbox', { name: 'Profile name' }), { target: { value: 'Second' } })
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
     await waitFor(() => expect(onSave).toHaveBeenLastCalledWith('custom-a', 'baseline-b', 'Second', expect.any(Array)))
   })
 
+  it('adopts a prop update that arrives before the save promise resolves', async () => {
+    let resolve!: (saved: typeof profile) => void
+    const onSave = vi.fn(() => new Promise<typeof profile>(done => { resolve = done }))
+    const { rerender } = render(<CustomProfileEditor profile={profile} {...props} onSave={onSave} onStateChange={vi.fn()} />)
+    fireEvent.change(screen.getByRole('textbox', { name: 'Profile name' }), { target: { value: 'First' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    const saved = { ...profile, name: 'First', fingerprint: 'baseline-b' }
+    rerender(<CustomProfileEditor profile={saved} {...props} onSave={onSave} onStateChange={vi.fn()} />)
+    resolve(saved)
+    await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Saved'))
+    expect(screen.queryByText('EXTERNAL_CHANGE')).toBeNull()
+    fireEvent.change(screen.getByRole('textbox', { name: 'Profile name' }), { target: { value: 'Second' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(onSave).toHaveBeenLastCalledWith('custom-a', 'baseline-b', 'Second', expect.any(Array)))
+  })
+
+  it('resets drafts when profile ids change even with the same fingerprint', () => {
+    const { rerender } = render(<CustomProfileEditor profile={profile} {...props} onSave={vi.fn()} onStateChange={vi.fn()} />)
+    fireEvent.change(screen.getByRole('textbox', { name: 'Profile name' }), { target: { value: 'Draft A' } })
+    rerender(<CustomProfileEditor profile={{ ...profile, id: 'custom-b', name: 'Work B' }} {...props} onSave={vi.fn()} onStateChange={vi.fn()} />)
+    expect((screen.getByRole('textbox', { name: 'Profile name' }) as HTMLInputElement).value).toBe('Work B')
+    expect(screen.queryByText('EXTERNAL_CHANGE')).toBeNull()
+  })
+
+  it('ignores a save result after switching profiles', async () => {
+    let resolve!: (saved: typeof profile) => void
+    const onSave = vi.fn(() => new Promise<typeof profile>(done => { resolve = done }))
+    const { rerender } = render(<CustomProfileEditor profile={profile} {...props} onSave={onSave} onStateChange={vi.fn()} />)
+    fireEvent.change(screen.getByRole('textbox', { name: 'Profile name' }), { target: { value: 'Draft A' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    rerender(<CustomProfileEditor profile={{ ...profile, id: 'custom-b', name: 'Work B' }} {...props} onSave={onSave} onStateChange={vi.fn()} />)
+    resolve({ ...profile, name: 'Draft A', fingerprint: 'baseline-b' })
+    await Promise.resolve()
+    expect((screen.getByRole('textbox', { name: 'Profile name' }) as HTMLInputElement).value).toBe('Work B')
+    expect(screen.queryByRole('status')).toBeNull()
+  })
+
+  it('does not publish state after unmounting during a save', async () => {
+    let resolve!: (saved: typeof profile) => void
+    const onStateChange = vi.fn()
+    const { unmount } = render(<CustomProfileEditor profile={profile} {...props} onSave={() => new Promise(done => { resolve = done })} onStateChange={onStateChange} />)
+    fireEvent.change(screen.getByRole('textbox', { name: 'Profile name' }), { target: { value: 'Draft A' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(onStateChange).toHaveBeenLastCalledWith({ dirty: true, saving: true, externalChange: false }))
+    unmount()
+    onStateChange.mockClear()
+    resolve({ ...profile, name: 'Draft A', fingerprint: 'baseline-b' })
+    await Promise.resolve()
+    expect(onStateChange).not.toHaveBeenCalled()
+  })
+
   it('adopts clean external updates without reporting an external change', async () => {
     const onStateChange = vi.fn()
-    const { rerender } = render(<CustomProfileEditor profile={profile} {...props} onSave={vi.fn(async () => {})} onStateChange={onStateChange} />)
+    const { rerender } = render(<CustomProfileEditor profile={profile} {...props} onSave={async (_id, _fingerprint, _name, nextBindings) => ({ ...profile, name: 'Work', bindings: nextBindings, fingerprint: 'baseline-a' })} onStateChange={onStateChange} />)
     rerender(<CustomProfileEditor profile={{ ...profile, name: 'Remote', fingerprint: 'baseline-b' }} {...props} onSave={vi.fn(async () => {})} onStateChange={onStateChange} />)
     await waitFor(() => expect((screen.getByRole('textbox', { name: 'Profile name' }) as HTMLInputElement).value).toBe('Remote'))
     expect(screen.queryByText('EXTERNAL_CHANGE')).toBeNull()
@@ -150,12 +249,12 @@ describe('CustomProfileEditor', () => {
 
   it('preserves a dirty draft across external fingerprint changes until load latest', async () => {
     const onStateChange = vi.fn()
-    const onSave = vi.fn(async () => {})
+    const onSave = vi.fn(async (_id, _fingerprint, name, nextBindings) => ({ ...profile, name, bindings: nextBindings, fingerprint: 'baseline-b' }))
     const { rerender } = render(<CustomProfileEditor profile={profile} {...props} onSave={onSave} onStateChange={onStateChange} />)
     fireEvent.change(screen.getByRole('textbox', { name: 'Profile name' }), { target: { value: 'Draft' } })
     rerender(<CustomProfileEditor profile={{ ...profile, name: 'Remote', fingerprint: 'baseline-b' }} {...props} onSave={onSave} onStateChange={onStateChange} />)
     expect((screen.getByRole('textbox', { name: 'Profile name' }) as HTMLInputElement).value).toBe('Draft')
-    expect(screen.getByText('EXTERNAL_CHANGE')).toBeTruthy()
+    expect(screen.getByRole('status').textContent).toContain('EXTERNAL_CHANGE')
     await waitFor(() => expect(onStateChange).toHaveBeenLastCalledWith({ dirty: true, saving: false, externalChange: true }))
     fireEvent.click(screen.getByRole('button', { name: 'Load latest' }))
     expect((screen.getByRole('textbox', { name: 'Profile name' }) as HTMLInputElement).value).toBe('Remote')

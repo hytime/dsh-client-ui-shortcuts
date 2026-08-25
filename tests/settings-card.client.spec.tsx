@@ -606,6 +606,25 @@ describe('shortcut settings card', () => {
     )
   })
 
+  it('locks the profile selector while the custom editor is saving', async () => {
+    const registry = createProfileRegistry([standardProfile, vimProfile])
+    registry.replaceCustom([{ command: 'openCommandPalette', scope: 'global', key: { key: 'k', modifiers: ['Ctrl'] } }])
+    const settings = settingsFace('custom', registry.list())
+    const persist = settings.saveCustomProfile.bind(settings)
+    let resolve!: () => void
+    settings.saveCustomProfile = vi.fn(async (...args) => {
+      await new Promise<void>(done => { resolve = done })
+      await persist(...args)
+    })
+    render(<ShortcutProfileCard settings={settings} profiles={registry.list()} availableGlobalActions={['openCommandPalette']} platform="linux" t={t} />)
+    openCard()
+    fireEvent.change(screen.getByRole('textbox', { name: 'editor.profileName' }), { target: { value: 'Review' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect((screen.getByRole('group') as HTMLFieldSetElement).disabled).toBe(true))
+    resolve()
+    await waitFor(() => expect((screen.getByRole('group') as HTMLFieldSetElement).disabled).toBe(false))
+  })
+
   it('saves a recorded Custom binding through the real settings controller', async () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     const scope = controllerScope({ activeProfile: 'standard' })
