@@ -2,6 +2,17 @@
 
 `@hytime/dsh-client-ui-shortcuts` 的重要变更记录如下。
 
+## Unreleased - 命名自定义方案与 JSON 迁移
+
+### 新增
+
+- 新增多个命名 Custom profile，支持 New、Import、Export 和带确认的 Delete；Standard 与 Vim 保持只读。
+- 新增严格的单方案 JSON v1 格式，导入文件上限为 1 MiB。文件不包含内部 ID，每次导入都会分配新 ID，重名方案使用连续数字后缀。
+
+### 变更
+
+- Export 只写出当前 active Custom profile 的 authoritative saved snapshot，不包含未保存的编辑器更改或其他方案。
+
 ## 0.1.13 - Git 源码安装与包元数据
 
 ### 修复

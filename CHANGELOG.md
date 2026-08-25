@@ -2,6 +2,17 @@
 
 All notable changes to `@hytime/dsh-client-ui-shortcuts` are documented here.
 
+## Unreleased - Named custom profiles and JSON portability
+
+### Added
+
+- Added multiple named Custom profiles with New, Import, Export, and confirmed Delete controls; Standard and Vim remain read-only.
+- Added a strict, single-profile JSON v1 format with a 1 MiB import limit. Files omit internal IDs, every import allocates a new ID, and duplicate names receive continuing numeric suffixes.
+
+### Changed
+
+- Export now writes only the active Custom profile's authoritative saved snapshot, excluding unsaved editor changes and all other profiles.
+
 ## 0.1.13 - Git source installation and package metadata
 
 ### Fixed

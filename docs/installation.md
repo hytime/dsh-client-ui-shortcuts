@@ -89,7 +89,35 @@ After the profile is installed, start the Web surface through DSH:
 dsh --profile web
 ```
 
-The shortcuts settings card is available under the composed settings plugin surface. The persisted settings namespace is `dsh-ui-shortcuts`, with `activeProfile` and `customBindings` fields; the built-in profiles are `standard` and `vim`, and `customBindings` stores the editable Custom profile.
+The shortcuts settings card is available under the composed settings plugin surface. The persisted settings namespace is `dsh-ui-shortcuts`, with `activeProfile` and `customProfiles` fields. The built-in `standard` and `vim` profiles are read-only; `customProfiles` stores the named editable profiles.
+
+## Manage named Custom profiles
+
+The settings card can create, import, export, and delete multiple named Custom profiles. New creates a profile with Standard bindings. Import accepts one profile per file and always allocates a new internal ID; importing the same name repeatedly appends continuing numeric suffixes such as `Name 1`, `Name 2`, and then `Name 3`. Delete requires confirmation, and deleting the active Custom profile first selects Standard.
+
+Custom profile files use the strict single-profile JSON v1 envelope below:
+
+```json
+{
+  "format": "dsh-client-ui-shortcuts/custom-profile",
+  "version": 1,
+  "profile": {
+    "name": "Review",
+    "bindings": [
+      {
+        "command": "question.next",
+        "key": {
+          "code": "KeyJ"
+        }
+      }
+    ]
+  }
+}
+```
+
+Each import file must be at most 1 MiB. The envelope contains exactly `format`, `version`, and `profile`; the profile contains exactly `name` and `bindings`. It deliberately contains no internal profile ID, so importing never replaces or updates an existing profile.
+
+Export is available only for the active Custom profile after its name and bindings have been saved. It writes the current authoritative saved snapshot, not unsaved editor changes, as one JSON v1 profile. Standard and Vim cannot be exported or edited.
 
 Do not open `apps/web` directly. The Web entry needs DSH boot injection and the Client module table that the real DSH composition provides.
 

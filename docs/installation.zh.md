@@ -89,7 +89,35 @@ profile manifest 也应在 `dependencies` 和 `dsh.profile.bundles` 中列出该
 dsh --profile web
 ```
 
-快捷键设置卡片会出现在已组合的 settings plugin surface 中。持久化 settings namespace 是 `dsh-ui-shortcuts`，包含 `activeProfile` 和 `customBindings` 字段；内置 profile 为 `standard` 和 `vim`，`customBindings` 保存可编辑的 Custom profile。
+快捷键设置卡片会出现在已组合的 settings plugin surface 中。持久化 settings namespace 是 `dsh-ui-shortcuts`，包含 `activeProfile` 和 `customProfiles` 字段。内置的 `standard` 与 `vim` profile 均为只读；`customProfiles` 保存多个可命名、可编辑的 profile。
+
+## 管理命名 Custom profile
+
+可在设置卡片中创建、导入、导出和删除多个命名 Custom profile。New 会使用 Standard binding 创建方案。Import 每次只读取一个方案，并且始终分配新的内部 ID；重复导入同名方案会依次使用 `Name 1`、`Name 2`、`Name 3` 等连续数字后缀。Delete 需要确认；删除 active Custom profile 前会先切回 Standard。
+
+Custom profile 文件使用以下严格的单方案 JSON v1 envelope：
+
+```json
+{
+  "format": "dsh-client-ui-shortcuts/custom-profile",
+  "version": 1,
+  "profile": {
+    "name": "Review",
+    "bindings": [
+      {
+        "command": "question.next",
+        "key": {
+          "code": "KeyJ"
+        }
+      }
+    ]
+  }
+}
+```
+
+每个导入文件最大为 1 MiB。Envelope 只能包含 `format`、`version` 和 `profile`，其中 profile 只能包含 `name` 与 `bindings`。文件特意不保存内部 profile ID，因此导入不会替换或更新已有方案。
+
+只有当前 active Custom profile 的名称与 binding 均已保存时，才能执行 Export。导出内容来自当前 authoritative saved snapshot，不包含编辑器中的未保存更改，并且每个 JSON v1 文件只保存一个方案。Standard 与 Vim 不能编辑或导出。
 
 不要直接打开 `apps/web`。该 Web entry 需要 DSH boot 注入和真实 composition 提供的 Client module table。
 

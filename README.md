@@ -11,7 +11,7 @@ This plugin runs inside DSH Web, adds predictable keyboard control for question 
 ## Why install it
 
 - Answer DSH questions and approvals without leaving the keyboard.
-- Choose Standard, Vim, or Custom profiles for interaction cards and global actions.
+- Choose read-only Standard and Vim profiles, or create and switch between multiple named Custom profiles for interaction cards and global actions.
 - Navigate Sessions and Workspaces with explicit physical `Meta`, `Ctrl`, `Alt`, and `Shift` modifiers.
 - Automatically expand a collapsed target Workspace before opening an existing eligible Session.
 - Keep unavailable actions out of routing and shortcut lists when DSH does not provide the required capability.
@@ -52,7 +52,8 @@ For upgrades, removal, local tarballs, profile inspection, and troubleshooting, 
 
 - Question cards with single-select, multi-select, custom-answer, skip, previous-question, and submit flows.
 - Approval cards with allow once, reject, details, cancel, and keyboard-confirmation flows.
-- Standard, Vim, and editable Custom profiles with one active profile at a time.
+- Read-only Standard and Vim profiles plus multiple named, editable Custom profiles, with one active profile at a time.
+- New, Import, Export, and Delete controls for managing portable Custom profiles; exports contain one saved profile and no internal ID.
 - Explicit physical `Meta`, `Ctrl`, `Alt`, and `Shift` modifiers, alternatives, and two-stroke chords.
 - Browser-reserved shortcut denylist and conflict validation.
 - Capability checks for DSH features that are not available in the current composition.
@@ -89,7 +90,11 @@ Global actions are registered only when DSH provides the required capability.
 
 ## Profiles and Custom bindings
 
-`Standard` uses arrow keys, `Enter`, and `Escape` for question and approval interactions. `Vim` uses `j`/`k`, `Enter`, and `Escape`. `Custom` lets you edit question, approval, and capability-backed global bindings, including explicit modifiers, alternatives, and two-stroke chords.
+`Standard` uses arrow keys, `Enter`, and `Escape` for question and approval interactions. `Vim` uses `j`/`k`, `Enter`, and `Escape`. These built-in profiles are read-only.
+
+Create multiple named Custom profiles and switch the active profile from the settings card. A new profile copies the Standard bindings; its name and bindings are saved together. Import always creates a new internal profile ID, while duplicate names receive a continuing numeric suffix such as `Name 1`, `Name 2`, and so on. Export is available only for the active, saved Custom profile and writes a single-profile JSON v1 document without the internal ID. Delete requires confirmation and returns to Standard before removing the active Custom profile. See the [installation guide](docs/installation.md) for the JSON format and limits.
+
+Custom profiles can edit question, approval, and capability-backed global bindings, including explicit modifiers, alternatives, and two-stroke chords.
 
 The resolver matches physical `KeyboardEvent.code` values, normalizes aliases such as `Esc`/`Escape` and `Return`/`Enter`, rejects prefix conflicts, and limits chords to two strokes. On macOS, `Meta` is displayed as Command and `Alt` as Option; on other platforms, `Meta` is displayed as Windows key and `Ctrl` as Control.
 

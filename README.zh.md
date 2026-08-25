@@ -11,7 +11,7 @@
 ## 为什么安装
 
 - 无需离开键盘即可回答 DSH Question 和 Approval。
-- 为交互卡片和全局动作选择 Standard、Vim 或 Custom profile。
+- 为交互卡片和全局动作选择只读的 Standard、Vim profile，或创建并切换多个命名 Custom profile。
 - 使用显式的物理 `Meta`、`Ctrl`、`Alt` 和 `Shift` 修饰键导航 Session 与 Workspace。
 - 打开已有的可用 Session 前，自动展开处于折叠状态的目标 Workspace。
 - 当 DSH 不提供所需能力时，不将不可用动作加入路由和快捷键列表。
@@ -52,7 +52,8 @@ Git 安装会在安装阶段执行包的 `prepare` 脚本。pnpm 可能要求将
 
 - Question 卡片：单选、多选、自定义答案、跳过、上一题和提交。
 - Approval 卡片：允许一次、拒绝、详情、取消和键盘确认。
-- Standard、Vim 和可编辑的 Custom profile；同一时间只有一个 profile 处于 active 状态。
+- 只读的 Standard、Vim profile，以及多个可命名、可编辑的 Custom profile；同一时间只有一个 profile 处于 active 状态。
+- 使用 New、Import、Export 和 Delete 管理可迁移的 Custom profile；导出内容只包含一个已保存方案，不包含内部 ID。
 - 显式物理 `Meta`、`Ctrl`、`Alt` 和 `Shift` 修饰键、候选绑定和两段 chord。
 - 浏览器保留快捷键 denylist 与冲突检查。
 - 对当前 DSH 组合中不可用功能进行能力检查。
@@ -89,7 +90,11 @@ Vim profile 会将两个聚焦绑定替换为 `k` 和 `j`；确认和取消仍�
 
 ## Profile 与 Custom binding
 
-`Standard` 使用方向键、`Enter` 和 `Escape` 处理 Question 与 Approval 交互。`Vim` 使用 `j`/`k`、`Enter` 和 `Escape`。`Custom` 可以编辑 Question、Approval 以及由 capability 支持的全局 binding，包括显式修饰键、候选绑定和两段 chord。
+`Standard` 使用方向键、`Enter` 和 `Escape` 处理 Question 与 Approval 交互。`Vim` 使用 `j`/`k`、`Enter` 和 `Escape`。这两个内置 profile 均为只读。
+
+可在设置卡片中创建多个命名 Custom profile，并切换当前 active profile。新建方案会复制 Standard binding，名称与 binding 在一次操作中保存。每次导入都会创建新的内部 profile ID；重名时会使用连续数字后缀，例如 `Name 1`、`Name 2`。只有当前 active 且已保存的 Custom profile 可以导出，生成不含内部 ID 的单方案 JSON v1 文档。删除操作需要确认；删除 active Custom profile 前会先切回 Standard。JSON 格式与限制见[安装指南](docs/installation.zh.md)。
+
+Custom profile 可以编辑 Question、Approval 以及由 capability 支持的全局 binding，包括显式修饰键、候选绑定和两段 chord。
 
 按物理 `KeyboardEvent.code` 匹配按键，并归一化 `Esc`/`Escape`、`Return`/`Enter` 等别名；会拒绝前缀冲突，并将 chord 限制为最多两段。在 macOS 上，`Meta` 显示为 Command，`Alt` 显示为 Option；其他平台将 `Meta` 显示为 Windows 键，`Ctrl` 显示为 Control。
 
