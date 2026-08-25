@@ -595,7 +595,7 @@ describe('shortcut settings card', () => {
     expect(settings.saveCustomProfile).toHaveBeenCalledWith(
       'custom',
       expect.any(String),
-      undefined,
+      'Custom',
       expect.arrayContaining([
         expect.objectContaining({
           command: 'startSession',
@@ -625,7 +625,7 @@ describe('shortcut settings card', () => {
 
     await waitFor(() => expect(scope.mutate).toHaveBeenCalledWith(expect.objectContaining({ field: 'customProfiles', value: expect.any(Array) })))
     const savedProfiles = vi.mocked(scope.mutate).mock.calls.find(call => call[0].field === 'customProfiles')?.[0].value as Array<{ name?: string }>
-    expect(savedProfiles[0]?.name).toBeUndefined()
+    expect(savedProfiles[0]?.name).toBe('Custom')
     expect(screen.queryByText('Could not save custom shortcuts: Cannot read properties of undefined (reading \'disposed\')')).toBeNull()
     controller.dispose()
   })

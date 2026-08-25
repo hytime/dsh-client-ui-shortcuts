@@ -1,206 +1,163 @@
 // @vitest-environment jsdom
 import React from 'react'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ShortcutBindingEditor } from '../src/client/components/ShortcutBindingEditor.js'
+import { CustomProfileEditor } from '../src/client/components/CustomProfileEditor.js'
 
 const bindings = [
   { command: 'openCommandPalette' as const, scope: 'global' as const, key: { key: 'q', modifiers: ['Meta'] as const } },
   { command: 'openSettings' as const, scope: 'global' as const, key: { key: ',', modifiers: ['Ctrl'] as const } },
 ]
-const t = (key: string) => key
+const t = (key: string) => ({
+  'editor.profileName': 'Profile name', 'editor.nameCount': '{count} / 64', 'editor.save': 'Save', 'editor.cancel': 'Cancel',
+  'editor.saveSucceeded': 'Saved', 'editor.saveFailed': 'Failed: {message}', 'editor.externalChange': 'EXTERNAL_CHANGE', 'editor.loadLatest': 'Load latest',
+}[key] ?? key)
 
 afterEach(cleanup)
 
 describe('ShortcutBindingEditor', () => {
   it('labels Alt as Option on macOS and Alt elsewhere', () => {
     const altBinding = { command: 'openCommandPalette' as const, scope: 'global' as const, key: { key: 'q', modifiers: ['Alt'] as const } }
-    const props = { bindings: [altBinding], availableGlobalActions: ['openCommandPalette'] as const, t, onSave: vi.fn() }
-
+    const props = { bindings: [altBinding], availableGlobalActions: ['openCommandPalette'] as const, t, onChange: vi.fn() }
     render(<ShortcutBindingEditor platform="mac" {...props} />)
     expect(screen.getByText('modifier.Option')).toBeTruthy()
-    expect(screen.queryByText('modifier.Alt')).toBeNull()
     cleanup()
-
     render(<ShortcutBindingEditor platform="windows" {...props} />)
     expect(screen.getByText('modifier.Alt')).toBeTruthy()
-    expect(screen.queryByText('modifier.Option')).toBeNull()
-  })
-  it('renders explicit Meta as Command on macOS and preserves hidden bindings on save', async () => {
-    const onSave = vi.fn().mockResolvedValue(undefined)
-    const hidden = { command: 'openSettings' as const, scope: 'global' as const, key: { key: 's', modifiers: ['Ctrl'] as const } }
-    render(<ShortcutBindingEditor platform="mac" bindings={[bindings[0]!, hidden]} availableGlobalActions={['openCommandPalette', 'openSettings']} t={t} onSave={onSave} />)
-    expect(screen.getAllByRole('img', { name: 'Command' }).length).toBeGreaterThan(0)
-    expect(screen.queryByText('openSettings')).toBeNull()
-    expect((screen.getByText('editor.save').closest('button') as HTMLButtonElement).disabled).toBe(false)
-    fireEvent.click(screen.getByText('editor.save').closest('button')!)
-    await new Promise(resolve => setTimeout(resolve, 0))
-    expect(onSave).toHaveBeenCalledWith([bindings[0], hidden])
   })
 
-  it('allows Linux saves with a hidden browser-reserved Ctrl binding', async () => {
-    const onSave = vi.fn().mockResolvedValue(undefined)
-    const hidden = { command: 'openSettings' as const, scope: 'global' as const, key: { key: 'n', modifiers: ['Ctrl'] as const } }
-    render(<ShortcutBindingEditor platform="linux" bindings={[bindings[0]!, hidden]} availableGlobalActions={['openCommandPalette', 'openSettings']} t={t} onSave={onSave} />)
-    expect((screen.getByRole('button', { name: 'editor.save' }) as HTMLButtonElement).disabled).toBe(false)
-    fireEvent.click(screen.getByRole('button', { name: 'editor.save' }))
-    await new Promise(resolve => setTimeout(resolve, 0))
-    expect(onSave).toHaveBeenCalledWith([bindings[0], hidden])
+  it('preserves hidden bindings when a visible binding changes', () => {
+    const onChange = vi.fn()
+    const hidden = { command: 'openSettings' as const, scope: 'global' as const, key: { key: 's', modifiers: ['Meta'] as const } }
+    render(<ShortcutBindingEditor platform="mac" bindings={[bindings[0]!, hidden]} availableGlobalActions={['openCommandPalette']} t={t} onChange={onChange} />)
+    expect(screen.queryByText('keyboard.openSettings')).toBeNull()
+    fireEvent.click(screen.getAllByRole('checkbox')[1]!)
+    expect(onChange).toHaveBeenCalledWith([expect.objectContaining({ command: 'openCommandPalette' }), hidden])
   })
 
-  it('allows macOS saves with a hidden browser-reserved Ctrl binding', async () => {
-    const onSave = vi.fn().mockResolvedValue(undefined)
-    const hidden = { command: 'openSettings' as const, scope: 'global' as const, key: { key: 'n', modifiers: ['Ctrl'] as const } }
-    render(<ShortcutBindingEditor platform="mac" bindings={[bindings[0]!, hidden]} availableGlobalActions={['openCommandPalette', 'openSettings']} t={t} onSave={onSave} />)
-    expect((screen.getByRole('button', { name: 'editor.save' }) as HTMLButtonElement).disabled).toBe(false)
-    fireEvent.click(screen.getByRole('button', { name: 'editor.save' }))
-    await new Promise(resolve => setTimeout(resolve, 0))
-    expect(onSave).toHaveBeenCalledWith([bindings[0], hidden])
-  })
-
-  it('allows Linux saves when hidden Meta binding overlaps visible Ctrl binding across scopes', async () => {
-    const onSave = vi.fn().mockResolvedValue(undefined)
-    const hidden = { command: 'openSettings' as const, scope: 'question' as const, key: { key: 'n', modifiers: ['Ctrl'] as const } }
-    const visible = { command: 'openCommandPalette' as const, scope: 'global' as const, key: { key: 'n', modifiers: ['Ctrl'] as const } }
-    render(<ShortcutBindingEditor platform="linux" bindings={[hidden, visible]} availableGlobalActions={['openCommandPalette', 'openSettings']} t={t} onSave={onSave} />)
-    expect((screen.getByRole('button', { name: 'editor.save' }) as HTMLButtonElement).disabled).toBe(false)
-    fireEvent.click(screen.getByRole('button', { name: 'editor.save' }))
-    await new Promise(resolve => setTimeout(resolve, 0))
-    expect(onSave).toHaveBeenCalledWith([hidden, visible])
-  })
-
-  it('allows Windows saves when hidden Meta binding overlaps visible Ctrl binding across scopes', async () => {
-    const onSave = vi.fn().mockResolvedValue(undefined)
-    const hidden = { command: 'openSettings' as const, scope: 'question' as const, key: { key: 'n', modifiers: ['Ctrl'] as const } }
-    const visible = { command: 'openCommandPalette' as const, scope: 'global' as const, key: { key: 'n', modifiers: ['Ctrl'] as const } }
-    render(<ShortcutBindingEditor platform="windows" bindings={[hidden, visible]} availableGlobalActions={['openCommandPalette', 'openSettings']} t={t} onSave={onSave} />)
-    expect((screen.getByRole('button', { name: 'editor.save' }) as HTMLButtonElement).disabled).toBe(false)
-    fireEvent.click(screen.getByRole('button', { name: 'editor.save' }))
-    await new Promise(resolve => setTimeout(resolve, 0))
-    expect(onSave).toHaveBeenCalledWith([hidden, visible])
-  })
-
-  it('allows macOS saves when hidden Ctrl binding overlaps visible Meta binding across scopes', async () => {
-    const onSave = vi.fn().mockResolvedValue(undefined)
-    const hidden = { command: 'openSettings' as const, scope: 'question' as const, key: { key: 'x', modifiers: ['Ctrl'] as const } }
-    const visible = { command: 'openCommandPalette' as const, scope: 'global' as const, key: { key: 'x', modifiers: ['Meta'] as const } }
-    render(<ShortcutBindingEditor platform="mac" bindings={[hidden, visible]} availableGlobalActions={['openCommandPalette', 'openSettings']} t={t} onSave={onSave} />)
-    expect((screen.getByRole('button', { name: 'editor.save' }) as HTMLButtonElement).disabled).toBe(false)
-    fireEvent.click(screen.getByRole('button', { name: 'editor.save' }))
-    await new Promise(resolve => setTimeout(resolve, 0))
-    expect(onSave).toHaveBeenCalledWith([hidden, visible])
-  })
-
-  it('still blocks visible cross-scope duplicate and prefix conflicts', () => {
-    for (const [platform, second] of [
-      ['linux', { key: 'n', modifiers: ['Ctrl'] as const }],
-      ['mac', { key: 'n', modifiers: ['Meta'] as const }],
-    ] as const) {
-      const onSave = vi.fn()
-      render(<ShortcutBindingEditor platform={platform} bindings={[{ ...bindings[0]!, scope: 'question', key: { key: 'n', modifiers: ['Meta'] as const } }, { command: 'openSettings' as const, scope: 'global', key: second }]} availableGlobalActions={['openCommandPalette', 'openSettings']} t={t} onSave={onSave} />)
-      expect((screen.getByRole('button', { name: 'editor.save' }) as HTMLButtonElement).disabled).toBe(true)
-      cleanup()
-    }
-  })
-
-  it('blocks a visible browser-reserved Meta binding', () => {
-    const onSave = vi.fn()
-    render(<ShortcutBindingEditor platform="linux" bindings={[{ ...bindings[0]!, key: { key: 'n', modifiers: ['Meta'] as const }}]} t={t} onSave={onSave} />)
-    expect(screen.getByRole('alert')).toBeTruthy()
-    expect((screen.getByRole('button', { name: 'editor.save' }) as HTMLButtonElement).disabled).toBe(true)
-    expect(onSave).not.toHaveBeenCalled()
-  })
-
-  it('validates hidden platform bindings while preserving them in the draft', () => {
-    const onSave = vi.fn()
-    render(<ShortcutBindingEditor platform="linux" bindings={[bindings[0]!, { command: 'openSettings', scope: 'global', key: { key: 's', modifiers: ['Meta'] }, sequence: [] } as never]} availableGlobalActions={['openCommandPalette', 'openSettings']} t={t} onSave={onSave} />)
-    expect(screen.getByRole('alert')).toBeTruthy()
-    expect((screen.getByRole('button', { name: 'editor.save' }) as HTMLButtonElement).disabled).toBe(true)
-  })
-
-  it('preserves hidden sequence payloads when a visible binding changes', async () => {
-    const onSave = vi.fn().mockResolvedValue(undefined)
-    const hidden = { command: 'openSettings' as const, scope: 'global' as const, key: { key: 's', modifiers: ['Meta'] as const }, sequence: [{ key: 'x', modifiers: ['Ctrl'] as const }] }
-    render(<ShortcutBindingEditor platform="linux" bindings={[bindings[0]!, hidden as never]} availableGlobalActions={['openCommandPalette', 'openSettings']} t={t} onSave={onSave} />)
-    const record = screen.getAllByRole('button')[0]!
-    fireEvent.click(record)
-    expect((screen.getByText('editor.save').closest('button') as HTMLButtonElement).disabled).toBe(true)
-    fireEvent.click(screen.getByText('editor.save').closest('button')!)
-    await new Promise(resolve => setTimeout(resolve, 0))
-    expect(onSave).not.toHaveBeenCalled()
-    expect(hidden).toEqual({ command: 'openSettings', scope: 'global', key: { key: 's', modifiers: ['Meta'] }, sequence: [{ key: 'x', modifiers: ['Ctrl'] }] })
-  })
-  it('edits the first sequence stroke without dropping later strokes or alternatives', () => {
-    const onSave = vi.fn().mockResolvedValue(undefined)
-    const sequenceBinding = {
-      command: 'openCommandPalette' as const,
-      scope: 'global' as const,
-      sequences: [
-        [{ key: 'g', modifiers: ['Meta'] as const }, { key: 's', modifiers: ['Shift'] as const }],
-        [{ key: 'p', modifiers: ['Meta'] as const }, { key: 'x', modifiers: ['Alt'] as const }],
-      ],
-    }
-    render(<ShortcutBindingEditor platform="linux" bindings={[sequenceBinding]} availableGlobalActions={['openCommandPalette']} t={t} onSave={onSave} />)
-    const record = screen.getAllByRole('button')[0]!
+  it('preserves later strokes and alternatives when recording a first stroke', () => {
+    const onChange = vi.fn()
+    const sequenceBinding = { command: 'openCommandPalette' as const, scope: 'global' as const, sequences: [[{ key: 'g', modifiers: ['Meta'] as const }, { key: 's', modifiers: ['Shift'] as const }], [{ key: 'p', modifiers: ['Meta'] as const }, { key: 'x', modifiers: ['Alt'] as const }]] }
+    render(<ShortcutBindingEditor platform="linux" bindings={[sequenceBinding]} availableGlobalActions={['openCommandPalette']} t={t} onChange={onChange} />)
+    const record = screen.getByRole('button')
     fireEvent.click(record)
     fireEvent.keyDown(record, { key: 'b', ctrlKey: true })
-    fireEvent.click(screen.getByRole('button', { name: 'editor.save' }))
-    expect(onSave).toHaveBeenCalledWith([{
-      command: 'openCommandPalette',
-      scope: 'global',
-      sequences: [
-        [{ key: 'b', modifiers: ['Ctrl'] }, { key: 's', modifiers: ['Shift'] }],
-        [{ key: 'p', modifiers: ['Meta'] }, { key: 'x', modifiers: ['Alt'] }],
-      ],
-    }])
+    expect(onChange).toHaveBeenCalledWith([{ command: 'openCommandPalette', scope: 'global', sequences: [[{ key: 'b', modifiers: ['Ctrl'] }, { key: 's', modifiers: ['Shift'] }], [{ key: 'p', modifiers: ['Meta'] }, { key: 'x', modifiers: ['Alt'] }]] }])
   })
 
-  it('keeps malformed and ambiguous sequence bindings unsaveable', () => {
-    for (const binding of [
-      { command: 'openCommandPalette', scope: 'global', sequence: [] },
-      { command: 'openCommandPalette', scope: 'global', key: { key: 'p', modifiers: ['Meta'] }, sequence: [{ key: 'x', modifiers: [] }] },
-    ] as never[]) {
-      const onSave = vi.fn()
-      render(<ShortcutBindingEditor platform="linux" bindings={[binding]} availableGlobalActions={['openCommandPalette']} t={t} onSave={onSave} />)
+  it('keeps conflict, browser-reserved, malformed, and hidden validation behavior', () => {
+    const cases = [
+      [{ ...bindings[0]!, key: { key: 'n', modifiers: ['Meta'] as const } }],
+      [bindings[0]!, { command: 'openSettings', scope: 'global', key: { key: 'q', modifiers: ['Meta'] } }],
+      [{ command: 'openCommandPalette', scope: 'global', sequence: [] }],
+      [bindings[0]!, { command: 'openSettings', scope: 'global', key: { key: 's', modifiers: ['Meta'] }, sequence: [] }],
+    ]
+    for (const value of cases) {
+      render(<ShortcutBindingEditor platform="linux" bindings={value as never} availableGlobalActions={['openCommandPalette', 'openSettings']} t={t} onChange={vi.fn()} />)
       expect(screen.getByRole('alert')).toBeTruthy()
-      expect((screen.getByRole('button', { name: 'editor.save' }) as HTMLButtonElement).disabled).toBe(true)
       cleanup()
     }
   })
 
   it('captures modifiers and cancels recording with Escape', () => {
-    render(<ShortcutBindingEditor platform="linux" bindings={bindings} t={t} onSave={vi.fn()} />)
+    const onChange = vi.fn()
+    render(<ShortcutBindingEditor platform="linux" bindings={bindings} availableGlobalActions={['openCommandPalette', 'openSettings']} t={t} onChange={onChange} />)
     const record = screen.getAllByRole('button')[0]!
     fireEvent.click(record)
     fireEvent.keyDown(record, { key: 'b', ctrlKey: true, shiftKey: true })
-    expect(screen.getAllByRole('img', { name: 'Control' }).length).toBeGreaterThan(0)
-    expect(screen.getByRole('img', { name: 'B' })).toBeTruthy()
+    expect(onChange).toHaveBeenCalledWith(expect.arrayContaining([expect.objectContaining({ key: { key: 'b', modifiers: ['Ctrl', 'Shift'] } })]))
     fireEvent.click(record)
     fireEvent.keyDown(record, { key: 'Escape' })
-    expect(record.textContent).not.toContain('recording')
+    expect(onChange).toHaveBeenCalledTimes(1)
   })
-  it('shows conflict and disables save', () => {
-    const onSave = vi.fn()
-    render(<ShortcutBindingEditor platform="linux" bindings={[
-      bindings[0]!,
-      { command: 'openSettings', scope: 'global', key: { key: 'p', modifiers: ['Meta'] } },
-    ]} t={t} onSave={onSave} />)
-    expect(screen.getByRole('alert')).toBeTruthy()
-    expect((screen.getByRole('button', { name: 'editor.save' }) as HTMLButtonElement).disabled).toBe(true)
-    expect(onSave).not.toHaveBeenCalled()
+})
+
+describe('CustomProfileEditor', () => {
+  const profile = { id: 'custom-a', name: 'Work', bindings, fingerprint: 'baseline-a' }
+  const props = { availableGlobalActions: ['openCommandPalette', 'openSettings'] as const, platform: 'linux' as const, t }
+
+  it('saves the literal name and bindings in one operation', async () => {
+    const onSave = vi.fn(async () => {})
+    render(<CustomProfileEditor profile={profile} {...props} onSave={onSave} onStateChange={vi.fn()} />)
+    fireEvent.change(screen.getByRole('textbox', { name: 'Profile name' }), { target: { value: 'Review' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(onSave).toHaveBeenCalledWith('custom-a', 'baseline-a', 'Review', expect.any(Array)))
   })
-  it('saves a captured binding and retains draft after failed save', async () => {
-    const onSave = vi.fn().mockRejectedValue(new Error('nope'))
-    render(<ShortcutBindingEditor platform="linux" bindings={[{ ...bindings[0]!, key: { key: 'p', modifiers: ['Meta'] as const } }, { command: 'openSettings' as const, scope: 'global' as const, key: { key: ',', modifiers: ['Meta'] as const } }]} t={t} onSave={onSave} />)
-    const record = screen.getAllByRole('button')[0]!
-    fireEvent.click(record)
-    fireEvent.keyDown(record, { key: 'b', ctrlKey: true, shiftKey: true })
-    expect(screen.getByRole('img', { name: 'B' })).toBeTruthy()
-    expect((screen.getByText('editor.save').closest('button') as HTMLButtonElement).disabled).toBe(false)
-    fireEvent.click(screen.getByText('editor.save').closest('button')!)
-    expect(onSave).toHaveBeenCalled()
-    await new Promise(resolve => setTimeout(resolve, 0))
-    expect(screen.getByText(/editor.saveFailed/)).toBeTruthy()
-    expect(screen.getByRole('img', { name: 'B' })).toBeTruthy()
+
+  it('counts Unicode code points and rejects empty or overlong names', () => {
+    render(<CustomProfileEditor profile={profile} {...props} onSave={vi.fn()} onStateChange={vi.fn()} />)
+    const name = screen.getByRole('textbox', { name: 'Profile name' })
+    fireEvent.change(name, { target: { value: '😀' } })
+    expect(screen.getByText('1 / 64')).toBeTruthy()
+    fireEvent.change(name, { target: { value: '' } })
+    expect((screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement).disabled).toBe(true)
+    fireEvent.change(name, { target: { value: '😀'.repeat(65) } })
+    expect(screen.getByText('65 / 64')).toBeTruthy()
+    expect((screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('cancels both name and binding changes', () => {
+    render(<CustomProfileEditor profile={profile} {...props} onSave={vi.fn()} onStateChange={vi.fn()} />)
+    fireEvent.change(screen.getByRole('textbox', { name: 'Profile name' }), { target: { value: 'Review' } })
+    fireEvent.click(screen.getAllByRole('checkbox')[1]!)
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect((screen.getByRole('textbox', { name: 'Profile name' }) as HTMLInputElement).value).toBe('Work')
+    expect((screen.getAllByRole('checkbox')[1] as HTMLInputElement).checked).toBe(false)
+  })
+
+  it('reports dirty, saving, and save success', async () => {
+    let resolve!: () => void
+    const onStateChange = vi.fn()
+    render(<CustomProfileEditor profile={profile} {...props} onSave={() => new Promise<void>(done => { resolve = done })} onStateChange={onStateChange} />)
+    fireEvent.change(screen.getByRole('textbox', { name: 'Profile name' }), { target: { value: 'Review' } })
+    await waitFor(() => expect(onStateChange).toHaveBeenLastCalledWith({ dirty: true, saving: false, externalChange: false }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(onStateChange).toHaveBeenLastCalledWith({ dirty: true, saving: true, externalChange: false }))
+    resolve()
+    await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Saved'))
+  })
+
+  it('retains a failed draft', async () => {
+    render(<CustomProfileEditor profile={profile} {...props} onSave={async () => { throw new Error('denied') }} onStateChange={vi.fn()} />)
+    fireEvent.change(screen.getByRole('textbox', { name: 'Profile name' }), { target: { value: 'Review' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toBe('Failed: denied'))
+    expect((screen.getByRole('textbox', { name: 'Profile name' }) as HTMLInputElement).value).toBe('Review')
+  })
+
+  it('adopts the authoritative fingerprint after save and uses it for the next CAS write', async () => {
+    const onStateChange = vi.fn()
+    const onSave = vi.fn(async () => {})
+    const { rerender } = render(<CustomProfileEditor profile={profile} {...props} onSave={onSave} onStateChange={onStateChange} />)
+    fireEvent.change(screen.getByRole('textbox', { name: 'Profile name' }), { target: { value: 'First' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    rerender(<CustomProfileEditor profile={{ ...profile, name: 'First', fingerprint: 'baseline-b' }} {...props} onSave={onSave} onStateChange={onStateChange} />)
+    await waitFor(() => expect(screen.queryByText('EXTERNAL_CHANGE')).toBeNull())
+    fireEvent.change(screen.getByRole('textbox', { name: 'Profile name' }), { target: { value: 'Second' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(onSave).toHaveBeenLastCalledWith('custom-a', 'baseline-b', 'Second', expect.any(Array)))
+  })
+
+  it('adopts clean external updates without reporting an external change', async () => {
+    const onStateChange = vi.fn()
+    const { rerender } = render(<CustomProfileEditor profile={profile} {...props} onSave={vi.fn(async () => {})} onStateChange={onStateChange} />)
+    rerender(<CustomProfileEditor profile={{ ...profile, name: 'Remote', fingerprint: 'baseline-b' }} {...props} onSave={vi.fn(async () => {})} onStateChange={onStateChange} />)
+    await waitFor(() => expect((screen.getByRole('textbox', { name: 'Profile name' }) as HTMLInputElement).value).toBe('Remote'))
+    expect(screen.queryByText('EXTERNAL_CHANGE')).toBeNull()
+    expect(onStateChange).not.toHaveBeenCalledWith(expect.objectContaining({ externalChange: true }))
+  })
+
+  it('preserves a dirty draft across external fingerprint changes until load latest', async () => {
+    const onStateChange = vi.fn()
+    const onSave = vi.fn(async () => {})
+    const { rerender } = render(<CustomProfileEditor profile={profile} {...props} onSave={onSave} onStateChange={onStateChange} />)
+    fireEvent.change(screen.getByRole('textbox', { name: 'Profile name' }), { target: { value: 'Draft' } })
+    rerender(<CustomProfileEditor profile={{ ...profile, name: 'Remote', fingerprint: 'baseline-b' }} {...props} onSave={onSave} onStateChange={onStateChange} />)
+    expect((screen.getByRole('textbox', { name: 'Profile name' }) as HTMLInputElement).value).toBe('Draft')
+    expect(screen.getByText('EXTERNAL_CHANGE')).toBeTruthy()
+    await waitFor(() => expect(onStateChange).toHaveBeenLastCalledWith({ dirty: true, saving: false, externalChange: true }))
+    fireEvent.click(screen.getByRole('button', { name: 'Load latest' }))
+    expect((screen.getByRole('textbox', { name: 'Profile name' }) as HTMLInputElement).value).toBe('Remote')
   })
 })

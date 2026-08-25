@@ -81,7 +81,15 @@
 .error { color: var(--dsw-alias-text-danger); }
 .empty { color: var(--dsw-alias-text-secondary); }
 .summary { margin: 0; color: var(--dsw-alias-text-secondary); }
-.editor { display: grid; gap: 14px; margin-top: 14px; }
+.customProfileEditor { display: grid; gap: 14px; margin-top: 14px; }
+.profileNameRow { display: grid; grid-template-columns: minmax(100px, auto) minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+.profileNameRow input { min-width: 0; border: 1px solid var(--dsw-alias-border-subtle); border-radius: 6px; padding: 8px 10px; background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-text-primary); font: inherit; }
+.profileNameRow input:focus-visible { outline: 2px solid var(--dsw-alias-border-focus); outline-offset: 2px; }
+.profileNameCount { color: var(--dsw-alias-text-secondary); font-size: 12px; white-space: nowrap; }
+.externalChange { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; border: 1px solid var(--dsw-alias-border-focus); border-radius: 6px; color: var(--dsw-alias-text-secondary); }
+.externalChange button { border: 0; background: transparent; color: var(--dsw-alias-action-primary); font: inherit; cursor: pointer; }
+.success { color: var(--dsw-alias-text-success); }
+.editor { display: grid; gap: 14px; }
 .editorGroup { display: grid; gap: 6px; }
 .editorGroup + .editorGroup { padding-top: 14px; border-top: 1px solid var(--dsw-alias-border-subtle); }
 .editorGroup h3 { margin: 0; color: var(--dsw-alias-text-primary); font-size: 12px; font-weight: 600; text-transform: uppercase; }
@@ -95,5 +103,5 @@
 .editorActions button:last-child { background: var(--dsw-alias-action-primary); color: var(--dsw-alias-text-on-primary); }
 .editorActions button:disabled { cursor: default; opacity: .55; }
 
-@media (max-width: 560px) { .body { padding: 16px 0 8px; } .profileSelect { grid-template-columns: 1fr; gap: 6px; } .profileSelect [role='status'] { white-space: normal; } .legendItem { grid-template-columns: 1fr; gap: 4px; } .legendKeys { justify-content: flex-start; } .editorRow { grid-template-columns: 1fr; } .recordButton { justify-self: start; } }
+@media (max-width: 560px) { .body { padding: 16px 0 8px; } .profileSelect, .profileNameRow { grid-template-columns: 1fr; gap: 6px; } .profileSelect [role='status'] { white-space: normal; } .legendItem { grid-template-columns: 1fr; gap: 4px; } .legendKeys { justify-content: flex-start; } .editorRow { grid-template-columns: 1fr; } .recordButton { justify-self: start; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; } }
