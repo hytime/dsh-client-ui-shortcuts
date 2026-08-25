@@ -105,9 +105,11 @@ Custom profile 文件使用以下严格的单方案 JSON v1 envelope：
     "name": "Review",
     "bindings": [
       {
-        "command": "question.next",
+        "command": "focusNext",
+        "scope": "question",
         "key": {
-          "code": "KeyJ"
+          "key": "j",
+          "modifiers": []
         }
       }
     ]

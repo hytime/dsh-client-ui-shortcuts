@@ -105,9 +105,11 @@ Custom profile files use the strict single-profile JSON v1 envelope below:
     "name": "Review",
     "bindings": [
       {
-        "command": "question.next",
+        "command": "focusNext",
+        "scope": "question",
         "key": {
-          "code": "KeyJ"
+          "key": "j",
+          "modifiers": []
         }
       }
     ]

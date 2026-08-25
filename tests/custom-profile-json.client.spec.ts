@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+
 import { describe, expect, it } from 'vitest'
 import {
   CUSTOM_PROFILE_JSON_FORMAT,
@@ -27,7 +29,30 @@ function validEnvelope(profile: Record<string, unknown> = {
   }
 }
 
+function installationJsonExample(path: string): string {
+  const markdown = readFileSync(new URL(path, import.meta.url), 'utf8')
+  const examples = [...markdown.matchAll(/```json\n([\s\S]*?)\n```/g)]
+  expect(examples).toHaveLength(1)
+  return examples[0]![1]!
+}
+
 describe('custom profile JSON codec', () => {
+  it.each([
+    ['English', '../docs/installation.md'],
+    ['Chinese', '../docs/installation.zh.md'],
+  ])('decodes the %s installation guide example', (_label, path) => {
+    const text = installationJsonExample(path)
+
+    expect(decodeCustomProfileJson(text, new TextEncoder().encode(text).byteLength)).toEqual({
+      name: 'Review',
+      bindings: [{
+        command: 'focusNext',
+        scope: 'question',
+        key: { key: 'j', modifiers: [] },
+      }],
+    })
+  })
+
   it('round-trips one profile without an internal id', () => {
     const text = encodeCustomProfileJson({ name: 'Work', bindings: [validCustomBinding] })
 
