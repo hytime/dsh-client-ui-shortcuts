@@ -55,6 +55,7 @@ describe('package manifest', () => {
     })
     expect(manifest.dsh.client.platform).toBe('web')
     expect(manifest.dsh.client.inject).toEqual([
+      '@deepseek-ai/dsh-client-connection',
       '@deepseek-ai/dsh-client-locale',
       '@deepseek-ai/dsh-client-runtime',
       '@deepseek-ai/dsh-client-ui-conversation',

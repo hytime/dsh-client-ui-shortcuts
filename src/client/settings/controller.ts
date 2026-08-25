@@ -11,10 +11,12 @@ import type { PersistedShortcutBinding, ShortcutSettings } from '../../settings.
 import type { ShortcutBinding } from '../contract/profile.js'
 import type {
   ManagedShortcutProfile,
+  MutateShortcutSettings,
   PortableCustomProfile,
   ShortcutSettingsErrorCode,
   ShortcutSettingsFace,
   ShortcutSettingsFailure,
+  ShortcutSettingsMutationView,
   ShortcutSettingsOperation,
   ShortcutSettingsPartialResult,
 } from '../contract/settings.js'
@@ -48,7 +50,7 @@ export class ShortcutSettingsOperationError extends Error implements ShortcutSet
   }
 }
 
-/** Controller joining the durable settings scope to the isolated profile registry. */
+/** Controller joining the durable settings mirror to the CAS mutation port. */
 export class ShortcutSettingsController implements ShortcutSettingsFace {
   private readonly listeners = new Set<() => void>()
   private readonly disposeScope: () => void
@@ -56,22 +58,28 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
   private managedProfiles: readonly ManagedShortcutProfile[] = Object.freeze([])
   private currentId: string = DEFAULT_SHORTCUT_PROFILE_ID
   private lastError: ShortcutSettingsFailure | undefined
+  private authoritative: SettingsScopeSnapshot<ShortcutSettings>
   private disposed = false
   private operationGeneration = 0
   private writeInFlight = false
+  private pendingScopeChange = false
+  private recoveryRevision: number | undefined
+  private recoveryRequiresNewer = false
   private ready = false
   private canWrite = false
 
   constructor(
     private readonly scope: SettingsScope<ShortcutSettings>,
     private readonly registry: ShortcutProfileRegistry,
+    private readonly mutate: MutateShortcutSettings,
     private readonly options: ShortcutSettingsControllerOptions,
   ) {
-    this.rebuild(scope.getSnapshot())
+    this.authoritative = cloneSnapshot(scope.getSnapshot())
+    this.rebuild(this.authoritative)
     this.disposeScope = scope.subscribe(() => this.onScopeChanged())
   }
 
-  writable(): boolean { return this.ready && this.canWrite }
+  writable(): boolean { return this.ready && this.canWrite && this.recoveryRevision === undefined }
 
   profiles(): readonly ManagedShortcutProfile[] { return this.managedProfiles }
 
@@ -101,9 +109,8 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
         { id, name, bindings: standard.bindings as unknown as readonly PersistedShortcutBinding[] },
       ])
       const expected = next.find(profile => profile.id === id)!
-      const readBack = await this.writeAndRead(
-        'customProfiles',
-        next,
+      const readBack = await this.write(
+        'customProfiles', next, snapshot.revision,
         { operation: 'create', phase: 'collection', profileId: id },
       )
       if (readBack === undefined) return id
@@ -114,7 +121,7 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
         }, `custom profile "${id}" was not saved`)
       }
       if (this.disposed) return id
-      await this.selectAfterCreate(id, 'create')
+      await this.selectAfterCreate(id, 'create', readBack.revision)
       this.publishSuccess(generation)
       return id
     })
@@ -131,9 +138,8 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
       )
       const next = normalizeCustomProfiles([...profiles, { id, name, bindings: profile.bindings }])
       const expected = next.find(entry => entry.id === id)!
-      const readBack = await this.writeAndRead(
-        'customProfiles',
-        next,
+      const readBack = await this.write(
+        'customProfiles', next, snapshot.revision,
         { operation: 'import', phase: 'collection', profileId: id },
       )
       if (readBack === undefined) return id
@@ -144,7 +150,7 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
         }, `custom profile "${id}" was not saved`)
       }
       if (this.disposed) return id
-      await this.selectAfterCreate(id, 'import')
+      await this.selectAfterCreate(id, 'import', readBack.revision)
       this.publishSuccess(generation)
       return id
     })
@@ -161,9 +167,7 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
       const snapshot = this.prepareWritable(context)
       const profiles = this.readCustomProfiles(snapshot)
       const index = profiles.findIndex(profile => profile.id === id)
-      if (index < 0) {
-        throw this.failure('PROFILE_MISSING', context, `custom profile "${id}" is unavailable`)
-      }
+      if (index < 0) throw this.failure('PROFILE_MISSING', context, `custom profile "${id}" is unavailable`)
       const current = profiles[index]!
       if (customProfileFingerprint(current) !== baselineFingerprint) {
         throw this.failure('NOT_APPLIED', context, `custom profile "${id}" changed before it could be saved`)
@@ -178,7 +182,7 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
         profileIndex === index ? replacement : profile
       )))
       const expected = next[index]!
-      const readBack = await this.writeAndRead('customProfiles', next, context)
+      const readBack = await this.write('customProfiles', next, snapshot.revision, context)
       if (readBack === undefined) return
       const saved = this.readCustomProfiles(readBack).find(profile => profile.id === id)
       if (saved === undefined || customProfileFingerprint(saved) !== customProfileFingerprint(expected)) {
@@ -201,7 +205,9 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
 
       let selectionChanged = false
       if (snapshot.value?.activeProfile === id) {
-        const readBack = await this.writeAndRead('activeProfile', DEFAULT_SHORTCUT_PROFILE_ID, selectionContext)
+        const readBack = await this.write(
+          'activeProfile', DEFAULT_SHORTCUT_PROFILE_ID, snapshot.revision, selectionContext,
+        )
         if (readBack === undefined) return
         if (!this.activePredicate(readBack, DEFAULT_SHORTCUT_PROFILE_ID)) {
           throw this.failure('NOT_APPLIED', selectionContext, `active shortcut profile was not changed to "${DEFAULT_SHORTCUT_PROFILE_ID}"`)
@@ -222,13 +228,11 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
       }
 
       const context: FailureContext = {
-        operation: 'delete',
-        phase: 'collection',
-        profileId: id,
+        operation: 'delete', phase: 'collection', profileId: id,
         ...(selectionChanged ? { partial: 'selection-changed' as const } : {}),
       }
       const next = profiles.filter(profile => profile.id !== id)
-      const readBack = await this.writeAndRead('customProfiles', next, context)
+      const readBack = await this.write('customProfiles', next, snapshot.revision, context)
       if (readBack === undefined) return
       const remaining = this.readCustomProfiles(readBack)
       if (remaining.some(profile => profile.id === id) || readBack.value?.activeProfile === id) {
@@ -239,8 +243,7 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
   }
 
   exportActiveCustomProfile(): PortableCustomProfile {
-    const snapshot = this.scope.getSnapshot()
-    this.rebuild(snapshot)
+    const snapshot = this.authoritative
     if (snapshot.status !== 'ready') {
       throw this.failure('UNAVAILABLE', { operation: 'export', phase: 'selection' }, 'shortcut settings are unavailable')
     }
@@ -252,16 +255,13 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
         'the active custom shortcut profile is unavailable',
       )
     }
-    return {
-      name: profile.name,
-      bindings: cloneJson(profile.bindings),
-    }
+    return { name: profile.name, bindings: cloneJson(profile.bindings) }
   }
 
   setActiveProfile(id: string): Promise<void> {
     return this.enqueue('select', async generation => {
       const context = { operation: 'select', phase: 'selection', profileId: id } as const
-      this.prepareWritable(context)
+      const snapshot = this.prepareWritable(context)
       if (this.registry.get(id) === undefined) {
         throw this.failure('PROFILE_MISSING', context, `unknown shortcut profile: ${id}`)
       }
@@ -269,7 +269,7 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
         this.publishSuccess(generation)
         return
       }
-      const readBack = await this.writeAndRead('activeProfile', id, context)
+      const readBack = await this.write('activeProfile', id, snapshot.revision, context)
       if (readBack === undefined) return
       if (!this.activePredicate(readBack, id)) {
         throw this.failure('NOT_APPLIED', context, `active shortcut profile was not changed to "${id}"`)
@@ -288,14 +288,12 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
   dispose(): void {
     if (this.disposed) return
     this.disposed = true
+    this.pendingScopeChange = false
     this.disposeScope()
     this.listeners.clear()
   }
 
-  private enqueue<T>(
-    operation: ShortcutSettingsOperation,
-    task: (generation: number) => Promise<T>,
-  ): Promise<T> {
+  private enqueue<T>(operation: ShortcutSettingsOperation, task: (generation: number) => Promise<T>): Promise<T> {
     if (this.disposed) return Promise.resolve(undefined as T)
     const generation = ++this.operationGeneration
     const result = this.operationTail.then(async () => {
@@ -314,13 +312,12 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
     return result
   }
 
-  private prepareWritable(context: FailureContext): SettingsScopeSnapshot<ShortcutSettings> {
-    const snapshot = this.scope.getSnapshot()
-    this.rebuild(snapshot)
-    if (snapshot.status !== 'ready' || snapshot.writable !== true) {
+  private prepareWritable(context: FailureContext): ReadyShortcutSettingsSnapshot {
+    this.mergeMirror(false)
+    if (!isReadySnapshot(this.authoritative) || this.authoritative.writable !== true || this.recoveryRevision !== undefined) {
       throw this.failure('UNAVAILABLE', context, 'shortcut settings are unavailable')
     }
-    return snapshot
+    return this.authoritative
   }
 
   private existingProfileIds(customProfiles: readonly PersistedCustomShortcutProfile[]): ReadonlySet<string> {
@@ -329,20 +326,13 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
     return ids
   }
 
-  private createProfileId(
-    operation: 'create' | 'import',
-    existingIds: ReadonlySet<string>,
-  ): string {
+  private createProfileId(operation: 'create' | 'import', existingIds: ReadonlySet<string>): string {
     for (let attempt = 0; attempt < 8; attempt += 1) {
       let generated: string
       try {
         generated = this.options.createId()
       } catch (error) {
-        throw this.failure(
-          'ID_UNAVAILABLE',
-          { operation, phase: 'id' },
-          errorMessage(error),
-        )
+        throw this.failure('ID_UNAVAILABLE', { operation, phase: 'id' }, errorMessage(error))
       }
       if (typeof generated !== 'string' || generated.trim() === '') {
         throw this.failure('ID_UNAVAILABLE', { operation, phase: 'id' }, 'custom profile id generation is unavailable')
@@ -353,38 +343,63 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
     throw this.failure('ID_COLLISION', { operation, phase: 'id' }, 'could not allocate a unique custom profile id')
   }
 
-  private async selectAfterCreate(id: string, operation: 'create' | 'import'): Promise<void> {
+  private async selectAfterCreate(id: string, operation: 'create' | 'import', expectedRevision: number): Promise<void> {
     const context = {
-      operation,
-      phase: 'selection',
-      profileId: id,
-      partial: 'profile-saved',
+      operation, phase: 'selection', profileId: id, partial: 'profile-saved',
     } as const
-    const readBack = await this.writeAndRead('activeProfile', id, context)
+    const readBack = await this.write('activeProfile', id, expectedRevision, context)
     if (readBack === undefined) return
     if (!this.activePredicate(readBack, id)) {
       throw this.failure('NOT_APPLIED', context, `saved custom profile "${id}" was not selected`)
     }
   }
 
-  private async writeAndRead(
-    field: string,
+  private async write(
+    field: 'customProfiles' | 'activeProfile',
     value: unknown,
+    expectedRevision: number,
     context: FailureContext,
-  ): Promise<SettingsScopeSnapshot<ShortcutSettings> | undefined> {
+  ): Promise<ReadyShortcutSettingsSnapshot | undefined> {
     this.writeInFlight = true
+    let result
     try {
-      await this.scope.set(field, cloneJson(value))
-    } catch (error) {
-      if (!this.disposed) this.rebuild(this.scope.getSnapshot())
-      throw this.failure('NOT_APPLIED', context, errorMessage(error))
+      result = await this.mutate({ field, value: cloneJson(value), expectedRevision })
     } finally {
       this.writeInFlight = false
     }
     if (this.disposed) return undefined
-    const snapshot = this.scope.getSnapshot()
-    this.rebuild(snapshot)
-    return snapshot
+    if (!result.ok) {
+      if (result.kind === 'conflict') {
+        this.recoveryRevision = result.actualRevision ?? expectedRevision + 1
+        this.recoveryRequiresNewer = false
+      } else if (result.kind === 'transport') {
+        this.recoveryRevision = this.authoritative.revision ?? expectedRevision
+        this.recoveryRequiresNewer = true
+      }
+      this.flushPendingScopeChange()
+      throw this.failure('NOT_APPLIED', context, result.message)
+    }
+    this.acceptMutationView(result.view)
+    this.flushPendingScopeChange()
+    if (!isReadySnapshot(this.authoritative)) return undefined
+    return this.authoritative
+  }
+
+  private acceptMutationView(view: ShortcutSettingsMutationView): void {
+    const currentRevision = this.authoritative.revision ?? -1
+    if (this.disposed || view.revision < currentRevision) return
+    this.authoritative = {
+      status: 'ready',
+      value: cloneJson(view.value) as ShortcutSettings,
+      base: cloneJson(view.base) as ShortcutSettings | undefined,
+      user: cloneJson(view.user) as ShortcutSettings | undefined,
+      revision: view.revision,
+      writable: this.scope.getSnapshot().writable,
+      mode: 'host',
+    }
+    this.recoveryRevision = undefined
+    this.recoveryRequiresNewer = false
+    this.rebuild(this.authoritative)
   }
 
   private activePredicate(snapshot: SettingsScopeSnapshot<ShortcutSettings>, id: string): boolean {
@@ -394,9 +409,47 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
   }
 
   private onScopeChanged(): void {
-    if (this.disposed || this.writeInFlight) return
-    this.rebuild(this.scope.getSnapshot())
-    this.notify()
+    if (this.disposed) return
+    if (this.writeInFlight) {
+      this.pendingScopeChange = true
+      return
+    }
+    this.mergeMirror(true)
+  }
+
+  private flushPendingScopeChange(): void {
+    if (this.disposed || !this.pendingScopeChange) return
+    this.pendingScopeChange = false
+    this.mergeMirror(false)
+    if (!this.disposed) this.notify()
+  }
+
+  private mergeMirror(notify: boolean): void {
+    const snapshot = this.scope.getSnapshot()
+    if (!isReadySnapshot(snapshot)) {
+      this.authoritative = cloneSnapshot(snapshot)
+      this.rebuild(this.authoritative)
+      if (notify) this.notify()
+      return
+    }
+    const currentRevision = this.authoritative.revision ?? -1
+    const catchesRecovery = this.recoveryRevision !== undefined && (
+      this.recoveryRequiresNewer
+        ? snapshot.revision > this.recoveryRevision
+        : snapshot.revision >= this.recoveryRevision
+    )
+    if (snapshot.revision > currentRevision || catchesRecovery) {
+      this.authoritative = cloneSnapshot(snapshot)
+      if (catchesRecovery) {
+        this.recoveryRevision = undefined
+        this.recoveryRequiresNewer = false
+      }
+      this.rebuild(this.authoritative)
+    } else if (snapshot.revision === currentRevision) {
+      this.authoritative = { ...this.authoritative, writable: snapshot.writable }
+      this.rebuild(this.authoritative)
+    }
+    if (notify) this.notify()
   }
 
   private rebuild(snapshot: SettingsScopeSnapshot<ShortcutSettings>): void {
@@ -439,11 +492,7 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
     if (snapshot.status !== 'ready') return []
     const value = snapshot.value
     if (value?.customProfiles !== undefined) {
-      try {
-        return normalizeCustomProfiles(value.customProfiles)
-      } catch {
-        return []
-      }
+      try { return normalizeCustomProfiles(value.customProfiles) } catch { return [] }
     }
     const standard = this.registry.get(DEFAULT_SHORTCUT_PROFILE_ID)
     try {
@@ -472,24 +521,26 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
     this.notify()
   }
 
-  private failure(
-    code: ShortcutSettingsErrorCode,
-    context: FailureContext,
-    message: string,
-  ): ShortcutSettingsOperationError {
+  private failure(code: ShortcutSettingsErrorCode, context: FailureContext, message: string): ShortcutSettingsOperationError {
     return new ShortcutSettingsOperationError(
-      code,
-      context.operation,
-      context.phase,
-      message,
-      context.profileId,
-      context.partial,
+      code, context.operation, context.phase, message, context.profileId, context.partial,
     )
   }
 
   private notify(): void {
     for (const listener of [...this.listeners]) listener()
   }
+}
+
+interface ReadyShortcutSettingsSnapshot extends SettingsScopeSnapshot<ShortcutSettings> {
+  readonly status: 'ready'
+  readonly revision: number
+}
+
+function isReadySnapshot(
+  snapshot: SettingsScopeSnapshot<ShortcutSettings>,
+): snapshot is ReadyShortcutSettingsSnapshot {
+  return snapshot.status === 'ready' && typeof snapshot.revision === 'number'
 }
 
 function managedBuiltin(profile: ReturnType<ShortcutProfileRegistry['active']>): ManagedShortcutProfile {
@@ -502,13 +553,20 @@ function managedBuiltin(profile: ReturnType<ShortcutProfileRegistry['active']>):
 }
 
 function defaultPhase(operation: ShortcutSettingsOperation): ShortcutSettingsFailure['phase'] {
-  if (operation === 'select') return 'selection'
-  if (operation === 'create' || operation === 'import') return 'collection'
-  return 'collection'
+  return operation === 'select' ? 'selection' : 'collection'
 }
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
+}
+
+function cloneSnapshot(snapshot: SettingsScopeSnapshot<ShortcutSettings>): SettingsScopeSnapshot<ShortcutSettings> {
+  return {
+    ...snapshot,
+    value: cloneJson(snapshot.value),
+    base: cloneJson(snapshot.base),
+    user: cloneJson(snapshot.user),
+  }
 }
 
 function cloneJson<T>(value: T): T {
@@ -522,7 +580,8 @@ function cloneJson<T>(value: T): T {
 export function createShortcutSettingsController(
   scope: SettingsScope<ShortcutSettings>,
   registry: ShortcutProfileRegistry,
+  mutate: MutateShortcutSettings,
   options: ShortcutSettingsControllerOptions,
 ): ShortcutSettingsController {
-  return new ShortcutSettingsController(scope, registry, options)
+  return new ShortcutSettingsController(scope, registry, mutate, options)
 }

@@ -1,3 +1,4 @@
+import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 import type { SettingsScope, SessionId } from '@deepseek-ai/dsh-client-runtime/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
@@ -8,7 +9,7 @@ import { createBuiltinProfileRegistry } from './profiles/registry.js'
 import { selectShortcut } from './contract/slots.js'
 import { ShortcutComposer } from './components/ShortcutComposer.js'
 import { createShortcutSettingsController } from './settings/controller.js'
-import type { ShortcutSettingsFace } from './contract/settings.js'
+import type { MutateShortcutSettings, ShortcutSettingsFace } from './contract/settings.js'
 import { NS, en, zh } from './locales.js'
 import type { ShortcutSettings } from '../settings.js'
 import { SHORTCUTS_SETTINGS_NAMESPACE } from '../settings-namespace.js'
@@ -20,14 +21,43 @@ import { createGlobalKeyboardRouter } from './keyboard/router.js'
 import { expandCollapsedWorkspace } from './actions/workspace-expansion.js'
 
 /** Required browser services. */
-export const inject = ['slots', 'locale', 'settingsScope', 'sessions'] as const
+export const inject = ['slots', 'locale', 'settingsScope', 'sessions', 'connection'] as const
 
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-shortcuts: dictionaries')
   const t = ctx.locale.bind(NS)
   const registry = createBuiltinProfileRegistry()
   const scope = ctx.settingsScope.bind<ShortcutSettings>({ namespace: SHORTCUTS_SETTINGS_NAMESPACE }) as SettingsScope<ShortcutSettings>
-  const controller = createShortcutSettingsController(scope, registry, {
+  const connection = ctx.get('connection') as ConnectionHandle
+  const mutate: MutateShortcutSettings = async ({ field, value, expectedRevision }) => {
+    try {
+      const response = await connection.api.settings.mutate({
+        ns: SHORTCUTS_SETTINGS_NAMESPACE,
+        ops: [{ op: 'set', path: [field], value }],
+        expectedRevision,
+      })
+      if (!response.result.ok) {
+        const error = response.result.error
+        return {
+          ok: false,
+          kind: error.code === 'settings-conflict' ? 'conflict' : 'rejected',
+          message: error.message,
+        }
+      }
+      const view = response.result.value
+      return {
+        ok: true,
+        view: { value: view.value, base: view.base, user: view.user, revision: view.revision },
+      }
+    } catch (error) {
+      return {
+        ok: false,
+        kind: 'transport',
+        message: error instanceof Error ? error.message : String(error),
+      }
+    }
+  }
+  const controller = createShortcutSettingsController(scope, registry, mutate, {
     createId: () => window.crypto.randomUUID(),
     legacyName: () => t('profile.custom.label'),
   })

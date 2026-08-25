@@ -14,6 +14,7 @@ import type {
   ShortcutSettingsFailure,
 } from '../src/client/contract/settings.js'
 import type { ShortcutProfile } from '../src/client/contract/profile.js'
+import type { MutateShortcutSettings } from '../src/client/contract/settings.js'
 import type { SettingsScope, SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-runtime/client'
 import { customProfileFingerprint } from '../src/custom-profile-contract.js'
 
@@ -23,23 +24,33 @@ const customBindings = [{
   key: { key: 's', modifiers: ['Meta'] as const },
 }]
 
-function controllerScope(initial: { activeProfile: string; customBindings?: typeof customBindings }, fail = false): SettingsScope<import('../src/settings.js').ShortcutSettings> {
+function controllerScope(initial: { activeProfile: string; customBindings?: typeof customBindings }, fail = false): {
+  scope: SettingsScope<import('../src/settings.js').ShortcutSettings>
+  mutate: MutateShortcutSettings
+} {
   let snapshot: SettingsScopeSnapshot<import('../src/settings.js').ShortcutSettings> = {
     status: 'ready', value: {
       customBindings: initial.customBindings ?? standardProfile.bindings,
       activeProfile: initial.activeProfile,
     },
-    base: undefined, user: undefined, revision: 0, writable: true, mode: 'host',
+    base: undefined, user: undefined, revision: 1, writable: true, mode: 'host',
   }
-  return {
+  const scope: SettingsScope<import('../src/settings.js').ShortcutSettings> = {
     getSnapshot: () => snapshot,
     subscribe: () => () => {},
-    set: vi.fn(async (field: string, value: unknown) => {
-      if (fail) throw new Error('permission denied')
-      snapshot = { ...snapshot, value: { ...snapshot.value!, [field]: value } }
-    }),
+    set: vi.fn(async () => { throw new Error('controller must use CAS mutation port') }),
     unset: vi.fn(async () => {}),
   }
+  const mutate: MutateShortcutSettings = vi.fn(async request => {
+    if (fail) return { ok: false, kind: 'rejected', message: 'permission denied' }
+    const value = { ...snapshot.value!, [request.field]: structuredClone(request.value) }
+    snapshot = { ...snapshot, value, revision: snapshot.revision + 1 }
+    return {
+      ok: true,
+      view: { value: structuredClone(value), base: undefined, user: structuredClone(value), revision: snapshot.revision },
+    }
+  })
+  return { scope, mutate }
 }
 
 const controllerOptions = {
@@ -155,7 +166,7 @@ describe('shortcut settings controller custom profile', () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     const scope = controllerScope({ activeProfile: 'standard', customBindings })
     const { createShortcutSettingsController } = await import('../src/client/settings/controller.js')
-    const controller = createShortcutSettingsController(scope, registry, controllerOptions)
+    const controller = createShortcutSettingsController(scope.scope, registry, scope.mutate, controllerOptions)
 
     expect(legacyProfile(controller).bindings).toEqual(customBindings)
     expect(registry.get('custom')?.bindings).toEqual(customBindings)
@@ -169,7 +180,7 @@ describe('shortcut settings controller custom profile', () => {
       customBindings: [{ command: 'openSettings', scope: 'global', sequence: [] }] as never,
     })
     const { createShortcutSettingsController } = await import('../src/client/settings/controller.js')
-    const controller = createShortcutSettingsController(scope, registry, controllerOptions)
+    const controller = createShortcutSettingsController(scope.scope, registry, scope.mutate, controllerOptions)
 
     expect(legacyProfile(controller).bindings).toEqual(standardProfile.bindings)
     expect(registry.get('custom')?.bindings).toEqual(standardProfile.bindings)
@@ -182,14 +193,14 @@ describe('shortcut settings controller custom profile', () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     const scope = controllerScope({ activeProfile: 'standard' })
     const { createShortcutSettingsController } = await import('../src/client/settings/controller.js')
-    const controller = createShortcutSettingsController(scope, registry, controllerOptions)
+    const controller = createShortcutSettingsController(scope.scope, registry, scope.mutate, controllerOptions)
 
     expect(legacyProfile(controller).bindings).toEqual(standardProfile.bindings)
     await saveLegacyProfile(controller, customBindings)
     expect(legacyProfile(controller).bindings).toEqual(customBindings)
     expect(registry.get('custom')?.bindings).toEqual(customBindings)
-    expect(scope.set).toHaveBeenCalledWith('customProfiles', expect.any(Array))
-    expect((scope.set.mock.calls[0]?.[1] as unknown[])[0]).not.toBe(customBindings)
+    expect(scope.mutate).toHaveBeenCalledWith(expect.objectContaining({ field: 'customProfiles', value: expect.any(Array) }))
+    expect((vi.mocked(scope.mutate).mock.calls[0]?.[0].value as unknown[])[0]).not.toBe(customBindings)
     controller.dispose()
   })
 
@@ -237,11 +248,20 @@ describe('shortcut settings controller custom profile', () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     const scope = controllerScope({ activeProfile: 'standard' })
     const resolvers: Array<() => void> = []
-    vi.mocked(scope.set).mockImplementation(async () => {
+    vi.mocked(scope.mutate).mockImplementation(async request => {
       await new Promise<void>(resolve => { resolvers.push(resolve) })
+      return {
+        ok: true,
+        view: {
+          value: { ...scope.scope.getSnapshot().value!, [request.field]: structuredClone(request.value) },
+          base: undefined,
+          user: undefined,
+          revision: request.expectedRevision + 1,
+        },
+      }
     })
     const { createShortcutSettingsController } = await import('../src/client/settings/controller.js')
-    const controller = createShortcutSettingsController(scope, registry, controllerOptions)
+    const controller = createShortcutSettingsController(scope.scope, registry, scope.mutate, controllerOptions)
     const baseline = legacyProfile(controller)
     const first = controller.saveCustomProfile(
       baseline.id,
@@ -263,15 +283,15 @@ describe('shortcut settings controller custom profile', () => {
     expect(resolvers).toHaveLength(0)
     await expect(first).resolves.toBeUndefined()
     await expect(second).resolves.toBeUndefined()
-    expect(scope.set).toHaveBeenCalledTimes(1)
-    expect((scope.set.mock.calls[0]?.[1] as Array<{ bindings: Array<{ command: string }> }>)[0]?.bindings[0]?.command).toBe('openSettings')
+    expect(scope.mutate).toHaveBeenCalledTimes(1)
+    expect((vi.mocked(scope.mutate).mock.calls[0]?.[0].value as Array<{ bindings: Array<{ command: string }> }>)[0]?.bindings[0]?.command).toBe('openSettings')
   })
 
   it('keeps the active profile and old custom bindings when persistence fails', async () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     const scope = controllerScope({ activeProfile: 'vim', customBindings }, true)
     const { createShortcutSettingsController } = await import('../src/client/settings/controller.js')
-    const controller = createShortcutSettingsController(scope, registry, controllerOptions)
+    const controller = createShortcutSettingsController(scope.scope, registry, scope.mutate, controllerOptions)
 
     expect(controller.activeProfileId()).toBe('vim')
     await expect(saveLegacyProfile(controller, standardProfile.bindings)).rejects.toThrow('permission denied')
@@ -285,7 +305,7 @@ describe('shortcut settings controller custom profile', () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     const scope = controllerScope({ activeProfile: 'standard' })
     const { createShortcutSettingsController } = await import('../src/client/settings/controller.js')
-    const controller = createShortcutSettingsController(scope, registry, controllerOptions)
+    const controller = createShortcutSettingsController(scope.scope, registry, scope.mutate, controllerOptions)
     const submitted = [{
       command: 'openSettings' as const,
       scope: 'global' as const,
@@ -306,14 +326,14 @@ describe('shortcut settings controller custom profile', () => {
   it('publishes only the latest state after serialized generations', async () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     const scope = controllerScope({ activeProfile: 'standard' })
-    const persist = vi.mocked(scope.set).getMockImplementation()!
+    const persist = vi.mocked(scope.mutate).getMockImplementation()!
     const resolvers: Array<() => void> = []
-    vi.mocked(scope.set).mockImplementation(async (field: string, value: unknown) => {
+    vi.mocked(scope.mutate).mockImplementation(async request => {
       await new Promise<void>(resolve => { resolvers.push(resolve) })
-      await persist(field, value)
+      return persist(request)
     })
     const { createShortcutSettingsController } = await import('../src/client/settings/controller.js')
-    const controller = createShortcutSettingsController(scope, registry, controllerOptions)
+    const controller = createShortcutSettingsController(scope.scope, registry, scope.mutate, controllerOptions)
     const listener = vi.fn()
     controller.subscribe(listener)
 
@@ -590,7 +610,7 @@ describe('shortcut settings card', () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     const scope = controllerScope({ activeProfile: 'standard' })
     const { createShortcutSettingsController } = await import('../src/client/settings/controller.js')
-    const controller = createShortcutSettingsController(scope, registry, controllerOptions)
+    const controller = createShortcutSettingsController(scope.scope, registry, scope.mutate, controllerOptions)
 
     render(<ShortcutProfileCard settings={controller} profiles={registry.list()} availableGlobalActions={[]} platform="linux" t={t} />)
     openCard()
@@ -603,8 +623,8 @@ describe('shortcut settings card', () => {
     fireEvent.keyDown(record!, { key: 'x', ctrlKey: true })
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
-    await waitFor(() => expect(scope.set).toHaveBeenCalledWith('customProfiles', expect.any(Array)))
-    const savedProfiles = vi.mocked(scope.set).mock.calls.find(call => call[0] === 'customProfiles')?.[1] as Array<{ name?: string }>
+    await waitFor(() => expect(scope.mutate).toHaveBeenCalledWith(expect.objectContaining({ field: 'customProfiles', value: expect.any(Array) })))
+    const savedProfiles = vi.mocked(scope.mutate).mock.calls.find(call => call[0].field === 'customProfiles')?.[0].value as Array<{ name?: string }>
     expect(savedProfiles[0]?.name).toBeUndefined()
     expect(screen.queryByText('Could not save custom shortcuts: Cannot read properties of undefined (reading \'disposed\')')).toBeNull()
     controller.dispose()

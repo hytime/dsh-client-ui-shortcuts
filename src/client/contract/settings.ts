@@ -31,6 +31,32 @@ export interface ManagedShortcutProfile extends ShortcutProfile {
   readonly fingerprint: string
 }
 
+export interface ShortcutSettingsMutation {
+  readonly field: 'customProfiles' | 'activeProfile'
+  readonly value: unknown
+  readonly expectedRevision: number
+}
+
+export interface ShortcutSettingsMutationView {
+  readonly value: unknown
+  readonly base?: unknown
+  readonly user?: unknown
+  readonly revision: number
+}
+
+export type ShortcutSettingsMutationResult =
+  | { readonly ok: true; readonly view: ShortcutSettingsMutationView }
+  | {
+    readonly ok: false
+    readonly kind: 'conflict' | 'rejected' | 'transport'
+    readonly message: string
+    readonly actualRevision?: number
+  }
+
+export type MutateShortcutSettings = (
+  request: ShortcutSettingsMutation,
+) => Promise<ShortcutSettingsMutationResult>
+
 export interface ShortcutSettingsFace {
   writable(): boolean
   profiles(): readonly ManagedShortcutProfile[]

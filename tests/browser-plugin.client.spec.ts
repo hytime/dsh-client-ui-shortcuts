@@ -80,30 +80,22 @@ function makeScope(value: ShortcutSettings = {
   customProfiles: [],
   customBindings: [...defaultShortcutBindings()],
 }) {
-  let snapshot = {
+  const snapshot = {
     status: 'ready' as const,
     value,
     base: undefined,
     user: undefined,
-    revision: 0,
+    revision: 1,
     writable: true,
     mode: 'host' as const,
   }
-  const listeners = new Set<() => void>()
   const scope: SettingsScope<ShortcutSettings> = {
     getSnapshot: () => snapshot,
-    subscribe: listener => { listeners.add(listener); return () => listeners.delete(listener) },
-    set: vi.fn(async (field: string, next: unknown) => {
-      snapshot = {
-        ...snapshot,
-        revision: snapshot.revision + 1,
-        value: { ...snapshot.value, [field]: structuredClone(next) },
-      }
-      for (const listener of listeners) listener()
-    }),
+    subscribe: () => () => {},
+    set: vi.fn(async () => { throw new Error('controller must use connection mutation') }),
     unset: vi.fn(async () => {}),
   }
-  return { scope, setSnapshot: (next: ShortcutSettings) => { snapshot = { ...snapshot, value: next } } }
+  return { scope }
 }
 
 async function bench() {
@@ -121,6 +113,29 @@ async function bench() {
   ctx.provide('locale', locale)
   const settings = makeScope()
   ctx.provide('settingsScope', { bind: vi.fn(() => settings.scope) })
+  let hostValue = structuredClone(settings.scope.getSnapshot().value!)
+  let hostRevision = settings.scope.getSnapshot().revision
+  const mutate = vi.fn(async (request: {
+    ns: string
+    ops: readonly [{ op: 'set'; path: readonly [keyof ShortcutSettings]; value: unknown }]
+    expectedRevision: number
+  }) => {
+    const operation = request.ops[0]
+    hostValue = { ...hostValue, [operation.path[0]]: structuredClone(operation.value) }
+    hostRevision += 1
+    return {
+      result: {
+        ok: true as const,
+        value: {
+          value: structuredClone(hostValue),
+          base: undefined,
+          user: structuredClone(hostValue),
+          revision: hostRevision,
+        },
+      },
+    }
+  })
+  ctx.provide('connection', { api: { settings: { mutate } } })
   ctx.provide('sessions', {
     scope: vi.fn(() => undefined),
     list: { getSnapshot: () => ({ items: [{ sessionId: 's1' }], current: 's1' }) },
@@ -131,12 +146,12 @@ async function bench() {
   ctx.provide('theme', { getTheme: () => ({ preference: 'light' }), setTheme: vi.fn() })
   const feature = ctx.plugin({ inject: [...inject], apply })
   await feature.await()
-  return { ctx, feature, slots, locale, settings }
+  return { ctx, feature, slots, locale, settings, mutate }
 }
 
 describe('shortcut client slot wiring', () => {
   it('declares its client services', () => {
-    expect(inject).toEqual(['slots', 'locale', 'settingsScope', 'sessions'])
+    expect(inject).toEqual(['slots', 'locale', 'settingsScope', 'sessions', 'connection'])
   })
 
   it('registers locale, composer selector and keyed settings card', async () => {
@@ -191,7 +206,11 @@ describe('shortcut client slot wiring', () => {
     const off = face.subscribe(listener)
     await face.setActiveProfile('vim')
     expect(face.activeProfileId()).toBe('vim')
-    expect(b.settings.scope.set).toHaveBeenCalledWith('activeProfile', 'vim')
+    expect(b.mutate).toHaveBeenCalledWith({
+      ns: 'dsh-ui-shortcuts',
+      ops: [{ op: 'set', path: ['activeProfile'], value: 'vim' }],
+      expectedRevision: 1,
+    })
     expect(listener).toHaveBeenCalled()
     await expect(face.setActiveProfile('missing')).rejects.toThrow('unknown shortcut profile: missing')
     expect(face.error()).toMatchObject({
@@ -205,6 +224,7 @@ describe('shortcut client slot wiring', () => {
     expect(b.slots.entries('conversation.composer')).toHaveLength(0)
     expect(b.slots.entries('settings.plugin.item')).toHaveLength(0)
     expect(b.locale.bind('dsh-shortcuts')('profile.standard.label')).toBe('profile.standard.label')
-    expect(b.settings.scope.set).toHaveBeenCalledTimes(1)
+    expect(b.mutate).toHaveBeenCalledTimes(1)
+    expect(b.settings.scope.set).not.toHaveBeenCalled()
   })
 })
