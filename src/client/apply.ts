@@ -101,6 +101,6 @@ export function apply(ctx: ClientContext): void {
   }, ShortcutComposer)), 'dsh-shortcuts: composer slot')
   ctx.effect(() => ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
     name: 'settings.plugin.item', key: SHORTCUTS_SETTINGS_NAMESPACE, locale: NS,
-    inject: (): { settings: ShortcutSettingsFace; profiles: readonly ShortcutProfile[]; availableGlobalActions: readonly string[]; platform: ReturnType<typeof detectShortcutPlatform>; t: (key: string) => string } => ({ settings: controller, profiles: controller.profiles(), availableGlobalActions: Object.keys(getGlobalActions()) as GlobalShortcutCommand[], platform, t: (key: string) => t(key as never) }),
+    inject: (): { settings: ShortcutSettingsFace; availableGlobalActions: readonly string[]; platform: ReturnType<typeof detectShortcutPlatform>; t: (key: string) => string } => ({ settings: controller, availableGlobalActions: Object.keys(getGlobalActions()) as GlobalShortcutCommand[], platform, t: (key: string) => t(key as never) }),
   }, ShortcutProfileCard)), 'dsh-shortcuts: settings card slot')
 }

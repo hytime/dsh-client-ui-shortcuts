@@ -74,7 +74,7 @@ export function CustomProfileEditor({ profile, availableGlobalActions, platform,
     setBindings(profile.bindings)
     setBaseline(profile)
     setExternalProfile(undefined)
-  }, [dirty, profile])
+  }, [profile.fingerprint])
   useEffect(() => { onStateChange({ dirty, saving, externalChange }) }, [dirty, externalChange, onStateChange, saving])
 
   const reset = (next = baseline): void => {

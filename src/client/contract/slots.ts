@@ -29,7 +29,6 @@ export type ShortcutComposerProps = {
 /** Props consumed by the keyed settings plugin card. */
 export type ShortcutProfileCardProps = SettingsPluginItemOwnerProps & {
   readonly settings: ShortcutSettingsFace
-  readonly profiles: readonly ShortcutProfile[]
   readonly t: (key: string) => string
   readonly availableGlobalActions: readonly string[]
   readonly platform: ShortcutPlatform

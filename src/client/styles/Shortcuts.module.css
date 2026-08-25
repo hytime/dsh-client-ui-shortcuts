@@ -36,12 +36,25 @@
 .body { border-top: 1px solid var(--dsw-alias-border-l2); margin: 0 16px; padding: 16px 0 12px; }
 .profileSelectGroup { border: 0; min-width: 0; margin: 0; padding: 0; }
 .profileSelectGroup legend { margin: 0 0 8px; padding: 0; color: var(--dsw-alias-text-primary); font-size: 14px; font-weight: 600; line-height: 1.4; }
-.profileSelect { display: grid; grid-template-columns: minmax(0, 1fr) minmax(160px, 1fr) auto; gap: 12px; align-items: center; padding: 0 0 12px; border-bottom: 1px solid var(--dsw-alias-border-subtle); }
+.profileSelectRow { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: end; padding: 0 0 12px; border-bottom: 1px solid var(--dsw-alias-border-subtle); }
+.profileSelect { display: grid; grid-template-columns: minmax(100px, auto) minmax(160px, 1fr); gap: 12px; align-items: center; min-width: 0; }
 .profileSelect > span:first-child { color: var(--dsw-alias-text-secondary); }
 .profileSelect select { width: 100%; min-width: 0; border: 1px solid var(--dsw-alias-border-subtle); border-radius: 6px; padding: 8px 10px; background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-text-primary); font: inherit; }
 .profileSelect select:focus-visible { outline: 2px solid var(--dsw-alias-border-focus); outline-offset: 2px; }
 .profileSelect select:disabled { cursor: default; opacity: .6; }
 .profileSelect [role='status'] { color: var(--dsw-alias-text-secondary); font-size: 12px; white-space: nowrap; }
+.profileToolbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.iconButton { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; width: 32px; height: 32px; flex: 0 0 32px; padding: 0; border: 1px solid var(--dsw-alias-border-subtle); border-radius: 6px; background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-text-primary); cursor: pointer; }
+.iconButton:hover:not(:disabled) { border-color: var(--dsw-alias-border-focus); background: var(--dsw-alias-bg-module-platform); }
+.iconButton:focus-visible { outline: 2px solid var(--dsw-alias-border-focus); outline-offset: 2px; }
+.iconButton:disabled { cursor: default; opacity: .55; }
+.visuallyHidden { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; border: 0 !important; }
+.operationStatus { color: var(--dsw-alias-text-secondary); font-size: 12px; white-space: nowrap; align-self: center; }
+.operationReason { margin: 8px 0 0; color: var(--dsw-alias-text-secondary); font-size: 12px; }
+.deleteConfirm { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; padding: 8px 0; border-bottom: 1px solid var(--dsw-alias-border-subtle); }
+.deleteConfirm span { flex: 1 1 180px; color: var(--dsw-alias-text-secondary); }
+.deleteConfirm button { border: 1px solid var(--dsw-alias-border-subtle); border-radius: 6px; padding: 5px 8px; background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-text-primary); font: inherit; cursor: pointer; }
+.deleteConfirm button:last-child { color: var(--dsw-alias-text-danger); }
 .profile { display: flex; gap: 12px; align-items: center; padding: 12px; border: 1px solid var(--dsw-alias-border-subtle); cursor: pointer; }
 .profile:hover, .selected { border-color: var(--dsw-alias-border-focus); }
 .profile input { accent-color: var(--dsw-alias-action-primary); }
@@ -103,5 +116,5 @@
 .editorActions button:last-child { background: var(--dsw-alias-action-primary); color: var(--dsw-alias-text-on-primary); }
 .editorActions button:disabled { cursor: default; opacity: .55; }
 
-@media (max-width: 560px) { .body { padding: 16px 0 8px; } .profileSelect, .profileNameRow { grid-template-columns: 1fr; gap: 6px; } .profileSelect [role='status'] { white-space: normal; } .legendItem { grid-template-columns: 1fr; gap: 4px; } .legendKeys { justify-content: flex-start; } .editorRow { grid-template-columns: 1fr; } .recordButton { justify-self: start; } }
+@media (max-width: 560px) { .body { padding: 16px 0 8px; } .profileSelectRow, .profileSelect, .profileNameRow { grid-template-columns: 1fr; gap: 6px; } .profileToolbar { width: 100%; } .operationStatus { white-space: normal; } .legendItem { grid-template-columns: 1fr; gap: 4px; } .legendKeys { justify-content: flex-start; } .editorRow { grid-template-columns: 1fr; } .recordButton { justify-self: start; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; } }

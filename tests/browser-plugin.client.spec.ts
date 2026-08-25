@@ -196,11 +196,10 @@ describe('shortcut client slot wiring', () => {
     const card = b.slots.entries('settings.plugin.item')[0]!
     const injected = (card.options.inject as () => {
       settings: ShortcutSettingsFace
-      profiles: readonly unknown[]
       availableGlobalActions: readonly string[]
     })()
     const face = injected.settings
-    expect(injected.profiles.map(profile => (profile as { id: string }).id)).toEqual(['standard', 'vim'])
+    expect('profiles' in injected).toBe(false)
     expect(face.profiles().map(profile => profile.id)).toEqual(['standard', 'vim'])
     expect(injected.availableGlobalActions).toEqual(expect.arrayContaining(['startSession', 'forkSession', 'toggleTheme']))
     const off = face.subscribe(listener)
