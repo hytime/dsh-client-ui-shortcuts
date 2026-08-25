@@ -92,7 +92,7 @@ Global actions are registered only when DSH provides the required capability.
 
 `Standard` uses arrow keys, `Enter`, and `Escape` for question and approval interactions. `Vim` uses `j`/`k`, `Enter`, and `Escape`. These built-in profiles are read-only.
 
-Create multiple named Custom profiles and switch the active profile from the settings card. A new profile copies the Standard bindings; its name and bindings are saved together. Import always creates a new internal profile ID, while duplicate names receive a continuing numeric suffix such as `Name 1`, `Name 2`, and so on. Export is available only for the active, saved Custom profile and writes a single-profile JSON v1 document without the internal ID. Delete requires confirmation and returns to Standard before removing the active Custom profile. See the [installation guide](docs/installation.md) for the JSON format and limits.
+Create multiple named Custom profiles and switch the active profile from the settings card. A new profile copies the current profile's bindings; its name and bindings are saved together. Import always creates a new internal profile ID, while duplicate names receive a continuing numeric suffix such as `Name 1`, `Name 2`, and so on. Export is available only for the active, saved Custom profile and writes a single-profile JSON v1 document without the internal ID. Delete requires confirmation and returns to Standard before removing the active Custom profile. See the [installation guide](docs/installation.md) for the JSON format and limits.
 
 Custom profiles can edit question, approval, and capability-backed global bindings, including explicit modifiers, alternatives, and two-stroke chords.
 

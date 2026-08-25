@@ -92,7 +92,7 @@ Vim profile 会将两个聚焦绑定替换为 `k` 和 `j`；确认和取消仍�
 
 `Standard` 使用方向键、`Enter` 和 `Escape` 处理 Question 与 Approval 交互。`Vim` 使用 `j`/`k`、`Enter` 和 `Escape`。这两个内置 profile 均为只读。
 
-可在设置卡片中创建多个命名 Custom profile，并切换当前 active profile。新建方案会复制 Standard binding，名称与 binding 在一次操作中保存。每次导入都会创建新的内部 profile ID；重名时会使用连续数字后缀，例如 `Name 1`、`Name 2`。只有当前 active 且已保存的 Custom profile 可以导出，生成不含内部 ID 的单方案 JSON v1 文档。删除操作需要确认；删除 active Custom profile 前会先切回 Standard。JSON 格式与限制见[安装指南](docs/installation.zh.md)。
+可在设置卡片中创建多个命名 Custom profile，并切换当前 active profile。新建方案会复制当前 profile 的 binding，名称与 binding 在一次操作中保存。每次导入都会创建新的内部 profile ID；重名时会使用连续数字后缀，例如 `Name 1`、`Name 2`。只有当前 active 且已保存的 Custom profile 可以导出，生成不含内部 ID 的单方案 JSON v1 文档。删除操作需要确认；删除 active Custom profile 前会先切回 Standard。JSON 格式与限制见[安装指南](docs/installation.zh.md)。
 
 Custom profile 可以编辑 Question、Approval 以及由 capability 支持的全局 binding，包括显式修饰键、候选绑定和两段 chord。
 

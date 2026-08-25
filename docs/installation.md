@@ -93,7 +93,7 @@ The shortcuts settings card is available under the composed settings plugin surf
 
 ## Manage named Custom profiles
 
-The settings card can create, import, export, and delete multiple named Custom profiles. New creates a profile with Standard bindings. Import accepts one profile per file and always allocates a new internal ID; importing the same name repeatedly appends continuing numeric suffixes such as `Name 1`, `Name 2`, and then `Name 3`. Delete requires confirmation, and deleting the active Custom profile first selects Standard.
+The settings card can create, import, export, and delete multiple named Custom profiles. New creates a profile with the current profile's bindings. Import accepts one profile per file and always allocates a new internal ID; importing the same name repeatedly appends continuing numeric suffixes such as `Name 1`, `Name 2`, and then `Name 3`. Delete requires confirmation, and deleting the active Custom profile first selects Standard.
 
 Custom profile files use the strict single-profile JSON v1 envelope below:
 

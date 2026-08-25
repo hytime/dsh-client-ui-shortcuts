@@ -28,6 +28,11 @@ class MemorySettings extends SettingsProvider {
     return Promise.resolve(structuredClone(this.doc))
   }
 
+  publishExternal(doc: Record<string, unknown>): void {
+    this.doc = structuredClone(doc)
+    this.publish(structuredClone(doc), 'provider')
+  }
+
   protected persist(ns: SettingsNamespace, section: Record<string, unknown>): Promise<void> {
     if (this.failures > 0) {
       this.failures -= 1
@@ -123,11 +128,37 @@ describe('shortcut Host settings', () => {
     const fiber = ctx.plugin({ apply })
     await fiber.await()
     await flushSettingsMigration()
-    expect(provider.persisted.at(-1)?.section).toMatchObject({
+    expect(provider.persisted).toHaveLength(1)
+    expect(provider.persisted[0]?.section).toMatchObject({
       activeProfile: 'custom',
       customProfiles: [{ id: 'custom', bindings: [validCustomBinding] }],
     })
+    await flushSettingsMigration()
+    expect(provider.persisted).toHaveLength(1)
     await fiber.dispose()
+  })
+
+  it('disposes the real provider migration watch with the plugin fiber', async () => {
+    const ctx = new Context()
+    const providerFiber = ctx.plugin(MemorySettings, { doc: {
+      [SHORTCUTS_SETTINGS_NAMESPACE]: {
+        activeProfile: 'standard', customBindings: [validCustomBinding], customProfiles: [],
+      },
+    } })
+    await providerFiber.await()
+    const provider = providerFiber.ctx.settings as unknown as MemorySettings
+    const fiber = ctx.plugin({ apply })
+    await fiber.await()
+    await fiber.dispose()
+
+    provider.publishExternal({
+      [SHORTCUTS_SETTINGS_NAMESPACE]: {
+        activeProfile: 'custom', customBindings: [validCustomBinding],
+      },
+    })
+    await flushSettingsMigration()
+
+    expect(provider.persisted).toHaveLength(0)
   })
 
   it('logs a failed startup migration and retries after a resolved change', async () => {

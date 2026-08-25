@@ -98,15 +98,21 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
         this.options.legacyName(),
         profiles.flatMap(profile => profile.name === undefined ? [] : [profile.name]),
       )
-      const standard = this.registry.get(DEFAULT_SHORTCUT_PROFILE_ID)
-      if (standard === undefined) {
+      const activeProfileId = snapshot.value?.activeProfile
+      if (typeof activeProfileId !== 'string') {
         throw this.failure('PROFILE_MISSING', {
-          operation: 'create', phase: 'collection', profileId: DEFAULT_SHORTCUT_PROFILE_ID,
-        }, 'Standard shortcut profile is unavailable')
+          operation: 'create', phase: 'collection',
+        }, 'active shortcut profile is unavailable')
+      }
+      const source = this.registry.get(activeProfileId)
+      if (source === undefined) {
+        throw this.failure('PROFILE_MISSING', {
+          operation: 'create', phase: 'collection', profileId: activeProfileId,
+        }, `active shortcut profile "${activeProfileId}" is unavailable`)
       }
       const next = normalizeCustomProfiles([
         ...profiles,
-        { id, name, bindings: standard.bindings as unknown as readonly PersistedShortcutBinding[] },
+        { id, name, bindings: source.bindings as unknown as readonly PersistedShortcutBinding[] },
       ])
       const expected = next.find(profile => profile.id === id)!
       const readBack = await this.write(
@@ -446,7 +452,7 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
       }
       this.rebuild(this.authoritative)
     } else if (snapshot.revision === currentRevision) {
-      this.authoritative = { ...this.authoritative, writable: snapshot.writable }
+      this.authoritative = cloneSnapshot(snapshot)
       this.rebuild(this.authoritative)
     }
     if (notify) this.notify()

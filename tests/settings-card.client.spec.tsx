@@ -78,7 +78,7 @@ const labels: Record<string, string> = {
   'settings.title': 'Shortcuts', 'settings.description': 'Choose controls.', 'settings.profile': 'Profile',
   'settings.expand': 'Expand', 'settings.collapse': 'Collapse',
   'settings.saving': 'Saving...', 'settings.error': 'Save failed: {message}', 'settings.conflict': 'Unavailable.',
-  'settings.currentProfile': 'Current profile',
+  'settings.currentProfile': 'Current profile', 'settings.profileActions': 'Profile actions',
   'settings.empty': 'No profiles.', 'settings.new': 'New profile', 'settings.upload': 'Import profile',
   'settings.download': 'Export profile', 'settings.delete': 'Delete profile', 'settings.fileInput': 'Choose custom profile JSON file',
   'settings.importSucceeded': 'Profile imported.', 'settings.importPartial': 'Profile imported but could not be selected.',
@@ -477,7 +477,9 @@ describe('shortcut settings card', () => {
     openCard()
 
     const create = screen.getByRole('button', { name: 'New profile' })
+    const toolbar = screen.getByRole('toolbar', { name: 'Profile actions' })
     const upload = screen.getByRole('button', { name: 'Import profile' })
+    expect(toolbar.contains(create)).toBe(true)
     expect(create.getAttribute('title')).toBe('New profile')
     expect(upload.getAttribute('title')).toBe('Import profile')
     expect(screen.queryByRole('button', { name: 'Export profile' })).toBeNull()
@@ -533,6 +535,31 @@ describe('shortcut settings card', () => {
     fireEvent.change(input, { target: { files: [new File(['{}'], 'bad.json')] } })
     await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('Could not import profile'))
     expect(settings.importCustomProfile).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['success', new File([encodeCustomProfileJson({ name: 'Imported', bindings: customBindings })], 'same.json'), undefined],
+    ['read failure', Object.assign(new File(['x'], 'same.json'), { text: vi.fn().mockRejectedValue(new Error('disk failed')) }), 'Could not read profile file'],
+    ['decode failure', new File(['{}'], 'same.json'), 'Could not import profile'],
+    ['controller failure', new File([encodeCustomProfileJson({ name: 'Imported', bindings: customBindings })], 'same.json'), 'Could not import profile'],
+  ])('allows the same file to be selected again after %s', async (scenario, file, expectedError) => {
+    const settings = settingsFace()
+    settings.importCustomProfile = scenario === 'controller failure'
+      ? vi.fn().mockRejectedValue(new Error('denied'))
+      : vi.fn(settings.importCustomProfile)
+    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+    openCard()
+    const input = screen.getByLabelText('Choose custom profile JSON file') as HTMLInputElement
+
+    fireEvent.change(input, { target: { files: [file] } })
+    if (expectedError === undefined) await waitFor(() => expect(screen.getByRole('status').textContent).toContain('Profile imported.'))
+    else await waitFor(() => expect(screen.getByRole('alert').textContent).toContain(expectedError))
+    expect(input.value).toBe('')
+
+    fireEvent.change(input, { target: { files: [file] } })
+    if (scenario === 'success') await waitFor(() => expect(settings.importCustomProfile).toHaveBeenCalledTimes(2))
+    else if (scenario === 'controller failure') await waitFor(() => expect(settings.importCustomProfile).toHaveBeenCalledTimes(2))
+    else await waitFor(() => expect(screen.getByRole('alert').textContent).toContain(expectedError!))
   })
 
   it('reports a saved import partial while preserving the newly emitted profile', async () => {

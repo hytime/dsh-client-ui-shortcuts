@@ -110,7 +110,7 @@ describe('custom profile contract', () => {
     expect(customProfileFilename('../')).toBe('custom-profile.dsh-shortcuts.json')
   })
 
-  it.each(['PRN', 'AUX', 'NUL', 'COM1', 'COM9', 'LPT1', 'LPT9'])('prefixes Windows reserved filename %s', (name) => {
+  it.each(['PRN', 'AUX', 'NUL', 'COM1', 'COM9', 'LPT1', 'LPT9', 'CON.txt', 'COM1.foo', 'lpt9.JSON'])('prefixes Windows reserved filename %s', (name) => {
     expect(customProfileFilename(name)).toBe(`custom-${name}.dsh-shortcuts.json`)
   })
 

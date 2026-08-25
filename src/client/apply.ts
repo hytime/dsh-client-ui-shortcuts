@@ -20,16 +20,10 @@ import { detectShortcutPlatform } from './keyboard/visuals.js'
 import { createGlobalKeyboardRouter } from './keyboard/router.js'
 import { expandCollapsedWorkspace } from './actions/workspace-expansion.js'
 
-/** Required browser services. */
-export const inject = ['slots', 'locale', 'settingsScope', 'sessions', 'connection'] as const
+type SettingsMutationConnection = Pick<ConnectionHandle, 'api'>
 
-export function apply(ctx: ClientContext): void {
-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-shortcuts: dictionaries')
-  const t = ctx.locale.bind(NS)
-  const registry = createBuiltinProfileRegistry()
-  const scope = ctx.settingsScope.bind<ShortcutSettings>({ namespace: SHORTCUTS_SETTINGS_NAMESPACE }) as SettingsScope<ShortcutSettings>
-  const connection = ctx.get('connection') as ConnectionHandle
-  const mutate: MutateShortcutSettings = async ({ field, value, expectedRevision }) => {
+export function createSettingsMutationAdapter(connection: SettingsMutationConnection): MutateShortcutSettings {
+  return async ({ field, value, expectedRevision }) => {
     try {
       const response = await connection.api.settings.mutate({
         ns: SHORTCUTS_SETTINGS_NAMESPACE,
@@ -38,10 +32,12 @@ export function apply(ctx: ClientContext): void {
       })
       if (!response.result.ok) {
         const error = response.result.error
+        const actualRevision = numericConflictRevision(error.details)
         return {
           ok: false,
           kind: error.code === 'settings-conflict' ? 'conflict' : 'rejected',
           message: error.message,
+          ...(actualRevision === undefined ? {} : { actualRevision }),
         }
       }
       const view = response.result.value
@@ -57,6 +53,24 @@ export function apply(ctx: ClientContext): void {
       }
     }
   }
+}
+
+function numericConflictRevision(details: unknown): number | undefined {
+  if (typeof details !== 'object' || details === null || Array.isArray(details)) return undefined
+  const actual = Reflect.get(details, 'actual')
+  return typeof actual === 'number' && Number.isFinite(actual) ? actual : undefined
+}
+
+/** Required browser services. */
+export const inject = ['slots', 'locale', 'settingsScope', 'sessions', 'connection'] as const
+
+export function apply(ctx: ClientContext): void {
+  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-shortcuts: dictionaries')
+  const t = ctx.locale.bind(NS)
+  const registry = createBuiltinProfileRegistry()
+  const scope = ctx.settingsScope.bind<ShortcutSettings>({ namespace: SHORTCUTS_SETTINGS_NAMESPACE }) as SettingsScope<ShortcutSettings>
+  const connection = ctx.get('connection') as ConnectionHandle
+  const mutate = createSettingsMutationAdapter(connection)
   const controller = createShortcutSettingsController(scope, registry, mutate, {
     createId: () => window.crypto.randomUUID(),
     legacyName: () => t('profile.custom.label'),

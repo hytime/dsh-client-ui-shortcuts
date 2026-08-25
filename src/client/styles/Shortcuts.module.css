@@ -53,7 +53,7 @@
 .operationReason { margin: 8px 0 0; color: var(--dsw-alias-text-secondary); font-size: 12px; }
 .deleteConfirm { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; padding: 8px 0; border-bottom: 1px solid var(--dsw-alias-border-subtle); }
 .deleteConfirm span { flex: 1 1 180px; color: var(--dsw-alias-text-secondary); }
-.deleteConfirm button { border: 1px solid var(--dsw-alias-border-subtle); border-radius: 6px; padding: 5px 8px; background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-text-primary); font: inherit; cursor: pointer; }
+.deleteConfirm button { min-width: 0; max-width: 100%; overflow-wrap: anywhere; border: 1px solid var(--dsw-alias-border-subtle); border-radius: 6px; padding: 5px 8px; background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-text-primary); font: inherit; cursor: pointer; }
 .deleteConfirm button:last-child { color: var(--dsw-alias-text-danger); }
 .profile { display: flex; gap: 12px; align-items: center; padding: 12px; border: 1px solid var(--dsw-alias-border-subtle); cursor: pointer; }
 .profile:hover, .selected { border-color: var(--dsw-alias-border-focus); }

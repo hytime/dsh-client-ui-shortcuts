@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { SettingsScope, SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-runtime/client'
 import { customProfileFingerprint } from '../src/custom-profile-contract.js'
 import { createBuiltinProfileRegistry } from '../src/client/profiles/registry.js'
-import { standardProfile } from '../src/client/profiles/builtins.js'
+import { standardProfile, vimProfile } from '../src/client/profiles/builtins.js'
 import { createShortcutSettingsController } from '../src/client/settings/controller.js'
 import { defaultShortcutBindings, type ShortcutSettings } from '../src/settings.js'
 import type {
@@ -90,6 +90,11 @@ function controlledSettings(initial: ShortcutSettings) {
       scopeSnapshot = { ...scopeSnapshot, value: structuredClone(value), revision }
       publish()
     },
+    publishSnapshot: (snapshot: SettingsScopeSnapshot<ShortcutSettings>) => {
+      scopeSnapshot = structuredClone(snapshot)
+      publish()
+    },
+    advanceHostRevision: (count: number) => { hostRevision += count },
     replace: (value: ShortcutSettings) => {
       hostValue = structuredClone(value)
       hostRevision += 1
@@ -155,6 +160,31 @@ describe('custom profile settings controller', () => {
     })
     expect(controller.isCustomProfile('custom-uuid-1')).toBe(true)
     expect(controller.writable()).toBe(true)
+  })
+
+  it('creates from the authoritative Vim and modified Custom profiles', async () => {
+    const custom = { id: 'custom-work', name: 'Work', bindings: [customBinding] }
+    const cases = [
+      { activeProfile: 'vim', customProfiles: [custom], expected: vimProfile.bindings },
+      { activeProfile: custom.id, customProfiles: [custom], expected: custom.bindings },
+    ]
+
+    for (const testCase of cases) {
+      const scope = controlledSettings(initialSettings(testCase))
+      const controller = controllerFor(scope)
+      await controller.createCustomProfile()
+      expect(scope.hostSnapshot().value.customProfiles?.at(-1)?.bindings).toEqual(testCase.expected)
+    }
+  })
+
+  it('fails create when the authoritative active profile is missing', async () => {
+    const scope = controlledSettings(initialSettings({ activeProfile: 'custom-missing' }))
+    const controller = controllerFor(scope)
+
+    await expect(caughtFailure(controller.createCustomProfile())).resolves.toMatchObject({
+      code: 'PROFILE_MISSING', operation: 'create', phase: 'collection', profileId: 'custom-missing',
+    })
+    expect(scope.mutate).not.toHaveBeenCalled()
   })
 
   it('creates from authoritative legacy profiles with declarative empty modifiers', async () => {
@@ -546,6 +576,38 @@ describe('custom profile settings controller', () => {
     scope.publishOlderMirror(1, initialSettings())
     expect(controller.activeProfileId()).toBe('custom-uuid-1')
     expect(controller.profiles().map(profile => profile.id)).toContain('custom-uuid-1')
+  })
+
+  it('keeps conflict recovery blocked until the mirror reaches the actual revision', async () => {
+    const scope = controlledSettings(initialSettings())
+    const controller = controllerFor(scope)
+    scope.advanceHostRevision(7)
+
+    await expect(caughtFailure(controller.setActiveProfile('vim'))).resolves.toMatchObject({ code: 'NOT_APPLIED' })
+    scope.publishOlderMirror(6, initialSettings())
+    await expect(caughtFailure(controller.setActiveProfile('vim'))).resolves.toMatchObject({ code: 'UNAVAILABLE' })
+    expect(scope.mutate).toHaveBeenCalledTimes(1)
+    scope.publishOlderMirror(8, initialSettings())
+    await controller.setActiveProfile('vim')
+    expect(scope.mutate).toHaveBeenCalledTimes(2)
+  })
+
+  it('adopts the complete same-revision mirror snapshot', () => {
+    const scope = controlledSettings(initialSettings())
+    const controller = controllerFor(scope)
+    const mirrored = initialSettings({
+      activeProfile: 'custom-work',
+      customProfiles: [{ id: 'custom-work', name: 'Work', bindings: [customBinding] }],
+    })
+
+    scope.publishSnapshot({
+      status: 'ready', value: mirrored, base: { ...mirrored, activeProfile: 'vim' },
+      user: { ...mirrored, activeProfile: 'custom-work' }, revision: 1, writable: false, mode: 'host',
+    })
+
+    expect(controller.activeProfileId()).toBe('custom-work')
+    expect(controller.profiles().map(profile => profile.id)).toContain('custom-work')
+    expect(controller.writable()).toBe(false)
   })
 
   it('rejects a stale full-array write without retry and recovers only after mirror catches up', async () => {

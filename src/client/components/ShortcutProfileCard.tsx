@@ -139,8 +139,17 @@ export function ShortcutProfileCard({ settings, availableGlobalActions, platform
     const currentRequest = ++requestId.current
     setOperation('import')
     setMessage(undefined)
+    let source: Awaited<ReturnType<typeof readCustomProfileFile>>
     try {
-      const source = await readCustomProfileFile(file)
+      source = await readCustomProfileFile(file)
+    } catch (reason) {
+      if (isCurrentRequest(currentRequest, face)) {
+        setMessage({ kind: 'alert', text: t('settings.fileError').replace('{message}', errorText(reason)) })
+      }
+      if (isCurrentRequest(currentRequest, face)) setOperation(undefined)
+      return
+    }
+    try {
       if (!isCurrentRequest(currentRequest, face)) return
       const profile = decodeCustomProfileJson(source.text, source.bytes)
       await face.importCustomProfile(profile)
@@ -155,7 +164,6 @@ export function ShortcutProfileCard({ settings, availableGlobalActions, platform
       }
     } finally {
       if (!isCurrentRequest(currentRequest, face)) return
-      if (fileInput.current !== null) fileInput.current.value = ''
       setSelection(face.activeProfileId())
       setOperation(undefined)
     }
@@ -200,12 +208,13 @@ export function ShortcutProfileCard({ settings, availableGlobalActions, platform
     }
   }
 
-  const toolbar = <div className={styles.profileToolbar} aria-label={t('settings.profileActions')}>
+  const toolbar = <div className={styles.profileToolbar} role="toolbar" aria-label={t('settings.profileActions')}>
     <IconButton name="plus" label={t('settings.new')} disabled={persistenceDisabled} onClick={() => void createProfile()} />
     <IconButton name="upload" label={t('settings.upload')} disabled={persistenceDisabled} onClick={() => fileInput.current?.click()} />
     <label htmlFor={fileInputId} className={styles.visuallyHidden}>{t('settings.fileInput')}</label>
     <input ref={fileInput} id={fileInputId} className={styles.visuallyHidden} type="file" accept="application/json,.json" disabled={persistenceDisabled} onChange={event => {
       const file = event.target.files?.[0]
+      event.target.value = ''
       if (file !== undefined) void importFile(file)
     }} />
     {currentCustom !== undefined ? <>

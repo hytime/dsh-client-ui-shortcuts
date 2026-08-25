@@ -93,7 +93,7 @@ dsh --profile web
 
 ## 管理命名 Custom profile
 
-可在设置卡片中创建、导入、导出和删除多个命名 Custom profile。New 会使用 Standard binding 创建方案。Import 每次只读取一个方案，并且始终分配新的内部 ID；重复导入同名方案会依次使用 `Name 1`、`Name 2`、`Name 3` 等连续数字后缀。Delete 需要确认；删除 active Custom profile 前会先切回 Standard。
+可在设置卡片中创建、导入、导出和删除多个命名 Custom profile。New 会使用当前 profile 的 binding 创建方案。Import 每次只读取一个方案，并且始终分配新的内部 ID；重复导入同名方案会依次使用 `Name 1`、`Name 2`、`Name 3` 等连续数字后缀。Delete 需要确认；删除 active Custom profile 前会先切回 Standard。
 
 Custom profile 文件使用以下严格的单方案 JSON v1 envelope：
 

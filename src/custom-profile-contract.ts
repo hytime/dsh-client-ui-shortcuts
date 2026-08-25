@@ -8,7 +8,7 @@ export const CUSTOM_PROFILE_NAME_MAX_CODE_POINTS = 64
 
 const CUSTOM_PROFILE_FILENAME_MAX_CODE_POINTS = 80
 const CUSTOM_PROFILE_FILENAME_SUFFIX = '.dsh-shortcuts.json'
-const WINDOWS_RESERVED_FILENAME = /^(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/i
+const WINDOWS_RESERVED_FILENAME = /^(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.|$)/i
 
 export interface PersistedCustomShortcutProfile {
   readonly id: string

@@ -207,6 +207,20 @@ describe('shortcut profile registry', () => {
     expect(registry.active().id).toBe('standard')
   })
 
+  it('emits exactly once when replacing the active custom profile triggers fallback', () => {
+    const workBinding = { command: 'openSettings' as const, scope: 'global' as const, key: stroke('s', { meta: true }) }
+    const registry = createBuiltinProfileRegistry()
+    registry.replaceCustomProfiles([{ id: 'custom-a', name: 'Work', bindings: [workBinding] }])
+    registry.setActive('custom-a')
+    const listener = vi.fn()
+    registry.subscribe(listener)
+
+    registry.replaceCustomProfiles([])
+
+    expect(registry.active().id).toBe('standard')
+    expect(listener).toHaveBeenCalledTimes(1)
+  })
+
   it('isolates custom profiles from caller mutation', () => {
     const profiles = [{
       id: 'custom-a',
