@@ -25,6 +25,6 @@ export function downloadCustomProfileJson(
     anchor.click()
   } finally {
     anchor.remove()
-    url.revokeObjectURL(objectUrl)
+    setTimeout(() => { url.revokeObjectURL(objectUrl) }, 0)
   }
 }

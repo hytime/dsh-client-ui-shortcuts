@@ -7,6 +7,7 @@ import {
 } from '../src/client/settings/custom-profile-files.js'
 
 afterEach(() => {
+  vi.useRealTimers()
   vi.restoreAllMocks()
   document.body.replaceChildren()
 })
@@ -24,7 +25,8 @@ describe('custom profile file adapter', () => {
     await expect(readCustomProfileFile({ size: 3, text: async () => { throw new Error('disk read failed') } })).rejects.toThrow('disk read failed')
   })
 
-  it('downloads utf-8 json with a revoked object url and cleaned anchor', () => {
+  it('keeps the object url alive through click and revokes it in the next task', () => {
+    vi.useFakeTimers()
     const createObjectURL = vi.fn(() => 'blob:profile')
     const revokeObjectURL = vi.fn()
     const url = { createObjectURL, revokeObjectURL }
@@ -32,6 +34,7 @@ describe('custom profile file adapter', () => {
       expect(this.download).toBe('Work.dsh-shortcuts.json')
       expect(this.href).toBe('blob:profile')
       expect(document.body.contains(this)).toBe(true)
+      expect(revokeObjectURL).not.toHaveBeenCalled()
     })
 
     downloadCustomProfileJson(document, url, 'Work.dsh-shortcuts.json', '{\n}\n')
@@ -40,7 +43,11 @@ describe('custom profile file adapter', () => {
     expect(blob.type).toBe('application/json')
     expect(blob.size).toBe(4)
     expect(click).toHaveBeenCalledOnce()
-    expect(revokeObjectURL).toHaveBeenCalledWith('blob:profile')
+    expect(revokeObjectURL).not.toHaveBeenCalled()
     expect(document.querySelector('a[download]')).toBeNull()
+
+    vi.runOnlyPendingTimers()
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:profile')
+    vi.useRealTimers()
   })
 })

@@ -45,6 +45,8 @@ export function ShortcutProfileCard({ settings, availableGlobalActions, platform
   const [editor, setEditor] = useState<EditorState>(idleEditor)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const requestId = useRef(0)
+  const mounted = useRef(false)
+  const currentSettings = useRef(settings)
   const pendingRef = useRef<string>()
   const fileInput = useRef<HTMLInputElement>(null)
   const id = useId()
@@ -68,64 +70,93 @@ export function ShortcutProfileCard({ settings, availableGlobalActions, platform
     return { id: saved.id, name: saved.persistedName ?? saved.displayName, bindings: saved.bindings, fingerprint: saved.fingerprint }
   }
 
-  useEffect(() => settings.subscribe(() => {
+  useEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
+      requestId.current += 1
+      pendingRef.current = undefined
+    }
+  }, [])
+  useEffect(() => {
+    currentSettings.current = settings
+    requestId.current += 1
+    pendingRef.current = undefined
     setSelection(settings.activeProfileId())
-    refresh(value => value + 1)
-  }), [settings])
+    setOperation(undefined)
+    setMessage(undefined)
+    setEditor(idleEditor)
+    setConfirmDelete(false)
+    return settings.subscribe(() => {
+      if (!mounted.current || currentSettings.current !== settings) return
+      setSelection(settings.activeProfileId())
+      refresh(value => value + 1)
+    })
+  }, [settings])
+  const isCurrentRequest = (request: number, face: ShortcutProfileCardProps['settings']): boolean => (
+    mounted.current && request === requestId.current && face === currentSettings.current
+  )
   const choose = async (profileId: string): Promise<void> => {
     if (busy || pendingRef.current !== undefined || profileId === settings.activeProfileId()) return
+    const face = settings
     const currentRequest = ++requestId.current
     pendingRef.current = profileId
     setSelection(profileId)
     setOperation('select')
     setMessage(undefined)
     try {
-      await settings.setActiveProfile(profileId)
+      await face.setActiveProfile(profileId)
     } catch (reason) {
-      if (currentRequest === requestId.current) setMessage({ kind: 'alert', text: t('settings.error').replace('{message}', errorText(reason)) })
+      if (isCurrentRequest(currentRequest, face)) setMessage({ kind: 'alert', text: t('settings.error').replace('{message}', errorText(reason)) })
     } finally {
-      if (currentRequest !== requestId.current) return
+      if (!isCurrentRequest(currentRequest, face)) return
       pendingRef.current = undefined
       setOperation(undefined)
-      setSelection(settings.activeProfileId())
+      setSelection(face.activeProfileId())
     }
   }
 
   const createProfile = async (): Promise<void> => {
     if (persistenceDisabled) return
+    const face = settings
+    const currentRequest = ++requestId.current
     setOperation('create')
     setMessage(undefined)
     try {
-      const profileId = await settings.createCustomProfile()
-      await settings.setActiveProfile(profileId)
+      await face.createCustomProfile()
     } catch (reason) {
-      setMessage({ kind: 'alert', text: t('settings.error').replace('{message}', errorText(reason)) })
+      if (isCurrentRequest(currentRequest, face)) setMessage({ kind: 'alert', text: t('settings.error').replace('{message}', errorText(reason)) })
     } finally {
-      setSelection(settings.activeProfileId())
+      if (!isCurrentRequest(currentRequest, face)) return
+      setSelection(face.activeProfileId())
       setOperation(undefined)
     }
   }
 
   const importFile = async (file: File): Promise<void> => {
     if (persistenceDisabled) return
+    const face = settings
+    const currentRequest = ++requestId.current
     setOperation('import')
     setMessage(undefined)
     try {
       const source = await readCustomProfileFile(file)
+      if (!isCurrentRequest(currentRequest, face)) return
       const profile = decodeCustomProfileJson(source.text, source.bytes)
-      const profileId = await settings.importCustomProfile(profile)
-      await settings.setActiveProfile(profileId)
-      setMessage({ kind: 'status', text: t('settings.importSucceeded') })
+      await face.importCustomProfile(profile)
+      if (isCurrentRequest(currentRequest, face)) setMessage({ kind: 'status', text: t('settings.importSucceeded') })
     } catch (reason) {
-      const failure = settings.error()
+      if (!isCurrentRequest(currentRequest, face)) return
+      const failure = face.error()
       if (failure?.operation === 'import' && failure.partial === 'profile-saved') {
         setMessage({ kind: 'status', text: t('settings.importPartial') })
       } else {
         setMessage({ kind: 'alert', text: t('settings.importError').replace('{message}', errorText(reason)) })
       }
     } finally {
+      if (!isCurrentRequest(currentRequest, face)) return
       if (fileInput.current !== null) fileInput.current.value = ''
-      setSelection(settings.activeProfileId())
+      setSelection(face.activeProfileId())
       setOperation(undefined)
     }
   }
@@ -144,21 +175,27 @@ export function ShortcutProfileCard({ settings, availableGlobalActions, platform
 
   const deleteProfile = async (): Promise<void> => {
     if (currentCustom === undefined || persistenceDisabled || editor.externalChange) return
+    const face = settings
+    const profileId = currentCustom.id
+    const currentRequest = ++requestId.current
     setOperation('delete')
     setMessage(undefined)
     try {
-      await settings.deleteCustomProfile(currentCustom.id)
+      await face.deleteCustomProfile(profileId)
+      if (!isCurrentRequest(currentRequest, face)) return
       setConfirmDelete(false)
       setMessage({ kind: 'status', text: t('settings.deleteSucceeded') })
     } catch (reason) {
-      const failure = settings.error()
+      if (!isCurrentRequest(currentRequest, face)) return
+      const failure = face.error()
       if (failure?.operation === 'delete' && failure.partial === 'selection-changed') {
         setMessage({ kind: 'status', text: t('settings.deletePartial') })
       } else {
         setMessage({ kind: 'alert', text: t('settings.deleteError').replace('{message}', errorText(reason)) })
       }
     } finally {
-      setSelection(settings.activeProfileId())
+      if (!isCurrentRequest(currentRequest, face)) return
+      setSelection(face.activeProfileId())
       setOperation(undefined)
     }
   }
@@ -208,7 +245,7 @@ export function ShortcutProfileCard({ settings, availableGlobalActions, platform
 
   const expandedLabel = t(open ? 'settings.collapse' : 'settings.expand')
   return <section className={clsx(styles.card, open && styles.cardOpen)} aria-labelledby={titleId}>
-    <button type="button" className={styles.header} aria-expanded={open} aria-controls={bodyId} aria-label={`${expandedLabel}: ${t('settings.title')}`} onClick={() => setOpen(value => !value)}>
+    <button type="button" className={styles.header} aria-expanded={open} aria-controls={bodyId} aria-label={`${expandedLabel}: ${t('settings.title')}`} disabled={busy} onClick={() => setOpen(value => !value)}>
       <ShortcutIcon name={registryProfiles.length === 0 ? 'settings-2' : 'keyboard'} size={20} />
       <span className={styles.headerText}>
         <span id={titleId} className={styles.title}>{t('settings.title')}</span>

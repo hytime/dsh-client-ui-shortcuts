@@ -25,7 +25,7 @@ const customBindings = [{
   key: { key: 's', modifiers: ['Meta'] as const },
 }]
 
-function controllerScope(initial: { activeProfile: string; customBindings?: typeof customBindings }, fail = false): {
+function controllerScope(initial: { activeProfile: string; customBindings?: typeof customBindings; customProfiles?: import('../src/custom-profile-contract.js').PersistedCustomShortcutProfile[] }, fail = false): {
   scope: SettingsScope<import('../src/settings.js').ShortcutSettings>
   mutate: MutateShortcutSettings
 } {
@@ -33,6 +33,7 @@ function controllerScope(initial: { activeProfile: string; customBindings?: type
     status: 'ready', value: {
       customBindings: initial.customBindings ?? standardProfile.bindings,
       activeProfile: initial.activeProfile,
+      ...(initial.customProfiles !== undefined ? { customProfiles: initial.customProfiles } : {}),
     },
     base: undefined, user: undefined, revision: 1, writable: true, mode: 'host',
   }
@@ -485,17 +486,28 @@ describe('shortcut settings card', () => {
     expect(file.accept).toBe('application/json,.json')
   })
 
-  it('creates a new profile and selects the controller-created id', async () => {
-    const settings = settingsFace()
-    settings.createCustomProfile = vi.fn(async () => 'custom-created')
-    settings.setActiveProfile = vi.fn(async id => { settings.setExternal(id) })
-    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+  it('creates and imports through the real controller without selecting twice', async () => {
+    const registry = createProfileRegistry([standardProfile, vimProfile])
+    const scope = controllerScope({ activeProfile: 'standard' })
+    let nextId = 0
+    const { createShortcutSettingsController } = await import('../src/client/settings/controller.js')
+    const controller = createShortcutSettingsController(scope.scope, registry, scope.mutate, {
+      createId: () => `test-${++nextId}`,
+      legacyName: () => 'Custom',
+    })
+    const setActiveProfile = vi.spyOn(controller, 'setActiveProfile')
+    render(<ShortcutProfileCard settings={controller} availableGlobalActions={[]} platform="linux" t={t} />)
     openCard()
 
     fireEvent.click(screen.getByRole('button', { name: 'New profile' }))
+    await waitFor(() => expect((screen.getByRole('combobox', { name: 'Profile' }) as HTMLSelectElement).value).toBe('custom-test-1'))
+    expect(setActiveProfile).not.toHaveBeenCalled()
 
-    await waitFor(() => expect(settings.createCustomProfile).toHaveBeenCalledOnce())
-    expect(settings.setActiveProfile).toHaveBeenCalledWith('custom-created')
+    const valid = new File([encodeCustomProfileJson({ name: 'Imported', bindings: customBindings })], 'profile.json', { type: 'application/json' })
+    fireEvent.change(screen.getByLabelText('Choose custom profile JSON file'), { target: { files: [valid] } })
+    await waitFor(() => expect((screen.getByRole('combobox', { name: 'Profile' }) as HTMLSelectElement).value).toBe('custom-test-2'))
+    expect(setActiveProfile).not.toHaveBeenCalled()
+    controller.dispose()
   })
 
   it('imports JSON through the strict codec and reports success without writing on invalid input', async () => {
@@ -515,7 +527,6 @@ describe('shortcut settings card', () => {
     fireEvent.change(input, { target: { files: [valid] } })
 
     await waitFor(() => expect(settings.importCustomProfile).toHaveBeenCalledWith({ name: 'Imported', bindings: customBindings }))
-    expect(settings.setActiveProfile).toHaveBeenCalledWith('custom-imported')
     expect(screen.getByText('Profile imported.').getAttribute('role')).toBe('status')
 
     settings.importCustomProfile = vi.fn()
@@ -604,6 +615,110 @@ describe('shortcut settings card', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Confirm delete' }))
     await waitFor(() => expect(screen.getByRole('status').textContent).toContain('Switched to Standard, but the profile was kept.'))
     expect(settings.deleteCustomProfile).toHaveBeenCalledTimes(2)
+  })
+
+  it('drops pending async results after unmount or settings replacement, including file reads', async () => {
+    let resolveCreate!: () => void
+    const oldSettings = settingsFace()
+    oldSettings.createCustomProfile = vi.fn(() => new Promise<string>(resolve => { resolveCreate = () => resolve('old-created') }))
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const mounted = render(<ShortcutProfileCard settings={oldSettings} availableGlobalActions={[]} platform="linux" t={t} />)
+    openCard()
+    fireEvent.click(screen.getByRole('button', { name: 'New profile' }))
+    mounted.unmount()
+    resolveCreate()
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(consoleError).not.toHaveBeenCalled()
+
+    let rejectSelection!: (reason: Error) => void
+    const first = settingsFace()
+    first.setActiveProfile = vi.fn(() => new Promise<void>((_resolve, reject) => { rejectSelection = reject }))
+    const second = settingsFace()
+    const replaced = render(<ShortcutProfileCard settings={first} availableGlobalActions={[]} platform="linux" t={t} />)
+    openCard()
+    fireEvent.change(screen.getByRole('combobox', { name: 'Profile' }), { target: { value: 'vim' } })
+    replaced.rerender(<ShortcutProfileCard settings={second} availableGlobalActions={[]} platform="linux" t={t} />)
+    rejectSelection(new Error('stale selection'))
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(screen.queryByText(/stale selection/)).toBeNull()
+    expect((screen.getByRole('combobox', { name: 'Profile' }) as HTMLSelectElement).value).toBe('standard')
+    replaced.unmount()
+
+    let resolveText!: (text: string) => void
+    const pendingFile = new File(['ignored'], 'profile.json')
+    Object.defineProperty(pendingFile, 'text', { value: () => new Promise<string>(resolve => { resolveText = resolve }) })
+    const fileSettings = settingsFace()
+    const readError = vi.spyOn(fileSettings, 'error')
+    const pendingRead = render(<ShortcutProfileCard settings={fileSettings} availableGlobalActions={[]} platform="linux" t={t} />)
+    openCard()
+    fireEvent.change(screen.getByLabelText('Choose custom profile JSON file'), { target: { files: [pendingFile] } })
+    const readsBeforeUnmount = readError.mock.calls.length
+    pendingRead.unmount()
+    resolveText('{}')
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(readError).toHaveBeenCalledTimes(readsBeforeUnmount)
+    expect(consoleError).not.toHaveBeenCalled()
+    consoleError.mockRestore()
+  })
+
+  it.each(['select', 'create', 'import', 'save', 'delete'] as const)('disables the disclosure header while %s is pending', async operation => {
+    const registry = createProfileRegistry([standardProfile, vimProfile])
+    registry.replaceCustomProfiles([{ id: 'custom', name: 'Work', bindings: customBindings }])
+    const settings = settingsFace(operation === 'save' || operation === 'delete' ? 'custom' : 'standard', registry.list())
+    let resolve!: () => void
+    const pending = () => new Promise<void>(done => { resolve = done })
+    if (operation === 'select') settings.setActiveProfile = vi.fn(pending)
+    if (operation === 'create') settings.createCustomProfile = vi.fn(async () => { await pending(); return 'custom-created' })
+    if (operation === 'import') settings.importCustomProfile = vi.fn(async () => { await pending(); return 'custom-imported' })
+    if (operation === 'save') settings.saveCustomProfile = vi.fn(async () => { await pending() })
+    if (operation === 'delete') settings.deleteCustomProfile = vi.fn(pending)
+    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+    openCard()
+
+    if (operation === 'select') fireEvent.change(screen.getByRole('combobox', { name: 'Profile' }), { target: { value: 'vim' } })
+    if (operation === 'create') fireEvent.click(screen.getByRole('button', { name: 'New profile' }))
+    if (operation === 'import') fireEvent.change(screen.getByLabelText('Choose custom profile JSON file'), { target: { files: [new File([encodeCustomProfileJson({ name: 'Imported', bindings: customBindings })], 'profile.json')] } })
+    if (operation === 'save') {
+      fireEvent.change(screen.getByRole('textbox', { name: 'Profile name' }), { target: { value: 'Draft' } })
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    }
+    if (operation === 'delete') {
+      fireEvent.click(screen.getByRole('button', { name: 'Delete profile' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Confirm delete' }))
+    }
+
+    await waitFor(() => expect((screen.getByRole('button', { name: 'Collapse: Shortcuts' }) as HTMLButtonElement).disabled).toBe(true))
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse: Shortcuts' }))
+    expect(screen.getByRole('combobox', { name: 'Profile' })).toBeTruthy()
+    resolve()
+    await waitFor(() => expect((screen.getByRole('button', { name: 'Collapse: Shortcuts' }) as HTMLButtonElement).disabled).toBe(false))
+  })
+
+  it('removes an active custom profile through the real controller without retaining its editor draft', async () => {
+    const registry = createProfileRegistry([standardProfile, vimProfile])
+    const scope = controllerScope({
+      activeProfile: 'custom-delete',
+      customProfiles: [{ id: 'custom-delete', name: 'Work', bindings: customBindings }],
+    })
+    const { createShortcutSettingsController } = await import('../src/client/settings/controller.js')
+    const controller = createShortcutSettingsController(scope.scope, registry, scope.mutate, controllerOptions)
+    render(<ShortcutProfileCard settings={controller} availableGlobalActions={[]} platform="linux" t={t} />)
+    openCard()
+    fireEvent.change(screen.getByRole('textbox', { name: 'Profile name' }), { target: { value: 'Detached draft' } })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete profile' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm delete' }))
+
+    await waitFor(() => expect((screen.getByRole('combobox', { name: 'Profile' }) as HTMLSelectElement).value).toBe('standard'))
+    expect(screen.queryByRole('option', { name: 'Work' })).toBeNull()
+    expect(screen.queryByRole('textbox', { name: 'Profile name' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Export profile' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Delete profile' })).toBeNull()
+    expect(screen.queryByDisplayValue('Detached draft')).toBeNull()
+    controller.dispose()
   })
 
   it('disables persistence while readonly but permits ready custom export', () => {
