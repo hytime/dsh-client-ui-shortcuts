@@ -157,6 +157,31 @@ describe('custom profile settings controller', () => {
     expect(controller.writable()).toBe(true)
   })
 
+  it('creates from authoritative legacy profiles with declarative empty modifiers', async () => {
+    const legacy = {
+      id: 'custom',
+      bindings: [{
+        command: 'focusPrevious' as const,
+        scope: 'question' as const,
+        key: { key: 'ArrowUp', modifiers: [] as const },
+      }],
+    }
+    const scope = controlledSettings(initialSettings({ customProfiles: [legacy] }))
+    const controller = controllerFor(scope)
+
+    await expect(controller.createCustomProfile()).resolves.toBe('custom-uuid-1')
+    expect(scope.hostSnapshot().value.customProfiles).toEqual([
+      legacy,
+      { id: 'custom-uuid-1', name: 'Custom', bindings: standardProfile.bindings },
+    ])
+    expect(controller.profiles().map(profile => profile.id)).toEqual([
+      'standard',
+      'vim',
+      'custom',
+      'custom-uuid-1',
+    ])
+  })
+
   it('projects legacy bindings as a nameless custom profile before Host migration arrives', () => {
     const scope = controlledSettings(initialSettings({
       activeProfile: 'custom',

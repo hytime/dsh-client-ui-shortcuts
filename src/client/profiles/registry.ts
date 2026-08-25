@@ -323,7 +323,7 @@ function normalizeStroke(stroke: KeyStroke | ShortcutStroke, modifier?: Shortcut
 }
 
 function normalizeModifiers(modifiers: readonly ShortcutModifier[]): ShortcutModifier[] {
-  if (!Array.isArray(modifiers) || modifiers.length === 0) throw new Error('invalid shortcut modifier')
+  if (!Array.isArray(modifiers)) throw new Error('invalid shortcut modifier')
   const normalized = modifiers.map(modifier => modifier as ShortcutModifier)
   if (normalized.some(modifier => !MODIFIERS.includes(modifier))) throw new Error('invalid shortcut modifier')
   if (new Set(normalized).size !== normalized.length) throw new Error('invalid shortcut modifier')

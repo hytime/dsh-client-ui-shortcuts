@@ -272,6 +272,31 @@ describe('shortcut profile registry', () => {
     expect(alternativePhysicalStroke.ctrl).toBe(true)
   })
 
+  it('accepts declarative custom strokes without modifiers and clears all runtime flags', () => {
+    const registry = createBuiltinProfileRegistry()
+    registry.replaceCustomProfiles([{
+      id: 'custom-empty-modifiers',
+      name: 'Empty modifiers',
+      bindings: [
+        { command: 'focusPrevious', scope: 'question', key: { key: 'ArrowUp', modifiers: [] } },
+        {
+          command: 'openSettings',
+          scope: 'global',
+          sequence: [{ key: 'g', modifiers: [] }, { key: 's', modifiers: [] }],
+        },
+      ],
+    }])
+
+    const profile = registry.get('custom-empty-modifiers')!
+    expect(profile.bindings[0]?.key).toEqual({ key: 'ArrowUp', modifiers: [] })
+    expect(profile.bindings[1]?.sequence).toEqual([
+      { key: 'g', modifiers: [] },
+      { key: 's', modifiers: [] },
+    ])
+    expect(canonicalBindingKey(profile.bindings[0]!)).toBe('||||ArrowUp')
+    expect(canonicalBindingKey(profile.bindings[1]!)).toBe('||||g ||||s')
+  })
+
   it('retains stable label metadata for the nameless legacy custom profile', () => {
     const workBinding = { command: 'openSettings' as const, scope: 'global' as const, key: stroke('s', { meta: true }) }
     const registry = createBuiltinProfileRegistry()
@@ -393,6 +418,16 @@ describe('shortcut profile registry', () => {
       ...alphaProfile,
       id: 'unknown-modifier',
       bindings: [{ command: 'openSettings', scope: 'global', key: { key: 's', modifiers: ['Nope' as never] } }],
+    }])).toThrow('modifier')
+    expect(() => createProfileRegistry([{
+      ...alphaProfile,
+      id: 'non-array-modifiers',
+      bindings: [{ command: 'openSettings', scope: 'global', key: { key: 's', modifiers: 'Meta' as never } }],
+    }])).toThrow('modifier')
+    expect(() => createProfileRegistry([{
+      ...alphaProfile,
+      id: 'duplicate-modifiers',
+      bindings: [{ command: 'openSettings', scope: 'global', key: { key: 's', modifiers: ['Meta', 'Meta'] } }],
     }])).toThrow('modifier')
   })
   it('rejects ambiguous binding shapes and deep-freezes normalized sequences', () => {
