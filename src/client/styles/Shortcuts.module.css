@@ -34,7 +34,7 @@
 .chevronOpen { transform: rotate(180deg); }
 .pending { flex: none; border-radius: 999px; padding: 1px 8px; font-size: 11px; line-height: 17px; background: var(--dsw-alias-bg-module-platform); color: var(--dsw-alias-label-secondary); }
 .body { border-top: 1px solid var(--dsw-alias-border-l2); margin: 0 16px; padding: 16px 0 12px; }
-.onboarding {
+.onboarding { min-width: 0; max-width: 100%; box-sizing: border-box;
   display: grid;
   gap: 10px;
   margin: 0 0 16px;
@@ -44,9 +44,15 @@
   background: var(--dsw-alias-bg-module-platform);
 }
 .onboardingTitleRow { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 10px; }
-.onboardingTitle { flex: 1; min-width: 0; margin: 0; font-size: 14px; line-height: 1.4; }
-.onboardingList { display: grid; gap: 6px; margin: 0; padding-left: 20px; color: var(--dsw-alias-text-secondary); line-height: 1.5; }
-.onboardingActions { display: flex; flex-wrap: wrap; gap: 8px; }
+.onboardingTitle { flex: 1 1 180px; min-width: 0; overflow-wrap: anywhere; margin: 0; font-size: 14px; line-height: 1.4; }
+.onboardingList { display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 20px;
+  color: var(--dsw-alias-text-secondary);
+  line-height: 1.5;
+}
+.onboardingActions { display: flex; flex-wrap: wrap; min-width: 0; gap: 8px; }
 .onboardingActions button, .onboardingClose { min-height: 32px; max-width: 100%; padding: 6px 10px; border: 1px solid var(--dsw-alias-border-subtle); border-radius: 6px; background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-text-primary); font: inherit; cursor: pointer; overflow-wrap: anywhere; }
 .onboardingActions button:last-child { background: var(--dsw-alias-action-primary); color: var(--dsw-alias-text-on-primary); }
 .onboardingClose { flex: none; min-height: 28px; padding: 4px 8px; color: var(--dsw-alias-text-secondary); }

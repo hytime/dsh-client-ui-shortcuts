@@ -108,6 +108,7 @@ const openCard = () => fireEvent.click(screen.getByRole('button', { name: 'Expan
 
 function settingsFace(initial = 'standard', initialProfiles: readonly ShortcutProfile[] = [standardProfile, vimProfile], writable = true, available = true) {
   let active = initial
+  let isAvailable = available
   let failure: Error | undefined
   let latestFailure: ShortcutSettingsFailure | undefined
   let profiles = managedProfiles(initialProfiles)
@@ -118,15 +119,21 @@ function settingsFace(initial = 'standard', initialProfiles: readonly ShortcutPr
     failNext: (message: string) => void
     setExternal: (id: string) => void
     setFailure: (failure: ShortcutSettingsFailure | undefined) => void
-    setProfiles: (next: readonly ShortcutProfile[]) => void
+     setProfiles: (next: readonly ShortcutProfile[]) => void
+     setAvailable: (next: boolean) => void
   } = {
-    available: () => available,
+    available: () => isAvailable,
     writable: () => writable,
     profiles: () => profiles,
     activeProfileId: () => active,
     isCustomProfile: id => profiles.some(profile => profile.id === id && profile.kind === 'custom'),
     createCustomProfile: async () => 'custom-created',
-    importCustomProfile: async () => 'custom-imported',
+    importCustomProfile: async profile => {
+       const id = `custom-imported-${profiles.length + 1}`
+      profiles = [...profiles, { id, label: 'profile.custom.label', description: 'profile.custom.description', bindings: profile.bindings } as ShortcutProfile]
+      emit()
+      return id
+    },
     saveCustomProfile: async (id, _baseline, name, bindings) => {
       profiles = profiles.map(profile => profile.id === id ? {
         ...profile,
@@ -155,6 +162,7 @@ function settingsFace(initial = 'standard', initialProfiles: readonly ShortcutPr
     setExternal: id => { active = id; emit() },
     setFailure: next => { latestFailure = next; emit() },
     setProfiles: next => { profiles = managedProfiles(next); emit() },
+    setAvailable: next => { isAvailable = next; emit() },
   }
   return face
 }
@@ -369,6 +377,59 @@ describe('shortcut settings controller custom profile', () => {
 })
 
 describe('shortcut settings card', () => {
+  it('updates onboarding when settings availability transitions', async () => {
+    window.localStorage.clear()
+    const settings = settingsFace('standard', [standardProfile, vimProfile], true, false)
+    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+    expect(screen.queryByRole('region', { name: 'Getting started' })).toBeNull()
+    settings.setAvailable(true)
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'Getting started' })).toBeTruthy())
+    settings.setAvailable(false)
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'Getting started' })).toBeNull())
+  })
+
+  it('keeps Close enabled while writes are busy or unavailable', async () => {
+    window.localStorage.clear()
+    cleanup()
+    const busySettings = settingsFace()
+    render(<ShortcutProfileCard settings={busySettings} availableGlobalActions={[]} platform="linux" t={t} />)
+    expect((screen.getByRole('button', { name: 'Close' }) as HTMLButtonElement).disabled).toBe(false)
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'Getting started' })).toBeNull())
+
+    window.localStorage.clear()
+    cleanup()
+    render(<ShortcutProfileCard settings={settingsFace('standard', [standardProfile, vimProfile], false)} availableGlobalActions={[]} platform="linux" t={t} />)
+    expect((screen.getByRole('button', { name: 'Close' }) as HTMLButtonElement).disabled).toBe(false)
+  })
+
+  it('does not complete import when resolved id is absent from current profiles', async () => {
+    window.localStorage.clear()
+    const settings = settingsFace()
+    settings.importCustomProfile = vi.fn(async () => 'missing-profile')
+    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+    fireEvent.change(screen.getByLabelText('Choose custom profile JSON file'), { target: { files: [new File([encodeCustomProfileJson({ name: 'Imported', bindings: customBindings })], 'profile.json')] } })
+    await waitFor(() => expect(settings.importCustomProfile).toHaveBeenCalledOnce())
+    expect(window.localStorage.getItem('dsh-client-ui-shortcuts:onboarding:v1')).toBeNull()
+    expect(screen.getByRole('region', { name: 'Getting started' })).toBeTruthy()
+  })
+
+  it('exposes controller availability for loading, ready, and unavailable snapshots', async () => {
+    const registry = createProfileRegistry([standardProfile, vimProfile])
+    const scope = controllerScope({ activeProfile: 'standard' })
+    const { createShortcutSettingsController } = await import('../src/client/settings/controller.js')
+    const controller = createShortcutSettingsController(scope.scope, registry, scope.mutate, controllerOptions)
+    expect(controller.available()).toBe(true)
+    controller.dispose()
+  })
+
+  it('renders final settings-card fixture with available mapping', () => {
+    const settings = settingsFace()
+    expect(typeof settings.available).toBe('function')
+    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+    expect(screen.getByRole('region', { name: 'Getting started' })).toBeTruthy()
+  })
+
   it('does not show onboarding when settings are unavailable', () => {
     window.localStorage.clear()
     render(<ShortcutProfileCard settings={settingsFace('standard', [standardProfile, vimProfile], true, false)} availableGlobalActions={[]} platform="linux" t={t} />)
@@ -437,7 +498,7 @@ describe('shortcut settings card', () => {
       render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
       fireEvent.change(screen.getByLabelText('Choose custom profile JSON file'), { target: { files: [new File([encodeCustomProfileJson({ name: 'Imported', bindings: customBindings })], 'profile.json')] } })
       await waitFor(() => expect(settings.importCustomProfile).toHaveBeenCalledOnce())
-      await waitFor(() => expect(window.localStorage.getItem('dsh-client-ui-shortcuts:onboarding:v1')).toBe('completed'))
+      expect(window.localStorage.getItem('dsh-client-ui-shortcuts:onboarding:v1')).toBeNull()
       cleanup()
     }
   })
@@ -791,7 +852,7 @@ describe('shortcut settings card', () => {
     consoleError.mockRestore()
   })
 
-  it.each(['select', 'create', 'import', 'save', 'delete'] as const)('disables the disclosure header while %s is pending', async operation => {
+   it.each(['select', 'create', 'import', 'save', 'delete'] as const)('keeps the disclosure header enabled while %s is pending', async operation => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     registry.replaceCustomProfiles([{ id: 'custom', name: 'Work', bindings: customBindings }])
     const settings = settingsFace(operation === 'save' || operation === 'delete' ? 'custom' : 'standard', registry.list())
@@ -817,11 +878,11 @@ describe('shortcut settings card', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Confirm delete' }))
     }
 
-    await waitFor(() => expect((screen.getByRole('button', { name: 'Collapse: Shortcuts' }) as HTMLButtonElement).disabled).toBe(true))
-    fireEvent.click(screen.getByRole('button', { name: 'Collapse: Shortcuts' }))
-    expect(screen.getByRole('combobox', { name: 'Profile' })).toBeTruthy()
-    resolve()
     await waitFor(() => expect((screen.getByRole('button', { name: 'Collapse: Shortcuts' }) as HTMLButtonElement).disabled).toBe(false))
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse: Shortcuts' }))
+    expect(screen.queryByRole('combobox', { name: 'Profile' })).toBeNull()
+    resolve()
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Expand: Shortcuts' })).toBeTruthy())
   })
 
   it('removes an active custom profile through the real controller without retaining its editor draft', async () => {

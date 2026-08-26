@@ -23,6 +23,11 @@ type Message = { kind: 'status' | 'alert'; text: string }
 
 const fallbackT = (key: string): string => key
 const idleEditor: EditorState = { dirty: false, saving: false, externalChange: false }
+function acquireOnboardingStorage(): import('../onboarding.js').OnboardingStorage | undefined {
+  if (typeof window === 'undefined') return undefined
+  try { return window.localStorage } catch { return undefined }
+}
+
 
 function IconButton({ name, label, disabled, describedBy, onClick }: {
   readonly name: ShortcutIconName
@@ -38,10 +43,8 @@ function IconButton({ name, label, disabled, describedBy, onClick }: {
 
 /** Settings UI uses the latest runtime snapshot as authoritative after every save attempt. */
 export function ShortcutProfileCard({ settings, availableGlobalActions, platform, t = fallbackT }: ShortcutProfileCardProps): React.ReactElement {
-  const [, refresh] = useState(0)
-  const storage = typeof window === 'undefined' ? undefined : (() => {
-    try { return window.localStorage } catch { return undefined }
-  })()
+  const [runtimeState, setRuntimeState] = useState(0)
+  const storage = useState<ReturnType<typeof acquireOnboardingStorage>>(() => acquireOnboardingStorage())[0]
   const [showOnboarding, setShowOnboarding] = useState(() => !hasCompletedOnboarding(storage))
   const [open, setOpen] = useState(() => !hasCompletedOnboarding(storage))
   const [operation, setOperation] = useState<string>()
@@ -69,6 +72,7 @@ export function ShortcutProfileCard({ settings, availableGlobalActions, platform
   const onboardingDisabled = busy || !settings.writable()
   const onboardingAvailable = settings.available() && registryProfiles.length > 0
   const exportReason = editor.externalChange ? t('settings.externalExport') : editor.dirty ? t('settings.unsavedExport') : undefined
+  void runtimeState
 
   const saveCustomProfile = async (profileId: string, baselineFingerprint: string, name: string, bindings: readonly ShortcutProfile['bindings'][number][]): Promise<EditableCustomProfile> => {
     await settings.saveCustomProfile(profileId, baselineFingerprint, name, bindings)
@@ -97,7 +101,7 @@ export function ShortcutProfileCard({ settings, availableGlobalActions, platform
     return settings.subscribe(() => {
       if (!mounted.current || currentSettings.current !== settings) return
       setSelection(settings.activeProfileId())
-      refresh(value => value + 1)
+      setRuntimeState(value => value + 1)
     })
   }, [settings])
   const isCurrentRequest = (request: number, face: ShortcutProfileCardProps['settings']): boolean => (
@@ -147,6 +151,7 @@ export function ShortcutProfileCard({ settings, availableGlobalActions, platform
     setOperation('import')
     setMessage(undefined)
     let source: Awaited<ReturnType<typeof readCustomProfileFile>>
+    let profileNameForFailure: string | undefined
     try {
       source = await readCustomProfileFile(file)
     } catch (reason) {
@@ -159,16 +164,17 @@ export function ShortcutProfileCard({ settings, availableGlobalActions, platform
     try {
       if (!isCurrentRequest(currentRequest, face)) return
       const profile = decodeCustomProfileJson(source.text, source.bytes)
-      await face.importCustomProfile(profile)
+      profileNameForFailure = profile.name
+      const profileId = await face.importCustomProfile(profile)
       if (isCurrentRequest(currentRequest, face)) {
-        completeOnboarding()
+        if (face.profiles().some(entry => entry.id === profileId)) completeOnboarding()
         setMessage({ kind: 'status', text: t('settings.importSucceeded') })
       }
     } catch (reason) {
       if (!isCurrentRequest(currentRequest, face)) return
       const failure = face.error()
       if (failure?.operation === 'import' && failure.partial === 'profile-saved') {
-        completeOnboarding()
+        if (face.profiles().some(entry => entry.id === failure.profileId) || face.profiles().some(entry => entry.kind === 'custom' && entry.displayName === profileNameForFailure)) completeOnboarding()
         setMessage({ kind: 'status', text: t('settings.importPartial') })
       } else {
         setMessage({ kind: 'alert', text: t('settings.importError').replace('{message}', errorText(reason)) })
@@ -242,7 +248,7 @@ export function ShortcutProfileCard({ settings, availableGlobalActions, platform
   const onboarding = showOnboarding && onboardingAvailable ? <section className={styles.onboarding} role="region" aria-labelledby={`${bodyId}-onboarding-title`}>
     <div className={styles.onboardingTitleRow}>
       <h2 id={`${bodyId}-onboarding-title`} className={styles.onboardingTitle}>{t('editor.onboarding.title')}</h2>
-      <button type="button" className={styles.onboardingClose} disabled={onboardingDisabled} onClick={completeOnboarding}>{t('editor.onboarding.close')}</button>
+      <button type="button" className={styles.onboardingClose} aria-label={t('editor.onboarding.close')} title={t('editor.onboarding.close')} onClick={completeOnboarding}>{t('editor.onboarding.close')}</button>
     </div>
     <ul className={styles.onboardingList}>
       <li>{t('editor.onboarding.standardVim')}</li>
@@ -287,7 +293,7 @@ export function ShortcutProfileCard({ settings, availableGlobalActions, platform
 
   const expandedLabel = t(open ? 'settings.collapse' : 'settings.expand')
   return <section className={clsx(styles.card, open && styles.cardOpen)} aria-labelledby={titleId}>
-    <button type="button" className={styles.header} aria-expanded={open} aria-controls={bodyId} aria-label={`${expandedLabel}: ${t('settings.title')}`} disabled={busy} onClick={() => setOpen(value => !value)}>
+    <button type="button" className={styles.header} aria-expanded={open} aria-controls={bodyId} aria-label={`${expandedLabel}: ${t('settings.title')}`} onClick={() => setOpen(value => !value)}>
       <ShortcutIcon name={registryProfiles.length === 0 ? 'settings-2' : 'keyboard'} size={20} />
       <span className={styles.headerText}>
         <span id={titleId} className={styles.title}>{t('settings.title')}</span>
