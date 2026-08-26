@@ -10,6 +10,7 @@ import { downloadCustomProfileJson, readCustomProfileFile } from '../settings/cu
 import { ShortcutIcon, type ShortcutIconName } from './ShortcutIcon.js'
 import { CustomProfileEditor, type EditableCustomProfile } from './CustomProfileEditor.js'
 import { ShortcutLegend } from './ShortcutLegend.js'
+import { hasCompletedOnboarding, markOnboardingCompleted } from '../onboarding.js'
 import styles from '../styles/Shortcuts.module.css'
 
 export type ShortcutProfileCardProps = Omit<SlotShortcutProfileCardProps, keyof import('@deepseek-ai/dsh-client-ui-settings-plugins/client').SettingsPluginItemOwnerProps> & {
@@ -38,7 +39,11 @@ function IconButton({ name, label, disabled, describedBy, onClick }: {
 /** Settings UI uses the latest runtime snapshot as authoritative after every save attempt. */
 export function ShortcutProfileCard({ settings, availableGlobalActions, platform, t = fallbackT }: ShortcutProfileCardProps): React.ReactElement {
   const [, refresh] = useState(0)
-  const [open, setOpen] = useState(false)
+  const storage = typeof window === 'undefined' ? undefined : (() => {
+    try { return window.localStorage } catch { return undefined }
+  })()
+  const [showOnboarding, setShowOnboarding] = useState(() => !hasCompletedOnboarding(storage))
+  const [open, setOpen] = useState(() => !hasCompletedOnboarding(storage))
   const [operation, setOperation] = useState<string>()
   const [selection, setSelection] = useState(() => settings.activeProfileId())
   const [message, setMessage] = useState<Message>()
@@ -61,6 +66,7 @@ export function ShortcutProfileCard({ settings, availableGlobalActions, platform
   const settingsFailure = settings.error()
   const busy = operation !== undefined || editor.saving
   const persistenceDisabled = busy || !settings.writable()
+  const onboardingDisabled = persistenceDisabled || registryProfiles.length === 0
   const exportReason = editor.externalChange ? t('settings.externalExport') : editor.dirty ? t('settings.unsavedExport') : undefined
 
   const saveCustomProfile = async (profileId: string, baselineFingerprint: string, name: string, bindings: readonly ShortcutProfile['bindings'][number][]): Promise<EditableCustomProfile> => {
@@ -169,6 +175,11 @@ export function ShortcutProfileCard({ settings, availableGlobalActions, platform
     }
   }
 
+  const completeOnboarding = (): void => {
+    markOnboardingCompleted(storage)
+    setShowOnboarding(false)
+  }
+
   const exportProfile = (): void => {
     if (currentCustom === undefined || busy || exportReason !== undefined) return
     setMessage(undefined)
@@ -215,7 +226,7 @@ export function ShortcutProfileCard({ settings, availableGlobalActions, platform
     <input ref={fileInput} id={fileInputId} className={styles.visuallyHidden} type="file" accept="application/json,.json" disabled={persistenceDisabled} onChange={event => {
       const file = event.target.files?.[0]
       event.target.value = ''
-      if (file !== undefined) void importFile(file)
+      if (file !== undefined) { completeOnboarding(); void importFile(file) }
     }} />
     {currentCustom !== undefined ? <>
       <IconButton name="download" label={t('settings.download')} describedBy={exportReason === undefined ? undefined : exportReasonId} disabled={busy || exportReason !== undefined} onClick={exportProfile} />
@@ -223,9 +234,26 @@ export function ShortcutProfileCard({ settings, availableGlobalActions, platform
     </> : null}
   </div>
 
+  const onboarding = showOnboarding && !onboardingDisabled ? <section className={styles.onboarding} role="region" aria-labelledby={`${bodyId}-onboarding-title`}>
+    <div className={styles.onboardingTitleRow}>
+      <h2 id={`${bodyId}-onboarding-title`} className={styles.onboardingTitle}>{t('editor.onboarding.title')}</h2>
+      <button type="button" className={styles.onboardingClose} disabled={onboardingDisabled} onClick={completeOnboarding}>{t('editor.onboarding.close')}</button>
+    </div>
+    <ul className={styles.onboardingList}>
+      <li>{t('editor.onboarding.standardVim')}</li>
+      <li>{t('editor.onboarding.customProfiles')}</li>
+      <li>{t('editor.onboarding.jsonProfiles')}</li>
+    </ul>
+    <div className={styles.onboardingActions}>
+      <button type="button" disabled={onboardingDisabled} onClick={() => { completeOnboarding(); void createProfile() }}>{t('editor.onboarding.new')}</button>
+      <button type="button" disabled={onboardingDisabled} onClick={() => fileInput.current?.click()}>{t('editor.onboarding.import')}</button>
+    </div>
+  </section> : null
+
   const body = registryProfiles.length === 0
     ? <p role="status" className={styles.empty}>{t('settings.empty')}</p>
     : <>
+      {onboarding}
       <fieldset className={styles.profileSelectGroup} disabled={busy}>
         <legend>{t('settings.profile')}</legend>
         <div className={styles.profileSelectRow}>

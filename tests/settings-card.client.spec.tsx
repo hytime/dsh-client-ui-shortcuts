@@ -78,6 +78,7 @@ const labels: Record<string, string> = {
   'settings.title': 'Shortcuts', 'settings.description': 'Choose controls.', 'settings.profile': 'Profile',
   'settings.expand': 'Expand', 'settings.collapse': 'Collapse',
   'settings.saving': 'Saving...', 'settings.error': 'Save failed: {message}', 'settings.conflict': 'Unavailable.',
+  'editor.onboarding.title': 'Getting started', 'editor.onboarding.standardVim': 'Standard and Vim are built-in read-only profiles.', 'editor.onboarding.customProfiles': 'Custom profiles can be created in multiples and switched at any time.', 'editor.onboarding.jsonProfiles': 'Import or export one Custom profile as JSON.', 'editor.onboarding.new': 'New', 'editor.onboarding.import': 'Import', 'editor.onboarding.close': 'Close',
   'settings.currentProfile': 'Current profile', 'settings.profileActions': 'Profile actions',
   'settings.empty': 'No profiles.', 'settings.new': 'New profile', 'settings.upload': 'Import profile',
   'settings.download': 'Export profile', 'settings.delete': 'Delete profile', 'settings.fileInput': 'Choose custom profile JSON file',
@@ -367,6 +368,20 @@ describe('shortcut settings controller custom profile', () => {
 })
 
 describe('shortcut settings card', () => {
+  it('opens the card and renders first-use onboarding on the first visit', () => {
+    window.localStorage.clear()
+    render(<ShortcutProfileCard settings={settingsFace()} availableGlobalActions={[]} platform="linux" t={t} />)
+    expect(screen.getByRole('button', { name: 'Collapse: Shortcuts' })).toBeTruthy()
+    expect(screen.getByRole('region', { name: 'Getting started' })).toBeTruthy()
+  })
+
+  it('keeps the card collapsed after onboarding is completed', () => {
+    window.localStorage.setItem('dsh-client-ui-shortcuts:onboarding:v1', 'completed')
+    render(<ShortcutProfileCard settings={settingsFace()} availableGlobalActions={[]} platform="linux" t={t} />)
+    expect(screen.getByRole('button', { name: 'Expand: Shortcuts' })).toBeTruthy()
+    expect(screen.queryByRole('region', { name: 'Getting started' })).toBeNull()
+  })
+
   it('renders platform keycaps with explicit physical modifiers', () => {
     render(<ShortcutLegend platform="mac" bindings={[
       { command: 'openSettings', scope: 'global', key: { key: 'p', modifiers: ['Ctrl'] } },
