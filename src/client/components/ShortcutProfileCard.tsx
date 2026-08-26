@@ -66,7 +66,8 @@ export function ShortcutProfileCard({ settings, availableGlobalActions, platform
   const settingsFailure = settings.error()
   const busy = operation !== undefined || editor.saving
   const persistenceDisabled = busy || !settings.writable()
-  const onboardingDisabled = persistenceDisabled || registryProfiles.length === 0
+  const onboardingDisabled = busy || !settings.writable()
+  const onboardingAvailable = settings.available() && registryProfiles.length > 0
   const exportReason = editor.externalChange ? t('settings.externalExport') : editor.dirty ? t('settings.unsavedExport') : undefined
 
   const saveCustomProfile = async (profileId: string, baselineFingerprint: string, name: string, bindings: readonly ShortcutProfile['bindings'][number][]): Promise<EditableCustomProfile> => {
@@ -159,11 +160,15 @@ export function ShortcutProfileCard({ settings, availableGlobalActions, platform
       if (!isCurrentRequest(currentRequest, face)) return
       const profile = decodeCustomProfileJson(source.text, source.bytes)
       await face.importCustomProfile(profile)
-      if (isCurrentRequest(currentRequest, face)) setMessage({ kind: 'status', text: t('settings.importSucceeded') })
+      if (isCurrentRequest(currentRequest, face)) {
+        completeOnboarding()
+        setMessage({ kind: 'status', text: t('settings.importSucceeded') })
+      }
     } catch (reason) {
       if (!isCurrentRequest(currentRequest, face)) return
       const failure = face.error()
       if (failure?.operation === 'import' && failure.partial === 'profile-saved') {
+        completeOnboarding()
         setMessage({ kind: 'status', text: t('settings.importPartial') })
       } else {
         setMessage({ kind: 'alert', text: t('settings.importError').replace('{message}', errorText(reason)) })
@@ -226,7 +231,7 @@ export function ShortcutProfileCard({ settings, availableGlobalActions, platform
     <input ref={fileInput} id={fileInputId} className={styles.visuallyHidden} type="file" accept="application/json,.json" disabled={persistenceDisabled} onChange={event => {
       const file = event.target.files?.[0]
       event.target.value = ''
-      if (file !== undefined) { completeOnboarding(); void importFile(file) }
+      if (file !== undefined) void importFile(file)
     }} />
     {currentCustom !== undefined ? <>
       <IconButton name="download" label={t('settings.download')} describedBy={exportReason === undefined ? undefined : exportReasonId} disabled={busy || exportReason !== undefined} onClick={exportProfile} />
@@ -234,7 +239,7 @@ export function ShortcutProfileCard({ settings, availableGlobalActions, platform
     </> : null}
   </div>
 
-  const onboarding = showOnboarding && !onboardingDisabled ? <section className={styles.onboarding} role="region" aria-labelledby={`${bodyId}-onboarding-title`}>
+  const onboarding = showOnboarding && onboardingAvailable ? <section className={styles.onboarding} role="region" aria-labelledby={`${bodyId}-onboarding-title`}>
     <div className={styles.onboardingTitleRow}>
       <h2 id={`${bodyId}-onboarding-title`} className={styles.onboardingTitle}>{t('editor.onboarding.title')}</h2>
       <button type="button" className={styles.onboardingClose} disabled={onboardingDisabled} onClick={completeOnboarding}>{t('editor.onboarding.close')}</button>

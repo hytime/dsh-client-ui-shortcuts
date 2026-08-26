@@ -79,6 +79,8 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
     this.disposeScope = scope.subscribe(() => this.onScopeChanged())
   }
 
+  available(): boolean { return this.ready }
+
   writable(): boolean { return this.ready && this.canWrite && this.recoveryRevision === undefined }
 
   profiles(): readonly ManagedShortcutProfile[] { return this.managedProfiles }

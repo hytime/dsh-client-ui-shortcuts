@@ -78,7 +78,7 @@ const labels: Record<string, string> = {
   'settings.title': 'Shortcuts', 'settings.description': 'Choose controls.', 'settings.profile': 'Profile',
   'settings.expand': 'Expand', 'settings.collapse': 'Collapse',
   'settings.saving': 'Saving...', 'settings.error': 'Save failed: {message}', 'settings.conflict': 'Unavailable.',
-  'editor.onboarding.title': 'Getting started', 'editor.onboarding.standardVim': 'Standard and Vim are built-in read-only profiles.', 'editor.onboarding.customProfiles': 'Custom profiles can be created in multiples and switched at any time.', 'editor.onboarding.jsonProfiles': 'Import or export one Custom profile as JSON.', 'editor.onboarding.new': 'New', 'editor.onboarding.import': 'Import', 'editor.onboarding.close': 'Close',
+  'editor.onboarding.title': 'Getting started', 'editor.onboarding.standardVim': 'Standard and Vim are built-in read-only profiles.', 'editor.onboarding.customProfiles': 'You can create multiple Custom profiles and switch between them.', 'editor.onboarding.jsonProfiles': 'Import or export one Custom profile as JSON.', 'editor.onboarding.new': 'New', 'editor.onboarding.import': 'Import', 'editor.onboarding.close': 'Close',
   'settings.currentProfile': 'Current profile', 'settings.profileActions': 'Profile actions',
   'settings.empty': 'No profiles.', 'settings.new': 'New profile', 'settings.upload': 'Import profile',
   'settings.download': 'Export profile', 'settings.delete': 'Delete profile', 'settings.fileInput': 'Choose custom profile JSON file',
@@ -106,7 +106,7 @@ const labels: Record<string, string> = {
 const t = (key: string) => labels[key] ?? key
 const openCard = () => fireEvent.click(screen.getByRole('button', { name: 'Expand: Shortcuts' }))
 
-function settingsFace(initial = 'standard', initialProfiles: readonly ShortcutProfile[] = [standardProfile, vimProfile], writable = true) {
+function settingsFace(initial = 'standard', initialProfiles: readonly ShortcutProfile[] = [standardProfile, vimProfile], writable = true, available = true) {
   let active = initial
   let failure: Error | undefined
   let latestFailure: ShortcutSettingsFailure | undefined
@@ -120,6 +120,7 @@ function settingsFace(initial = 'standard', initialProfiles: readonly ShortcutPr
     setFailure: (failure: ShortcutSettingsFailure | undefined) => void
     setProfiles: (next: readonly ShortcutProfile[]) => void
   } = {
+    available: () => available,
     writable: () => writable,
     profiles: () => profiles,
     activeProfileId: () => active,
@@ -368,6 +369,90 @@ describe('shortcut settings controller custom profile', () => {
 })
 
 describe('shortcut settings card', () => {
+  it('does not show onboarding when settings are unavailable', () => {
+    window.localStorage.clear()
+    render(<ShortcutProfileCard settings={settingsFace('standard', [standardProfile, vimProfile], true, false)} availableGlobalActions={[]} platform="linux" t={t} />)
+    expect(screen.getByRole('button', { name: 'Collapse: Shortcuts' })).toBeTruthy()
+    expect(screen.queryByRole('region', { name: 'Getting started' })).toBeNull()
+  })
+
+  it('keeps onboarding visible but disables writes for ready readonly settings', () => {
+    window.localStorage.clear()
+    render(<ShortcutProfileCard settings={settingsFace('standard', [standardProfile, vimProfile], false)} availableGlobalActions={[]} platform="linux" t={t} />)
+    expect(screen.getByRole('region', { name: 'Getting started' })).toBeTruthy()
+    expect((screen.getByRole('button', { name: 'New' }) as HTMLButtonElement).disabled).toBe(true)
+    expect((screen.getByRole('button', { name: 'Import' }) as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('closes onboarding and writes its completion marker', () => {
+    window.localStorage.clear()
+    render(<ShortcutProfileCard settings={settingsFace()} availableGlobalActions={[]} platform="linux" t={t} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+    expect(window.localStorage.getItem('dsh-client-ui-shortcuts:onboarding:v1')).toBe('completed')
+    expect(screen.queryByRole('region', { name: 'Getting started' })).toBeNull()
+  })
+
+  it('marks New onboarding action complete only after create succeeds', async () => {
+    window.localStorage.clear()
+    const settings = settingsFace()
+    settings.createCustomProfile = vi.fn(async () => 'created')
+    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+    fireEvent.click(screen.getByRole('button', { name: 'New' }))
+    await waitFor(() => expect(settings.createCustomProfile).toHaveBeenCalledOnce())
+    expect(window.localStorage.getItem('dsh-client-ui-shortcuts:onboarding:v1')).toBe('completed')
+  })
+
+  it('keeps onboarding after Import cancel, read, decode, and controller failures', async () => {
+    const scenarios = [
+      { file: undefined, setup: (_settings: ReturnType<typeof settingsFace>) => {} },
+      { file: Object.assign(new File(['x'], 'bad.json'), { text: vi.fn().mockRejectedValue(new Error('read failed')) }), setup: (_settings: ReturnType<typeof settingsFace>) => {} },
+      { file: new File(['{}'], 'bad.json'), setup: (_settings: ReturnType<typeof settingsFace>) => {} },
+      { file: new File([encodeCustomProfileJson({ name: 'Imported', bindings: customBindings })], 'bad.json'), setup: (settings: ReturnType<typeof settingsFace>) => { settings.importCustomProfile = vi.fn().mockRejectedValue(new Error('controller failed')) } },
+    ] as const
+    for (const scenario of scenarios) {
+      cleanup()
+      window.localStorage.clear()
+      const settings = settingsFace()
+      scenario.setup(settings)
+      render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+      const input = screen.getByLabelText('Choose custom profile JSON file') as HTMLInputElement
+      if (scenario.file === undefined) fireEvent.change(input, { target: { files: [] } })
+      else fireEvent.change(input, { target: { files: [scenario.file] } })
+      if (scenario.file !== undefined) await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy())
+      expect(window.localStorage.getItem('dsh-client-ui-shortcuts:onboarding:v1')).toBeNull()
+    }
+  })
+
+  it('marks Import complete after success and profile-saved partial success', async () => {
+    for (const partial of [false, true]) {
+      window.localStorage.clear()
+      const settings = settingsFace()
+      settings.importCustomProfile = vi.fn(async () => {
+        if (partial) {
+          settings.setFailure({ code: 'NOT_APPLIED', operation: 'import', phase: 'selection', message: 'selection failed', partial: 'profile-saved' })
+          throw new Error('selection failed')
+        }
+        return 'imported'
+      })
+      render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+      fireEvent.change(screen.getByLabelText('Choose custom profile JSON file'), { target: { files: [new File([encodeCustomProfileJson({ name: 'Imported', bindings: customBindings })], 'profile.json')] } })
+      await waitFor(() => expect(settings.importCustomProfile).toHaveBeenCalledOnce())
+      await waitFor(() => expect(window.localStorage.getItem('dsh-client-ui-shortcuts:onboarding:v1')).toBe('completed'))
+      cleanup()
+    }
+  })
+
+  it('survives a localStorage getter failure while rendering onboarding', () => {
+    const descriptor = Object.getOwnPropertyDescriptor(window, 'localStorage')
+    Object.defineProperty(window, 'localStorage', { configurable: true, get: () => { throw new Error('blocked') } })
+    try {
+      expect(() => render(<ShortcutProfileCard settings={settingsFace()} availableGlobalActions={[]} platform="linux" t={t} />)).not.toThrow()
+      expect(screen.getByRole('region', { name: 'Getting started' })).toBeTruthy()
+    } finally {
+      if (descriptor) Object.defineProperty(window, 'localStorage', descriptor)
+    }
+  })
+
   it('opens the card and renders first-use onboarding on the first visit', () => {
     window.localStorage.clear()
     render(<ShortcutProfileCard settings={settingsFace()} availableGlobalActions={[]} platform="linux" t={t} />)

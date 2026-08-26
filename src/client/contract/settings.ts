@@ -58,6 +58,7 @@ export type MutateShortcutSettings = (
 ) => Promise<ShortcutSettingsMutationResult>
 
 export interface ShortcutSettingsFace {
+  available(): boolean
   writable(): boolean
   profiles(): readonly ManagedShortcutProfile[]
   activeProfileId(): string
