@@ -4,7 +4,7 @@
 
 ## 当前基线
 
-当前稳定版本：`0.1.14`
+当前稳定版本：`0.1.15`
 
 当前核心能力：
 
@@ -25,7 +25,7 @@
 安装入口：
 
 ```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.14
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.15
 ```
 
 GitHub 源码安装必须固定 tag 或 commit：
@@ -102,7 +102,7 @@ README 和安装指南维护 DSH 兼容性表：
 
 | 插件版本 | DSH 版本 | 状态 | 备注 |
 | --- | --- | --- | --- |
-| `0.1.14` | `0.1.0-rc.8` 系列 | 已验证 | 使用公开 Client settings 与 slots 接口 |
+| `0.1.15` | `0.1.0-rc.8` 系列 | 已验证 | 使用公开 Client settings 与 slots 接口 |
 
 新增 DSH 版本后，先运行自动化测试和真实 composition 验证，再更新表格。
 

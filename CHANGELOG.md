@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased - First-use onboarding
+## 0.1.15 - First-use onboarding
 
 ### Added
 

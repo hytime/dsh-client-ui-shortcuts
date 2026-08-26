@@ -17,7 +17,7 @@ The npm release is the recommended installation path. It already contains the bu
 Use the DSH plugin command with the Web profile:
 
 ```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.14
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.15
 ```
 
 The command forwards the package installation to the profile and reconciles packages that declare `dsh.bundle.patch` into `dsh.profile.bundles`.
@@ -58,7 +58,7 @@ Then install the generated tarball into the DSH Web profile:
 export DSH_HOME="$(mktemp -d)"
 
 dsh plugin --profile web add \\
-  /tmp/dsh-client-ui-shortcuts-pack/hytime-dsh-client-ui-shortcuts-0.1.14.tgz
+  /tmp/dsh-client-ui-shortcuts-pack/hytime-dsh-client-ui-shortcuts-0.1.15.tgz
 ```
 
 Use a persistent `DSH_HOME` instead of `mktemp -d` when the profile should survive the shell session. The package tarball must contain `lib/client.js`, `lib/index.js`, `lib/invariant.js`, type declarations, and `cordis.patch.yml`.

@@ -32,7 +32,7 @@ Question 和 Approval 交互快捷键：
 推荐安装 npm 发布包，因为其中已经包含预构建的 `lib/` 产物，不需要在安装阶段执行构建。通过 DSH CLI 安装插件，然后重启或重新加载 Web composition：
 
 ```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.14
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.15
 dsh --profile web
 ```
 
