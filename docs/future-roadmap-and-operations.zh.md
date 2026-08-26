@@ -54,13 +54,18 @@ dsh plugin --profile web add github:hytime/dsh-client-ui-shortcuts#v0.1.14
 
 #### 首次使用引导
 
-当前状态：已在设置卡片内联实现首次使用引导，使用 browser-local v1 marker 记录完成状态，并提供 New 与 Import 的直接入口；未使用第三方 tour library。后续根据真实反馈调整文案和触发条件。
+**已实现能力**
 
-- 第一次打开设置卡片时展示简短引导；
-- 说明 Standard、Vim、Custom 的适用场景；
-- 说明 New、Import、Export、Delete 的作用；
-- 引导不重复展示完整快捷键表，避免设置卡片过于拥挤；
-- 引导必须支持关闭，不能阻塞现有设置操作。
+- 在设置卡片内联展示首次使用引导，并支持关闭，不阻塞现有设置操作；
+- 说明 Standard、Vim、Custom 和 JSON profile 的适用场景与基本流程；
+- 提供创建 Custom profile 的 New 入口，以及导入 JSON profile 的 Import 入口；
+- 使用带版本的 browser-local v1 marker 记录完成状态，不修改快捷键设置或 profile JSON；
+- 不使用第三方 tour library，也不重复展示完整快捷键表，避免设置卡片过于拥挤。
+
+**后续优化**
+
+- 根据真实使用反馈调整引导文案；
+- 根据真实使用反馈调整首次触发和再次展示的条件。
 
 #### 重置当前方案
 

@@ -5,7 +5,7 @@
 ### 新增
 
 - 在快捷键设置卡片内新增可关闭的首次使用引导。
-- 新增创建 Custom profile 和导入 JSON profile 的直接入口。
+- 新增创建 Custom profile 的 New 入口和导入 JSON profile 的 Import 入口。
 - 仅保存带版本的 browser-local 完成 marker；快捷键设置和 profile JSON 保持不变。
 
 ## 0.1.14 - 命名自定义方案与 JSON 迁移
