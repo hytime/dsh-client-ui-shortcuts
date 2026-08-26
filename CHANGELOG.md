@@ -1,6 +1,12 @@
 # Changelog
 
-All notable changes to `@hytime/dsh-client-ui-shortcuts` are documented here.
+## Unreleased - First-use onboarding
+
+### Added
+
+- Added a dismissible first-use guide inside the shortcut settings card.
+- Added direct entry points for creating a Custom profile and importing a JSON profile.
+- Stored only a versioned browser-local completion marker; shortcut settings and profile JSON remain unchanged.
 
 ## 0.1.14 - Named custom profiles and JSON portability
 
