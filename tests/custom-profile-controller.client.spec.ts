@@ -801,6 +801,26 @@ describe('custom profile settings controller', () => {
     expect(scope.mutate).toHaveBeenCalledTimes(1)
   })
 
+  it('keeps the authoritative reset response when an older mirror arrives afterward', async () => {
+    const work = { id: 'custom-work', name: 'Work', bindings: [otherBinding] }
+    const scope = controlledSettings(initialSettings({ activeProfile: work.id, customProfiles: [work] }))
+    const controller = controllerFor(scope)
+    const baseline = controller.profiles().find(profile => profile.id === work.id)!.fingerprint
+
+    await controller.resetCustomProfile(work.id, baseline)
+    const reset = controller.profiles().find(profile => profile.id === work.id)!
+    const resetFingerprint = reset.fingerprint
+    expect(reset).toMatchObject({ displayName: 'Work', bindings: standardProfile.bindings })
+
+    scope.publishSnapshot({
+      status: 'ready', value: initialSettings({ activeProfile: work.id, customProfiles: [work] }),
+      base: undefined, user: undefined, revision: 1, writable: true, mode: 'host',
+    })
+
+    const afterMirror = controller.profiles().find(profile => profile.id === work.id)!
+    expect(afterMirror).toMatchObject({ displayName: 'Work', bindings: standardProfile.bindings, fingerprint: resetFingerprint })
+  })
+
   it('does not start queued work or publish an in-flight result after disposal', async () => {
     const work = { id: 'custom-work', name: 'Work', bindings: [customBinding] }
     const scope = controlledSettings(initialSettings({ customProfiles: [work] }))
