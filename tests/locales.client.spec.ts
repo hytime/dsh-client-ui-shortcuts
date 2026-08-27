@@ -8,4 +8,9 @@ describe('shortcut locale dictionaries', () => {
     expect(zh['legend.scope.approval']).toBe('审批操作')
     expect(en['legend.scope.approval']).toBe('Approval actions')
   })
+
+  it('localizes Vim profile descriptions in Chinese and English', () => {
+    expect(zh['profile.vim.description']).toBe('使用 j 和 k、Enter 操作问题与审批。')
+    expect(en['profile.vim.description']).toBe('Use J and K with Enter for questions and approvals.')
+  })
 })

@@ -93,7 +93,7 @@ const labels: Record<string, string> = {
   'aria.profileOption': 'Shortcut profile {name}',
   'keyboard.focusPrevious': 'Previous', 'keyboard.focusNext': 'Next', 'keyboard.activate': 'Activate', 'keyboard.cancelTask': 'Cancel',
   'profile.standard.label': 'Standard', 'profile.standard.description': 'Arrows',
-  'profile.vim.label': 'Vim', 'profile.vim.description': 'J/K',
+  'profile.vim.label': 'Vim', 'profile.vim.description': 'Use J and K with Enter for questions and approvals.',
   'profile.custom.label': 'Custom', 'profile.custom.description': 'Your bindings',
   'legend.scope.global': 'Global',
   'keyboard.openCommandPalette': 'Command palette', 'keyboard.openSettings': 'Settings',
@@ -378,6 +378,13 @@ describe('shortcut settings controller custom profile', () => {
 })
 
 describe('shortcut settings card', () => {
+  it('renders the localized Vim profile description', () => {
+    const settings = settingsFace()
+    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+    fireEvent.change(screen.getByRole('combobox', { name: 'Profile' }), { target: { value: 'vim' } })
+    expect(screen.getByText('Use J and K with Enter for questions and approvals.')).toBeTruthy()
+  })
+
   it('updates onboarding when settings availability transitions', async () => {
     window.localStorage.clear()
     const settings = settingsFace('standard', [standardProfile, vimProfile], true, false)
