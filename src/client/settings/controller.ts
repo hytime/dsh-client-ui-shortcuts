@@ -200,6 +200,39 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
     })
   }
 
+  resetCustomProfile(id: string, baselineFingerprint: string): Promise<void> {
+    return this.enqueue('reset', async generation => {
+      const context = { operation: 'reset', phase: 'collection', profileId: id } as const
+      const snapshot = this.prepareWritable(context)
+      const profiles = this.readCustomProfiles(snapshot)
+      const index = profiles.findIndex(profile => profile.id === id)
+      if (index < 0) throw this.failure('PROFILE_MISSING', context, `custom profile "${id}" is unavailable`)
+      const current = profiles[index]!
+      if (customProfileFingerprint(current) !== baselineFingerprint) {
+        throw this.failure('NOT_APPLIED', context, `custom profile "${id}" changed before it could be reset`)
+      }
+      const standard = this.registry.get(DEFAULT_SHORTCUT_PROFILE_ID)
+      if (standard === undefined) {
+        throw this.failure('PROFILE_MISSING', context, `standard shortcut profile is unavailable`)
+      }
+      const replacement = {
+        id: current.id,
+        ...(current.name !== undefined ? { name: current.name } : {}),
+        bindings: standard.bindings as unknown as readonly PersistedShortcutBinding[],
+      }
+      const next = normalizeCustomProfiles(profiles.map((profile, profileIndex) => (
+        profileIndex === index ? replacement : profile
+      )))
+      const expected = next[index]!
+      const readBack = await this.write('customProfiles', next, snapshot.revision, context)
+      if (readBack === undefined) return
+      const saved = this.readCustomProfiles(readBack).find(profile => profile.id === id)
+      if (saved === undefined || customProfileFingerprint(saved) !== customProfileFingerprint(expected)) {
+        throw this.failure('NOT_APPLIED', context, `custom profile "${id}" was not reset`)
+      }
+      this.publishSuccess(generation)
+    })
+  }
   deleteCustomProfile(id: string): Promise<void> {
     return this.enqueue('delete', async generation => {
       const selectionContext = { operation: 'delete', phase: 'selection', profileId: id } as const

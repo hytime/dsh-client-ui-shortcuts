@@ -6,7 +6,7 @@ export interface PortableCustomProfile {
   readonly bindings: readonly PersistedShortcutBinding[]
 }
 
-export type ShortcutSettingsOperation = 'select' | 'create' | 'import' | 'save' | 'delete' | 'export'
+export type ShortcutSettingsOperation = 'select' | 'create' | 'import' | 'save' | 'reset' | 'delete' | 'export'
 export type ShortcutSettingsErrorCode =
   | 'UNAVAILABLE'
   | 'NOT_APPLIED'
@@ -71,6 +71,7 @@ export interface ShortcutSettingsFace {
     name: string | undefined,
     bindings: readonly ShortcutBinding[],
   ): Promise<void>
+  resetCustomProfile(id: string, baselineFingerprint: string): Promise<void>
   deleteCustomProfile(id: string): Promise<void>
   exportActiveCustomProfile(): PortableCustomProfile
   setActiveProfile(id: string): Promise<void>

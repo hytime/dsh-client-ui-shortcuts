@@ -682,6 +682,78 @@ describe('custom profile settings controller', () => {
     await expect(controller.setActiveProfile('vim')).resolves.toBeUndefined()
   })
 
+  it('resets one custom profile to Standard bindings through a CAS collection write', async () => {
+    const work = { id: 'custom-a', name: 'Work', bindings: [customBinding] }
+    const other = { id: 'custom-b', name: 'Other', bindings: [otherBinding] }
+    const scope = controlledSettings(initialSettings({ activeProfile: work.id, customProfiles: [work, other] }))
+    const controller = controllerFor(scope)
+    const baseline = controller.profiles().find(profile => profile.id === work.id)!.fingerprint
+
+    await controller.resetCustomProfile(work.id, baseline)
+
+    const saved = controller.profiles().find(profile => profile.id === work.id)!
+    expect(saved.displayName).toBe('Work')
+    expect(saved.id).toBe(work.id)
+    expect(saved.bindings).toEqual(standardProfile.bindings)
+    expect(saved.fingerprint).not.toBe(baseline)
+    expect(controller.profiles().find(profile => profile.id === other.id)?.bindings).toEqual(other.bindings)
+    expect(scope.mutate).toHaveBeenCalledWith(expect.objectContaining({
+      field: 'customProfiles',
+      expectedRevision: expect.any(Number),
+    }))
+  })
+
+  it('rejects reset for stale, builtin, readonly, and unavailable targets without writing', async () => {
+    const work = { id: 'custom-a', name: 'Work', bindings: [customBinding] }
+    const scope = controlledSettings(initialSettings({ customProfiles: [work] }))
+    const controller = controllerFor(scope)
+    const baseline = controller.profiles().find(profile => profile.id === work.id)!.fingerprint
+
+    scope.externalCommit('customProfiles', [{ ...work, bindings: [otherBinding] }])
+    const staleCalls = vi.mocked(scope.mutate).mock.calls.length
+    await expect(caughtFailure(controller.resetCustomProfile(work.id, baseline))).resolves.toMatchObject({
+      code: 'NOT_APPLIED', operation: 'reset', phase: 'collection', profileId: work.id,
+    })
+    expect(scope.mutate).toHaveBeenCalledTimes(staleCalls)
+
+    await expect(caughtFailure(controller.resetCustomProfile('standard', baseline))).resolves.toMatchObject({ code: 'PROFILE_MISSING' })
+    scope.setWritable(false)
+    await expect(caughtFailure(controller.resetCustomProfile(work.id, baseline))).resolves.toMatchObject({ code: 'UNAVAILABLE' })
+    scope.setStatus('unavailable')
+    await expect(caughtFailure(controller.resetCustomProfile(work.id, baseline))).resolves.toMatchObject({ code: 'UNAVAILABLE' })
+  })
+
+  it('does not retry reset after CAS conflict and exports restored bindings', async () => {
+    const work = { id: 'custom-a', name: 'Work', bindings: [customBinding] }
+    const scope = controlledSettings(initialSettings({ activeProfile: work.id, customProfiles: [work] }))
+    const controller = controllerFor(scope)
+    const baseline = controller.profiles().find(profile => profile.id === work.id)!.fingerprint
+    scope.advanceHostRevision(1)
+
+    await expect(caughtFailure(controller.resetCustomProfile(work.id, baseline))).resolves.toMatchObject({ code: 'NOT_APPLIED' })
+    expect(scope.mutate).toHaveBeenCalledTimes(1)
+    scope.publishMirror()
+    await controller.resetCustomProfile(work.id, controller.profiles().find(profile => profile.id === work.id)!.fingerprint)
+    expect(controller.exportActiveCustomProfile()).toEqual({ name: 'Work', bindings: standardProfile.bindings })
+  })
+
+  it('does not write reset after disposal while queued', async () => {
+    const work = { id: 'custom-a', name: 'Work', bindings: [customBinding] }
+    const scope = controlledSettings(initialSettings({ customProfiles: [work] }))
+    const controller = controllerFor(scope)
+    const baseline = controller.profiles().find(profile => profile.id === work.id)!.fingerprint
+    let release!: () => void
+    scope.beforeNextMutation(async () => { await new Promise<void>(resolve => { release = resolve }) })
+    const first = controller.setActiveProfile('vim')
+    const reset = controller.resetCustomProfile(work.id, baseline)
+    await Promise.resolve()
+    controller.dispose()
+    release()
+    await expect(first).resolves.toBeUndefined()
+    await expect(reset).resolves.toBeUndefined()
+    expect(scope.mutate).toHaveBeenCalledTimes(1)
+  })
+
   it('does not start queued work or publish an in-flight result after disposal', async () => {
     const work = { id: 'custom-work', name: 'Work', bindings: [customBinding] }
     const scope = controlledSettings(initialSettings({ customProfiles: [work] }))
