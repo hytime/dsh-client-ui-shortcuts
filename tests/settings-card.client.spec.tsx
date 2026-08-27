@@ -951,6 +951,81 @@ describe('shortcut settings card', () => {
     expect((screen.getByRole('button', { name: 'Reset to default' }) as HTMLButtonElement).disabled).toBe(true)
   })
 
+  it('updates the editor baseline from the authoritative reset profile and clears dirty state', async () => {
+    const registry = createProfileRegistry([standardProfile, vimProfile])
+    registry.replaceCustomProfiles([{ id: 'custom', name: 'Work', bindings: customBindings }])
+    const settings = settingsFace('custom', registry.list())
+    const authoritative = { id: 'custom', name: 'Canonical', bindings: vimProfile.bindings, fingerprint: 'authoritative-fingerprint' }
+    settings.resetCustomProfile = vi.fn(async () => {
+      settings.setProfiles([{ ...standardProfile }, { ...vimProfile }, { id: 'custom', name: 'Canonical', bindings: vimProfile.bindings }])
+      return authoritative
+    })
+    settings.saveCustomProfile = vi.fn(async (...args) => { expect(args[1]).toBe('authoritative-fingerprint'); expect(args[2]).toBe('Canonical') })
+    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+    openCard()
+    fireEvent.change(screen.getByRole('textbox', { name: 'Profile name' }), { target: { value: 'Draft' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Reset to default' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm reset' }))
+    await waitFor(() => expect((screen.getByRole('textbox', { name: 'Profile name' }) as HTMLInputElement).value).toBe('Custom'))
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeTruthy()
+  })
+
+  it('disables reset when the editor observes an external change', async () => {
+    const registry = createProfileRegistry([standardProfile, vimProfile])
+    registry.replaceCustomProfiles([{ id: 'custom', name: 'Work', bindings: customBindings }])
+    const settings = settingsFace('custom', registry.list())
+    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+    openCard()
+    fireEvent.change(screen.getByRole('textbox', { name: 'Profile name' }), { target: { value: 'Draft' } })
+    settings.setProfiles([{ id: 'custom', name: 'Changed elsewhere', bindings: vimProfile.bindings }])
+    await waitFor(() => expect(screen.getByText('This profile was updated elsewhere.')).toBeTruthy())
+    expect((screen.getByRole('button', { name: 'Reset to default' }) as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('keeps reset, cancel, and confirm states correct while reset is busy', async () => {
+    const registry = createProfileRegistry([standardProfile, vimProfile])
+    registry.replaceCustomProfiles([{ id: 'custom', name: 'Work', bindings: customBindings }])
+    const settings = settingsFace('custom', registry.list())
+    let resolve!: (value: { id: string; name: string; bindings: typeof standardProfile.bindings; fingerprint: string }) => void
+    settings.resetCustomProfile = vi.fn(() => new Promise(done => { resolve = done }))
+    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+    openCard()
+    fireEvent.click(screen.getByRole('button', { name: 'Reset to default' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm reset' }))
+    await waitFor(() => expect((screen.getByRole('button', { name: 'Confirm reset' }) as HTMLButtonElement).disabled).toBe(true))
+    expect((screen.getByRole('button', { name: 'Cancel reset' }) as HTMLButtonElement).disabled).toBe(true)
+    resolve({ id: 'custom', name: 'Work', bindings: standardProfile.bindings, fingerprint: 'reset-fingerprint' })
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Reset to default' })).toBeTruthy())
+  })
+
+  it('resets one custom profile without changing another profile', async () => {
+    const registry = createProfileRegistry([standardProfile, vimProfile])
+    registry.replaceCustomProfiles([{ id: 'custom-a', name: 'Alpha', bindings: customBindings }, { id: 'custom-b', name: 'Beta', bindings: vimProfile.bindings }])
+    const settings = settingsFace('custom', [{ ...standardProfile }, { ...vimProfile }, { id: 'custom', label: 'profile.custom.label', description: 'profile.custom.description', bindings: customBindings }, { id: 'custom-b', label: 'profile.custom.label', description: 'profile.custom.description', bindings: vimProfile.bindings }])
+    const beforeB = settings.profiles().find(profile => profile.id === 'custom-b')
+    settings.resetCustomProfile = vi.fn(async () => ({ id: 'custom', name: 'Custom reset', bindings: standardProfile.bindings, fingerprint: 'reset-fingerprint' }))
+    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+    if (screen.queryByRole('button', { name: 'Expand: Shortcuts' })) openCard()
+    fireEvent.click(screen.getByRole('button', { name: 'Reset to default' }))
+    await waitFor(() => expect((screen.getByRole('textbox', { name: 'Profile name' }) as HTMLInputElement).value).toBe('Custom'))
+    expect(settings.profiles().find(profile => profile.id === 'custom-b')?.bindings).toEqual(beforeB?.bindings)
+  })
+
+  it('keeps the current selector and custom-only actions after confirmed reset', async () => {
+    const registry = createProfileRegistry([standardProfile, vimProfile])
+    registry.replaceCustomProfiles([{ id: 'custom', name: 'Work', bindings: customBindings }])
+    const settings = settingsFace('custom', registry.list())
+    settings.resetCustomProfile = vi.fn(async () => ({ id: 'custom', name: 'Custom', bindings: standardProfile.bindings, fingerprint: 'reset-fingerprint' }))
+    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+    openCard()
+    fireEvent.click(screen.getByRole('button', { name: 'Reset to default' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm reset' }))
+    await waitFor(() => expect((screen.getByRole('combobox', { name: 'Profile' }) as HTMLSelectElement).value).toBe('custom'))
+    expect(screen.getByRole('button', { name: 'Export profile' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Delete profile' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Reset to default' })).toBeTruthy()
+  })
+
   it('removes an active custom profile through the real controller without retaining its editor draft', async () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     const scope = controllerScope({
