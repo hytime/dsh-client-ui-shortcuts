@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### 新增
+
+- 为当前 Custom profile 新增「恢复默认」操作。
+- 恢复默认会保留方案名称和 ID，只替换 bindings。
+- 写入失败时保留原方案和编辑草稿；只读的 Standard 与 Vim profile 不显示该操作。
+
 ## 0.1.15 - 首次使用引导
 
 ### 新增

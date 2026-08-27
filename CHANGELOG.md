@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Added a Reset to defaults action for the active Custom profile.
+- Reset preserves the profile name and ID while replacing only its bindings.
+- Reset keeps the original profile and draft intact when persistence fails, and remains unavailable for read-only Standard and Vim profiles.
+
 ## 0.1.15 - First-use onboarding
 
 ### Added

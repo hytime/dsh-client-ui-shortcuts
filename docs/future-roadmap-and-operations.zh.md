@@ -69,11 +69,17 @@ dsh plugin --profile web add github:hytime/dsh-client-ui-shortcuts#v0.1.14
 
 #### 重置当前方案
 
-- Custom profile 增加「恢复默认」操作；
-- 重置前显示当前方案名称；
-- 重置必须保留方案名称和方案 ID，只替换 bindings；
+**已实现能力**
+
+- Custom profile 增加「恢复默认」操作，并在确认前显示当前方案名称；
+- 重置保留方案名称和方案 ID，只替换 bindings；
 - 写入失败时保留原方案和编辑草稿；
 - Standard、Vim 不显示重置操作。
+
+**后续优化**
+
+- 根据真实使用反馈调整确认文案、错误提示和恢复路径；
+- 持续验证只读方案、写入失败及 390×844 窄屏下的交互体验。
 
 #### 冲突解释增强
 
