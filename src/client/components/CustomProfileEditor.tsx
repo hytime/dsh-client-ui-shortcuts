@@ -19,6 +19,7 @@ export interface CustomProfileEditorProps {
   readonly t: (key: ShortcutLocaleKey | string) => string
   readonly disabled?: boolean
   readonly onSave: (id: string, baselineFingerprint: string, name: string, bindings: readonly ShortcutBinding[]) => Promise<EditableCustomProfile>
+  readonly onReset?: (id: string, baselineFingerprint: string) => Promise<EditableCustomProfile>
   readonly onStateChange: (state: { dirty: boolean; saving: boolean; externalChange: boolean }) => void
 }
 

@@ -52,6 +52,7 @@ export function ShortcutProfileCard({ settings, availableGlobalActions, platform
   const [message, setMessage] = useState<Message>()
   const [editor, setEditor] = useState<EditorState>(idleEditor)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [confirmReset, setConfirmReset] = useState(false)
   const requestId = useRef(0)
   const mounted = useRef(false)
   const currentSettings = useRef(settings)
@@ -73,6 +74,13 @@ export function ShortcutProfileCard({ settings, availableGlobalActions, platform
   const onboardingAvailable = settings.available() && registryProfiles.length > 0
   const exportReason = editor.externalChange ? t('settings.externalExport') : editor.dirty ? t('settings.unsavedExport') : undefined
   void runtimeState
+
+  const resetCustomProfile = async (profileId: string, baselineFingerprint: string): Promise<EditableCustomProfile> => {
+    await settings.resetCustomProfile(profileId, baselineFingerprint)
+    const reset = settings.profiles().find(profile => profile.id === profileId && profile.kind === 'custom')
+    if (reset === undefined) throw new Error(`custom shortcut profile is unavailable: ${profileId}`)
+    return { id: reset.id, name: reset.persistedName ?? reset.displayName, bindings: reset.bindings, fingerprint: reset.fingerprint }
+  }
 
   const saveCustomProfile = async (profileId: string, baselineFingerprint: string, name: string, bindings: readonly ShortcutProfile['bindings'][number][]): Promise<EditableCustomProfile> => {
     await settings.saveCustomProfile(profileId, baselineFingerprint, name, bindings)
@@ -203,6 +211,25 @@ export function ShortcutProfileCard({ settings, availableGlobalActions, platform
     }
   }
 
+  const resetProfile = async (): Promise<void> => {
+    if (currentCustom === undefined || busy || !settings.writable() || editor.externalChange) return
+    const face = settings
+    const profileId = currentCustom.id
+    const currentRequest = ++requestId.current
+    setOperation('reset')
+    setMessage(undefined)
+    try {
+      await face.resetCustomProfile(profileId, currentCustom.fingerprint)
+      if (!isCurrentRequest(currentRequest, face)) return
+      setConfirmReset(false)
+      setMessage({ kind: 'status', text: t('editor.resetSucceeded') })
+    } catch (reason) {
+      if (isCurrentRequest(currentRequest, face)) setMessage({ kind: 'alert', text: t('editor.resetFailed').replace('{message}', errorText(reason)) })
+    } finally {
+      if (isCurrentRequest(currentRequest, face)) setOperation(undefined)
+    }
+  }
+
   const deleteProfile = async (): Promise<void> => {
     if (currentCustom === undefined || persistenceDisabled || editor.externalChange) return
     const face = settings
@@ -285,7 +312,7 @@ export function ShortcutProfileCard({ settings, availableGlobalActions, platform
         <button type="button" disabled={busy} onClick={() => void deleteProfile()}>{t('settings.deleteConfirmAction')}</button>
       </div> : null}
       {message !== undefined ? <p role={message.kind} className={message.kind === 'alert' ? styles.error : styles.success}>{message.text}</p> : settingsFailure !== undefined ? <p role="alert" className={styles.error}>{t('settings.error').replace('{message}', settingsFailure.message)}</p> : null}
-      {currentProfile === undefined ? <p role="status" className={styles.empty}>{t('settings.conflict')}</p> : currentCustom !== undefined ? <CustomProfileEditor key={currentCustom.id} profile={{ id: currentCustom.id, name: currentCustom.persistedName ?? currentCustom.displayName, bindings: currentCustom.bindings, fingerprint: currentCustom.fingerprint }} availableGlobalActions={availableGlobalActions as readonly GlobalShortcutCommand[] | undefined} platform={platform} t={t} disabled={busy || !settings.writable()} onSave={saveCustomProfile} onStateChange={setEditor} /> : <>
+      {currentProfile === undefined ? <p role="status" className={styles.empty}>{t('settings.conflict')}</p> : currentCustom !== undefined ? <CustomProfileEditor key={currentCustom.id} profile={{ id: currentCustom.id, name: currentCustom.persistedName ?? currentCustom.displayName, bindings: currentCustom.bindings, fingerprint: currentCustom.fingerprint }} availableGlobalActions={availableGlobalActions as readonly GlobalShortcutCommand[] | undefined} platform={platform} t={t} disabled={busy || !settings.writable()} onSave={saveCustomProfile} onReset={resetCustomProfile} onStateChange={setEditor} /> : <>
         <p className={styles.summary}>{currentProfile.description ? t(currentProfile.description) : ''}</p>
         <ShortcutLegend bindings={currentProfile.bindings} availableGlobalActions={availableGlobalActions as readonly GlobalShortcutCommand[] | undefined} platform={platform} t={t} />
       </>}
