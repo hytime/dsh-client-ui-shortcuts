@@ -112,6 +112,34 @@ describe('CustomProfileEditor', () => {
   const profile = { id: 'custom-a', name: 'Work', bindings, fingerprint: 'baseline-a' }
   const props = { availableGlobalActions: ['openCommandPalette', 'openSettings'] as const, platform: 'linux' as const, t }
 
+  it('adopts the authoritative reset profile as the new draft baseline', async () => {
+    const resetProfile = {
+      id: 'custom-a',
+      name: 'Default work',
+      bindings: [{ command: 'openCommandPalette' as const, scope: 'global' as const, key: { key: 'd', modifiers: ['Ctrl'] as const } }],
+      fingerprint: 'reset-fingerprint',
+    }
+    const onReset = vi.fn(async () => resetProfile)
+    const onSave = vi.fn(async (_id, _fingerprint, name, nextBindings) => ({ ...resetProfile, name, bindings: nextBindings }))
+    render(<CustomProfileEditor profile={profile} {...props} onReset={onReset} onSave={onSave} onStateChange={vi.fn()} />)
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Profile name' }), { target: { value: 'Draft' } })
+    fireEvent.click(screen.getByRole('button', { name: 'editor.reset' }))
+    expect(screen.getByText('editor.resetConfirm')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'editor.resetConfirmAction' }))
+
+    await waitFor(() => expect(onReset).toHaveBeenCalledWith('custom-a', 'baseline-a'))
+    await waitFor(() => {
+      expect(screen.queryByText('editor.resetConfirm')).toBeNull()
+      expect((screen.getByRole('textbox', { name: 'Profile name' }) as HTMLInputElement).value).toBe('Default work')
+      expect((screen.getAllByRole('checkbox')[1] as HTMLInputElement).checked).toBe(true)
+    })
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Profile name' }), { target: { value: 'Saved after reset' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(onSave).toHaveBeenCalledWith('custom-a', 'reset-fingerprint', 'Saved after reset', expect.any(Array)))
+  })
+
   it('saves the literal name and bindings in one operation', async () => {
     const saved = { ...profile, name: 'Review', fingerprint: 'baseline-b' }
     const onSave = vi.fn(async () => saved)
