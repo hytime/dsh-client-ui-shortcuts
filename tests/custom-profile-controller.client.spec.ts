@@ -699,10 +699,56 @@ describe('custom profile settings controller', () => {
     expect(controller.profiles().find(profile => profile.id === other.id)?.bindings).toEqual(other.bindings)
     expect(scope.mutate).toHaveBeenCalledWith(expect.objectContaining({
       field: 'customProfiles',
-      expectedRevision: expect.any(Number),
+      value: [work, other].map((profile, index) => index === 0
+        ? expect.objectContaining({ id: work.id, name: work.name, bindings: standardProfile.bindings })
+        : profile),
+      expectedRevision: 1,
     }))
+    const exported = controller.exportActiveCustomProfile()
+    expect(exported).toEqual({ name: 'Work', bindings: standardProfile.bindings })
+    expect(exported.bindings).not.toBe(standardProfile.bindings)
+    expect(saved.bindings).not.toBe(standardProfile.bindings)
+    const savedBinding = saved.bindings[0]!
+    const standardBinding = standardProfile.bindings[0]!
+    const exportedBinding = exported.bindings[0]!
+    expect(savedBinding).not.toBe(standardBinding)
+    expect(exportedBinding).not.toBe(standardBinding)
+    expect(savedBinding.key).not.toBe(standardBinding.key)
+    expect(exportedBinding.key).not.toBe(standardBinding.key)
+    expect(controller.profiles().find(profile => profile.id === other.id)?.bindings).toEqual(other.bindings)
   })
 
+  it('resets a non-active custom profile by id without changing selection or other profiles', async () => {
+    const active = { id: 'custom-a', name: 'Active', bindings: [customBinding] }
+    const target = { id: 'custom-b', name: 'Target', bindings: [otherBinding] }
+    const scope = controlledSettings(initialSettings({ activeProfile: active.id, customProfiles: [active, target] }))
+    const controller = controllerFor(scope)
+    const baseline = controller.profiles().find(profile => profile.id === target.id)!.fingerprint
+
+    await controller.resetCustomProfile(target.id, baseline)
+
+    expect(controller.activeProfileId()).toBe(active.id)
+    expect(scope.hostSnapshot().value.customProfiles).toEqual([
+      active,
+      { id: target.id, name: target.name, bindings: standardProfile.bindings },
+    ])
+  })
+
+  it('uses immutable built-in defaults even when the registry Standard is replaced', async () => {
+    const work = { id: 'custom-a', name: 'Work', bindings: [customBinding] }
+    const scope = controlledSettings(initialSettings({ customProfiles: [work] }))
+    const registry = createBuiltinProfileRegistry()
+    const registryGet = vi.spyOn(registry, 'get').mockImplementation((id: string) => (
+      id === 'standard' ? { ...standardProfile, bindings: [otherBinding] } : undefined
+    ))
+    const controller = createShortcutSettingsController(scope.scope, registry, scope.mutate, { createId: () => 'id', legacyName: () => 'Custom' })
+    const baseline = controller.profiles().find(profile => profile.id === work.id)!.fingerprint
+
+    await controller.resetCustomProfile(work.id, baseline)
+
+    expect(controller.profiles().find(profile => profile.id === work.id)?.bindings).toEqual(standardProfile.bindings)
+    expect(registryGet).toHaveBeenCalledWith('standard')
+  })
   it('rejects reset for stale, builtin, readonly, and unavailable targets without writing', async () => {
     const work = { id: 'custom-a', name: 'Work', bindings: [customBinding] }
     const scope = controlledSettings(initialSettings({ customProfiles: [work] }))
@@ -722,6 +768,7 @@ describe('custom profile settings controller', () => {
     scope.setStatus('unavailable')
     await expect(caughtFailure(controller.resetCustomProfile(work.id, baseline))).resolves.toMatchObject({ code: 'UNAVAILABLE' })
   })
+
 
   it('does not retry reset after CAS conflict and exports restored bindings', async () => {
     const work = { id: 'custom-a', name: 'Work', bindings: [customBinding] }

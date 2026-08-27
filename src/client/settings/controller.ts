@@ -6,6 +6,7 @@ import {
   resolveUniqueCustomProfileName,
 } from '../../custom-profile-contract.js'
 import { DEFAULT_SHORTCUT_PROFILE_ID } from '../../profile-catalog.js'
+import { standardProfile } from '../profiles/builtins.js'
 import type { PersistedCustomShortcutProfile } from '../../custom-profile-contract.js'
 import type { PersistedShortcutBinding, ShortcutSettings } from '../../settings.js'
 import type { ShortcutBinding } from '../contract/profile.js'
@@ -211,14 +212,11 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
       if (customProfileFingerprint(current) !== baselineFingerprint) {
         throw this.failure('NOT_APPLIED', context, `custom profile "${id}" changed before it could be reset`)
       }
-      const standard = this.registry.get(DEFAULT_SHORTCUT_PROFILE_ID)
-      if (standard === undefined) {
-        throw this.failure('PROFILE_MISSING', context, `standard shortcut profile is unavailable`)
-      }
+      const standard = standardProfile
       const replacement = {
         id: current.id,
         ...(current.name !== undefined ? { name: current.name } : {}),
-        bindings: standard.bindings as unknown as readonly PersistedShortcutBinding[],
+        bindings: cloneJson(standard.bindings) as unknown as readonly PersistedShortcutBinding[],
       }
       const next = normalizeCustomProfiles(profiles.map((profile, profileIndex) => (
         profileIndex === index ? replacement : profile
