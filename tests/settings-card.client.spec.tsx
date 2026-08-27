@@ -100,6 +100,7 @@ const labels: Record<string, string> = {
   'keyboard.startSession': 'New session', 'keyboard.previousSession': 'Previous session', 'keyboard.nextSession': 'Next session',
   'keyboard.previousWorkspace': 'Previous workspace', 'keyboard.nextWorkspace': 'Next workspace', 'keyboard.forkSession': 'Fork session', 'keyboard.toggleTheme': 'Toggle theme',
   'editor.save': 'Save', 'editor.cancel': 'Cancel', 'editor.record': 'Record shortcut', 'editor.conflict': 'Shortcut conflicts with another command.', 'editor.invalid': 'Resolve shortcut conflicts before saving.', 'editor.saveFailed': 'Could not save custom shortcuts: {message}',
+  'editor.reset': 'Reset to default', 'editor.resetConfirm': 'Reset “{name}” to Standard?', 'editor.resetCancel': 'Cancel reset', 'editor.resetConfirmAction': 'Confirm reset', 'editor.resetSucceeded': 'Profile reset to Standard.', 'editor.resetFailed': 'Could not reset profile: {message}',
   'editor.profileName': 'Profile name', 'editor.nameCount': '{count} / 64', 'editor.externalChange': 'This profile was updated elsewhere.', 'editor.loadLatest': 'Load latest',
   'modifier.Meta': 'Meta', 'modifier.Ctrl': 'Ctrl', 'modifier.Alt': 'Alt', 'modifier.Shift': 'Shift',
 }
@@ -883,6 +884,71 @@ describe('shortcut settings card', () => {
     expect(screen.queryByRole('combobox', { name: 'Profile' })).toBeNull()
     resolve()
     await waitFor(() => expect(screen.getByRole('button', { name: 'Expand: Shortcuts' })).toBeTruthy())
+  })
+
+  it('shows inline reset confirmation only for the current custom profile and resets authoritatively', async () => {
+    const registry = createProfileRegistry([standardProfile, vimProfile])
+    registry.replaceCustomProfiles([{ id: 'custom', name: 'Work', bindings: customBindings }])
+    const settings = settingsFace('custom', registry.list())
+    settings.resetCustomProfile = vi.fn(async (id, fingerprint) => {
+      expect(id).toBe('custom')
+      expect(fingerprint).toBe(settings.profiles().find(profile => profile.id === 'custom')?.fingerprint)
+      settings.setProfiles([{ ...standardProfile }, { ...vimProfile }, { id: 'custom', label: 'profile.custom.label', description: 'profile.custom.description', bindings: standardProfile.bindings }])
+    })
+    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+    openCard()
+
+    expect(screen.getByRole('button', { name: 'Reset to default' })).toBeTruthy()
+    fireEvent.change(screen.getByRole('textbox', { name: 'Profile name' }), { target: { value: 'Draft' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Reset to default' }))
+    expect(screen.getByText('Reset “Custom” to Standard?')).toBeTruthy()
+    expect(settings.resetCustomProfile).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel reset' }))
+    expect(settings.resetCustomProfile).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reset to default' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm reset' }))
+    await waitFor(() => expect(settings.resetCustomProfile).toHaveBeenCalledOnce())
+    await waitFor(() => expect(screen.getByRole('status').textContent).toContain('Profile reset to Standard.'))
+    expect((screen.getByRole('textbox', { name: 'Profile name' }) as HTMLInputElement).value).toBe('Custom')
+  })
+
+  it('keeps reset confirmation and draft after failure for retry', async () => {
+    const registry = createProfileRegistry([standardProfile, vimProfile])
+    registry.replaceCustomProfiles([{ id: 'custom', name: 'Work', bindings: customBindings }])
+    const settings = settingsFace('custom', registry.list())
+    settings.resetCustomProfile = vi.fn().mockRejectedValue(new Error('denied'))
+    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+    openCard()
+    fireEvent.change(screen.getByRole('textbox', { name: 'Profile name' }), { target: { value: 'Draft' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Reset to default' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm reset' }))
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('denied'))
+    expect(screen.getByText('Reset “Custom” to Standard?')).toBeTruthy()
+    expect((screen.getByRole('textbox', { name: 'Profile name' }) as HTMLInputElement).value).toBe('Draft')
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm reset' }))
+    await waitFor(() => expect(settings.resetCustomProfile).toHaveBeenCalledTimes(2))
+  })
+
+  it('disables reset for built-ins, dirty external state, readonly, busy, and unavailable settings', async () => {
+    const builtins = settingsFace('standard')
+    render(<ShortcutProfileCard settings={builtins} availableGlobalActions={[]} platform="linux" t={t} />)
+    openCard()
+    expect(screen.queryByRole('button', { name: 'Reset to default' })).toBeNull()
+    cleanup()
+
+    const registry = createProfileRegistry([standardProfile, vimProfile])
+    registry.replaceCustomProfiles([{ id: 'custom', name: 'Work', bindings: customBindings }])
+    const readonly = settingsFace('custom', registry.list(), false)
+    render(<ShortcutProfileCard settings={readonly} availableGlobalActions={[]} platform="linux" t={t} />)
+    openCard()
+    expect((screen.getByRole('button', { name: 'Reset to default' }) as HTMLButtonElement).disabled).toBe(true)
+    cleanup()
+
+    const unavailable = settingsFace('custom', registry.list(), true, false)
+    render(<ShortcutProfileCard settings={unavailable} availableGlobalActions={[]} platform="linux" t={t} />)
+    openCard()
+    expect((screen.getByRole('button', { name: 'Reset to default' }) as HTMLButtonElement).disabled).toBe(true)
   })
 
   it('removes an active custom profile through the real controller without retaining its editor draft', async () => {

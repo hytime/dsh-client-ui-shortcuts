@@ -25,7 +25,7 @@ export interface CustomProfileEditorProps {
 
 const bindingSnapshot = (bindings: readonly ShortcutBinding[]): string => JSON.stringify(bindings)
 
-export function CustomProfileEditor({ profile, availableGlobalActions, platform, t, disabled = false, onSave, onStateChange }: CustomProfileEditorProps): React.ReactElement {
+export function CustomProfileEditor({ profile, availableGlobalActions, platform, t, disabled = false, onSave, onReset, onStateChange }: CustomProfileEditorProps): React.ReactElement {
   const [name, setName] = useState(profile.name)
   const [bindings, setBindings] = useState(profile.bindings)
   const [baseline, setBaseline] = useState(profile)
@@ -33,6 +33,7 @@ export function CustomProfileEditor({ profile, availableGlobalActions, platform,
   const [bindingsValid, setBindingsValid] = useState(true)
   const [externalProfile, setExternalProfile] = useState<EditableCustomProfile>()
   const [message, setMessage] = useState<{ kind: 'status' | 'alert'; text: string }>()
+  const [confirmReset, setConfirmReset] = useState(false)
   const latestProfile = useRef(profile)
   latestProfile.current = profile
   const mounted = useRef(false)
@@ -85,6 +86,29 @@ export function CustomProfileEditor({ profile, availableGlobalActions, platform,
     setExternalProfile(undefined)
     setMessage(undefined)
   }
+  const resetProfile = async (): Promise<void> => {
+    if (onReset === undefined || disabled || saving || externalChange) return
+    const resetId = profile.id
+    const currentRequest = ++requestToken.current
+    setSaving(true)
+    setMessage(undefined)
+    try {
+      const resetProfile = await onReset(resetId, baseline.fingerprint)
+      if (!mounted.current || currentRequest !== requestToken.current || latestProfile.current.id !== resetId || resetProfile.id !== resetId) return
+      setName(resetProfile.name)
+      setBindings(resetProfile.bindings)
+      setBaseline(resetProfile)
+      setExternalProfile(undefined)
+      setConfirmReset(false)
+      setMessage({ kind: 'status', text: t('editor.resetSucceeded') })
+    } catch (reason) {
+      if (mounted.current && currentRequest === requestToken.current && latestProfile.current.id === resetId) {
+        setMessage({ kind: 'alert', text: t('editor.resetFailed').replace('{message}', reason instanceof Error ? reason.message : String(reason)) })
+      }
+    } finally {
+      if (mounted.current && currentRequest === requestToken.current && latestProfile.current.id === resetId) setSaving(false)
+    }
+  }
   const save = async (): Promise<void> => {
     if (disabled || saving || !dirty || externalChange || count === 0 || count > 64 || !bindingsValid) return
     const savedProfileId = profile.id
@@ -117,6 +141,13 @@ export function CustomProfileEditor({ profile, availableGlobalActions, platform,
     {externalChange ? <div role="status" className={styles.externalChange}><span>{t('editor.externalChange')}</span><button type="button" disabled={disabled || saving} onClick={() => reset(externalProfile)}>{t('editor.loadLatest')}</button></div> : null}
     <ShortcutBindingEditor bindings={bindings} availableGlobalActions={availableGlobalActions} platform={platform} t={t} onChange={next => { setBindings(next); setMessage(undefined) }} onValidityChange={setBindingsValid} disabled={disabled || saving} />
     {message !== undefined ? <p role={message.kind} className={message.kind === 'alert' ? styles.error : styles.success}>{message.text}</p> : null}
+    {onReset !== undefined ? <div className={styles.resetActions}>
+      {!confirmReset ? <button type="button" onClick={() => setConfirmReset(true)} disabled={disabled || saving || externalChange}>{t('editor.reset')}</button> : <div className={styles.resetConfirm}>
+        <span>{t('editor.resetConfirm').replace('{name}', baseline.name)}</span>
+        <button type="button" disabled={disabled || saving} onClick={() => { setConfirmReset(false); setMessage(undefined) }}>{t('editor.resetCancel')}</button>
+        <button type="button" disabled={disabled || saving} onClick={() => void resetProfile()}>{t('editor.resetConfirmAction')}</button>
+      </div>}
+    </div> : null}
     <div className={styles.editorActions}>
       <button type="button" onClick={() => reset()} disabled={disabled || saving || !dirty}>{t('editor.cancel')}</button>
       <button type="button" onClick={() => void save()} disabled={disabled || saving || !dirty || externalChange || count === 0 || count > 64 || !bindingsValid}>{saving ? t('settings.saving') : t('editor.save')}</button>

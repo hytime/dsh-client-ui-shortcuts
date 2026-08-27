@@ -136,7 +136,12 @@
 .modifierToggles label { display: inline-flex; align-items: center; gap: 3px; color: var(--dsw-alias-text-secondary); font-size: 12px; }
 .recordButton, .editorActions button { display: inline-flex; flex-wrap: nowrap; align-items: center; white-space: nowrap; border: 1px solid var(--dsw-alias-border-subtle); border-radius: 6px; padding: 5px 8px; background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-text-primary); font: inherit; cursor: pointer; }
 .recordButton:focus-visible, .editorActions button:focus-visible { outline: 2px solid var(--dsw-alias-border-focus); outline-offset: 2px; }
-.editorActions { display: flex; justify-content: flex-end; gap: 8px; }
+.resetActions { display: flex; min-width: 0; flex-wrap: wrap; gap: 8px; }
+.resetActions > button, .resetConfirm button { min-height: 32px; max-width: 100%; padding: 6px 10px; border: 1px solid var(--dsw-alias-border-subtle); border-radius: 6px; background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-text-primary); font: inherit; cursor: pointer; overflow-wrap: anywhere; }
+.resetConfirm { display: flex; min-width: 0; width: 100%; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px; border: 1px solid var(--dsw-alias-border-focus); border-radius: 6px; background: var(--dsw-alias-bg-module-platform); }
+.resetConfirm span { flex: 1 1 180px; min-width: 0; color: var(--dsw-alias-text-secondary); overflow-wrap: anywhere; }
+.resetConfirm button:last-child { background: var(--dsw-alias-action-primary); color: var(--dsw-alias-text-on-primary); }
+.resetActions button:disabled { cursor: default; opacity: .55; }
 .editorActions button:last-child { background: var(--dsw-alias-action-primary); color: var(--dsw-alias-text-on-primary); }
 .editorActions button:disabled { cursor: default; opacity: .55; }
 
