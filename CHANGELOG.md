@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.16 - Reset Custom profile to defaults
 
 ### Added
 

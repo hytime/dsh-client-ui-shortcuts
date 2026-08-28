@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.16 - 恢复 Custom 方案默认配置
 
 ### 新增
 
