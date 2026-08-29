@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import type { ApprovalWait } from '../contract/slots.js'
+import { answerApproval, approvalDetail } from '../contract/slots.js'
 import type { ShortcutProfile } from '../contract/profile.js'
 import { resolveKey } from '../keyboard/resolve.js'
 import type { KeyInput } from '../contract/keyboard.js'
@@ -34,11 +35,7 @@ export function ApprovalFlow({ matched, activeProfile, t, cancelTask, platform }
     setBusy(true)
     setError(undefined)
     try {
-      const receipt = await matched.respond({
-        ok: true,
-        value: { sessionId: matched.sessionId, approvalId: matched.payload.approvalId, outcome },
-      })
-      if (!receipt.accepted) throw new Error(receipt.reason)
+      await answerApproval(matched, outcome)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause))
       setBusy(false)
@@ -56,13 +53,14 @@ export function ApprovalFlow({ matched, activeProfile, t, cancelTask, platform }
       moveFocus(delta)
     }
   }
+  const detail = approvalDetail(matched)
   return <InteractionSurface kind="approval" data-approval-key={matched.key} onKeyDown={onKeyDown} aria-busy={busy}>
     <div className={styles.card}>
       <header className={styles.header}>
         <strong>{t('approval.title')}</strong>
       </header>
       <div className={styles.body} data-testid="approval-scroll" data-approval-scroll tabIndex={0} role="group" aria-label={t('approval.details')}>
-        <p className={styles.detail}>{matched.payload.reason ?? matched.payload.toolName}</p>
+        <p className={styles.detail}>{detail.reason ?? detail.toolName}</p>
       </div>
       <div className={styles.actions} data-testid="approval-actions" role="group" aria-label={t('approval.actions')}>
         <button className={styles.approvalReject} ref={node => { actionRefs.current[1] = node }} type="button" disabled={busy} aria-pressed={choice === 'rejected'} onClick={() => { setFocusIndex(1); void answer('rejected') }}>{t('approval.reject')}</button>

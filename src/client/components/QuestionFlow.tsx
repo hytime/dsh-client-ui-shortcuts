@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
-import type { QuestionWait } from '../contract/slots.js'
+import type { QuestionItem, QuestionWait } from '../contract/slots.js'
+import { answerQuestion, questionItems } from '../contract/slots.js'
 import type { ShortcutProfile } from '../contract/profile.js'
 import { resolveKey } from '../keyboard/resolve.js'
 import type { KeyInput } from '../contract/keyboard.js'
@@ -15,7 +16,7 @@ export interface QuestionFlowProps {
   readonly cancelTask: () => Promise<void>
   readonly platform: 'mac' | 'windows' | 'linux'
 }
-type Question = QuestionWait['payload']['questions'][number]
+type Question = QuestionItem
 type Answer = { id: string; selected: string[]; custom?: string }
 type Draft = { selected: string[]; custom: string; skipped: boolean }
 type FocusItem =
@@ -29,7 +30,7 @@ const composing = (event: React.KeyboardEvent<HTMLElement>): boolean => event.na
 function initialDraft(): Draft { return { selected: [], custom: '', skipped: false } }
 
 export function QuestionFlow({ matched, activeProfile, t, cancelTask, platform }: QuestionFlowProps): React.ReactElement {
-  const questions = matched.payload.questions
+  const questions = questionItems(matched)
   const [drafts, setDrafts] = useState<Draft[]>(() => questions.map(() => initialDraft()))
   const [index, setIndex] = useState(0)
   const [submitting, setSubmitting] = useState(false)
@@ -73,11 +74,7 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask, platform }
     if (submitting) return
     setSubmitting(true); setError(undefined)
     try {
-      const receipt = await matched.respond({
-        ok: true,
-        value: { sessionId: matched.sessionId, answer: { answers: answerFor(items) } },
-      })
-      if (!receipt.accepted) throw new Error(receipt.reason)
+      await answerQuestion(matched, { answers: answerFor(items) })
     } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)); setSubmitting(false) }
   }
   const advance = () => {

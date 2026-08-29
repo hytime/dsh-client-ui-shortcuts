@@ -115,27 +115,23 @@ async function bench() {
   ctx.provide('settingsScope', { bind: vi.fn(() => settings.scope) })
   let hostValue = structuredClone(settings.scope.getSnapshot().value!)
   let hostRevision = settings.scope.getSnapshot().revision
-  const mutate = vi.fn(async (request: {
-    ns: string
-    ops: readonly [{ op: 'set'; path: readonly [keyof ShortcutSettings]; value: unknown }]
-    expectedRevision: number
-  }) => {
-    const operation = request.ops[0]
+  const mutate = vi.fn(async (_namespace: string, ops: readonly [{ op: 'set'; path: readonly [keyof ShortcutSettings]; value: unknown }], _expectedRevision: number) => {
+    const operation = ops[0]
     hostValue = { ...hostValue, [operation.path[0]]: structuredClone(operation.value) }
     hostRevision += 1
     return {
-      result: {
-        ok: true as const,
-        value: {
-          value: structuredClone(hostValue),
-          base: undefined,
-          user: structuredClone(hostValue),
-          revision: hostRevision,
-        },
+      ok: true as const,
+      value: {
+        value: structuredClone(hostValue),
+        base: undefined,
+        user: structuredClone(hostValue),
+        revision: hostRevision,
       },
     }
   })
-  ctx.provide('connection', { api: { settings: { mutate } } })
+  const remote = { settings: { mutate } }
+  ctx.provide('remote', remote)
+  ctx.provide('remote.settings', remote.settings)
   ctx.provide('sessions', {
     scope: vi.fn(() => undefined),
     list: { getSnapshot: () => ({ items: [{ sessionId: 's1' }], current: 's1' }) },
@@ -151,7 +147,7 @@ async function bench() {
 
 describe('shortcut client slot wiring', () => {
   it('declares its client services', () => {
-    expect(inject).toEqual(['slots', 'locale', 'settingsScope', 'sessions', 'connection'])
+    expect(inject).toEqual(['slots', 'locale', 'settingsScope', 'sessions', 'remote', 'remote.settings'])
   })
 
   it('registers locale, composer selector and keyed settings card', async () => {
@@ -165,13 +161,22 @@ describe('shortcut client slot wiring', () => {
 
   it('selector prefers question, accepts approval, and declines other or empty interactions', async () => {
     const b = await bench()
-    const select = b.slots.entries('conversation.composer')[0]!.options.select as (owner: { interactions: readonly { kind: string }[] }) => unknown
+    const select = b.slots.entries('conversation.composer')[0]!.options.select as (owner: { pendingInteraction?: unknown; interactions?: readonly unknown[] }) => unknown
     const question = { kind: 'question' }
+    const planReview = { kind: 'plan-review' }
     const approval = { kind: 'approval' }
+    expect(select({ pendingInteraction: planReview })).toBe(planReview)
+    expect(select({ pendingInteraction: approval })).toBe(approval)
+    expect(select({ pendingInteraction: question })).toBe(question)
+    expect(select({ pendingInteraction: undefined })).toBeNull()
     expect(select({ interactions: [approval] })).toBe(approval)
     expect(select({ interactions: [approval, question] })).toBe(question)
     expect(select({ interactions: [{ kind: 'other' }] })).toBeNull()
+    expect(select({ interactions: [null, { kind: 'other' }] })).toBeNull()
     expect(select({ interactions: [] })).toBeNull()
+    expect(select({ pendingInteraction: null })).toBeNull()
+    expect(select({ pendingInteraction: undefined, interactions: [approval] })).toBeNull()
+    expect(select({ pendingInteraction: question, interactions: [approval] })).toBe(question)
     await b.feature.dispose()
   })
 
@@ -205,11 +210,11 @@ describe('shortcut client slot wiring', () => {
     const off = face.subscribe(listener)
     await face.setActiveProfile('vim')
     expect(face.activeProfileId()).toBe('vim')
-    expect(b.mutate).toHaveBeenCalledWith({
-      ns: 'dsh-ui-shortcuts',
-      ops: [{ op: 'set', path: ['activeProfile'], value: 'vim' }],
-      expectedRevision: 1,
-    })
+    expect(b.mutate).toHaveBeenCalledWith(
+      'dsh-ui-shortcuts',
+      [{ op: 'set', path: ['activeProfile'], value: 'vim' }],
+      1,
+    )
     expect(listener).toHaveBeenCalled()
     await expect(face.setActiveProfile('missing')).rejects.toThrow('unknown shortcut profile: missing')
     expect(face.error()).toMatchObject({

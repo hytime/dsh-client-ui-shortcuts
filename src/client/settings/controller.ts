@@ -286,15 +286,18 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
     if (snapshot.status !== 'ready') {
       throw this.failure('UNAVAILABLE', { operation: 'export', phase: 'selection' }, 'shortcut settings are unavailable')
     }
-    const profile = this.readCustomProfiles(snapshot).find(entry => entry.id === snapshot.value?.activeProfile)
-    if (profile === undefined || profile.name === undefined) {
+    const activeId = snapshot.value?.activeProfile
+    const profile = this.readCustomProfiles(snapshot).find(entry => entry.id === activeId)
+    const displayName = this.managedProfiles.find(entry => entry.id === activeId && entry.kind === 'custom')?.displayName
+    const name = profile?.name ?? displayName
+    if (profile === undefined || name === undefined) {
       throw this.failure(
         'PROFILE_MISSING',
-        { operation: 'export', phase: 'selection', profileId: snapshot.value?.activeProfile },
+        { operation: 'export', phase: 'selection', profileId: activeId },
         'the active custom shortcut profile is unavailable',
       )
     }
-    return { name: profile.name, bindings: cloneJson(profile.bindings) }
+    return { name, bindings: cloneJson(profile.bindings) }
   }
 
   setActiveProfile(id: string): Promise<void> {

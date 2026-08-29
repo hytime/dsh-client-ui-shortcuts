@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.17 - DSH Web compatibility
+
+### Fixed
+
+- Adapted interaction rendering and responses to the current DSH Web question, plan-review, and approval carriers while retaining legacy compatibility.
+- Switched settings persistence to the current remote settings mutation API.
+- Exported legacy nameless Custom profiles using their visible display name.
+
 ## 0.1.16 - Reset Custom profile to defaults
 
 ### Added

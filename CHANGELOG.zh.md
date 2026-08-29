@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.17 - DSH Web 兼容性修复
+
+### 修复
+
+- 适配当前 DSH Web 的 question、plan-review 和 approval 交互载体及响应方式，同时保留旧版兼容性。
+- 将 settings 持久化切换到当前 remote settings mutation API。
+- 旧版无持久化名称的 Custom 方案导出时使用界面显示名称。
+
 ## 0.1.16 - 恢复 Custom 方案默认配置
 
 ### 新增

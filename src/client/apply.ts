@@ -1,6 +1,4 @@
-import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
-import type { SettingsScope, SessionId } from '@deepseek-ai/dsh-client-runtime/client'
+import type { ClientContext, SettingsScope, SessionId } from '@deepseek-ai/dsh-client-runtime/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
@@ -20,31 +18,52 @@ import { detectShortcutPlatform } from './keyboard/visuals.js'
 import { createGlobalKeyboardRouter } from './keyboard/router.js'
 import { expandCollapsedWorkspace } from './actions/workspace-expansion.js'
 
-type SettingsMutationConnection = Pick<ConnectionHandle, 'api'>
+type SettingsMutationRemote = {
+  readonly settings: {
+    mutate: (
+      namespace: string,
+      ops: readonly [{ op: 'set'; path: readonly [string]; value: unknown }],
+      expectedRevision: number,
+    ) => Promise<SettingsMutationResponse>
+  }
+}
 
-export function createSettingsMutationAdapter(connection: SettingsMutationConnection): MutateShortcutSettings {
+type SettingsMutationResponse =
+  | { readonly ok: true; readonly value: SettingsMutationView }
+  | {
+    readonly ok: false
+    readonly error: {
+      readonly code: string
+      readonly message: string
+      readonly details?: unknown
+    }
+  }
+
+type SettingsMutationView = {
+  readonly value: unknown
+  readonly base?: unknown
+  readonly user?: unknown
+  readonly revision: number
+}
+
+export function createSettingsMutationAdapter(remote: SettingsMutationRemote): MutateShortcutSettings {
   return async ({ field, value, expectedRevision }) => {
     try {
-      const response = await connection.api.settings.mutate({
-        ns: SHORTCUTS_SETTINGS_NAMESPACE,
-        ops: [{ op: 'set', path: [field], value }],
+      const response = await remote.settings.mutate(
+        SHORTCUTS_SETTINGS_NAMESPACE,
+        [{ op: 'set', path: [field], value }],
         expectedRevision,
-      })
-      if (!response.result.ok) {
-        const error = response.result.error
-        const actualRevision = numericConflictRevision(error.details)
+      )
+      if (!response.ok) {
+        const actualRevision = numericConflictRevision(response.error.details)
         return {
           ok: false,
-          kind: error.code === 'settings-conflict' ? 'conflict' : 'rejected',
-          message: error.message,
+          kind: response.error.code === 'settings-conflict' ? 'conflict' : 'rejected',
+          message: response.error.message,
           ...(actualRevision === undefined ? {} : { actualRevision }),
         }
       }
-      const view = response.result.value
-      return {
-        ok: true,
-        view: { value: view.value, base: view.base, user: view.user, revision: view.revision },
-      }
+      return { ok: true, view: response.value }
     } catch (error) {
       return {
         ok: false,
@@ -62,15 +81,15 @@ function numericConflictRevision(details: unknown): number | undefined {
 }
 
 /** Required browser services. */
-export const inject = ['slots', 'locale', 'settingsScope', 'sessions', 'connection'] as const
+export const inject = ['slots', 'locale', 'settingsScope', 'sessions', 'remote', 'remote.settings'] as const
 
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-shortcuts: dictionaries')
   const t = ctx.locale.bind(NS)
-  const registry = createBuiltinProfileRegistry()
   const scope = ctx.settingsScope.bind<ShortcutSettings>({ namespace: SHORTCUTS_SETTINGS_NAMESPACE }) as SettingsScope<ShortcutSettings>
-  const connection = ctx.get('connection') as ConnectionHandle
-  const mutate = createSettingsMutationAdapter(connection)
+  const remote = ctx.get('remote') as unknown as SettingsMutationRemote
+  const registry = createBuiltinProfileRegistry()
+  const mutate = createSettingsMutationAdapter(remote)
   const controller = createShortcutSettingsController(scope, registry, mutate, {
     createId: () => window.crypto.randomUUID(),
     legacyName: () => t('profile.custom.label'),

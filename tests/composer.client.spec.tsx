@@ -74,6 +74,23 @@ describe('shortcut composer flows', () => {
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('radio', { name: 'A' })))
   })
 
+  it('renders current DSH question carriers with direct fields', async () => {
+    const answer = vi.fn(async (_value: unknown) => {})
+    const current = {
+      kind: 'question',
+      key: 'question:current',
+      sessionId: 's1' as never,
+      questions: [{ id: 'q', question: 'Pick current', options: [{ label: 'A' }] }],
+      answer,
+    } as unknown as QuestionWait
+    render(<QuestionFlow matched={current} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} />)
+
+    expect(screen.getByRole('heading', { name: 'Pick current' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('radio', { name: 'A' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }))
+    await waitFor(() => expect(answer).toHaveBeenCalledWith({ answers: [{ id: 'q', selected: ['A'] }] }))
+  })
+
   it('focuses custom input after a question session transition without options', async () => {
     const first = question()
     const second = { ...question(), sessionId: 's2' as never, key: 'q:q2', payload: { questions: [{ id: 'q', question: 'Pick', options: [] }] } }
@@ -398,6 +415,23 @@ describe('shortcut composer flows', () => {
       ok: true,
       value: { sessionId: 's1', approvalId: 'ap1', outcome: 'allowed-once' },
     })
+  })
+
+  it('renders current DSH approval carriers with direct fields', async () => {
+    const answer = vi.fn(async (_outcome: 'allowed-once' | 'rejected') => {})
+    const current = {
+      kind: 'approval',
+      key: 'approval:current',
+      sessionId: 's1' as never,
+      toolName: 'bash',
+      reason: 'Run current command',
+      answer,
+    } as unknown as ApprovalWait
+    render(<ApprovalFlow matched={current} activeProfile={standardProfile} t={t} cancelTask={vi.fn(async () => {})} />)
+
+    expect(screen.getByTestId('approval-scroll').textContent).toContain('Run current command')
+    fireEvent.keyDown(approvalSurface(), { key: 'Enter' })
+    await waitFor(() => expect(answer).toHaveBeenCalledWith('allowed-once'))
   })
 
   it('supports vim approval focus and Escape cancel without rejected response', () => {

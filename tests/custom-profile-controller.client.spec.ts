@@ -230,6 +230,17 @@ describe('custom profile settings controller', () => {
     expect(controller.profiles().at(-1)?.persistedName).toBeUndefined()
   })
 
+  it('exports a legacy active custom profile using its display name', () => {
+    const scope = controlledSettings(initialSettings({
+      activeProfile: 'custom',
+      customProfiles: undefined,
+      customBindings: [customBinding],
+    }))
+    const controller = controllerFor(scope)
+
+    expect(controller.exportActiveCustomProfile()).toEqual({ name: 'Custom', bindings: [customBinding] })
+  })
+
   it('exposes only Standard and rejects every operation while unavailable', async () => {
     const scope = controlledSettings(initialSettings({
       activeProfile: 'custom-work',
