@@ -98,7 +98,7 @@ function makeScope(value: ShortcutSettings = {
   return { scope }
 }
 
-async function bench() {
+async function bench(options: { withWorkspaces?: boolean } = {}) {
   const ctx = new Context()
   const slots = new FakeSlotRegistry()
   slots.register({
@@ -130,6 +130,7 @@ async function bench() {
     }
   })
   const remote = { settings: { mutate } }
+  ctx.provide('connection', { api: {} })
   ctx.provide('remote', remote)
   ctx.provide('remote.settings', remote.settings)
   ctx.provide('sessions', {
@@ -138,7 +139,7 @@ async function bench() {
     open: vi.fn(),
     fork: vi.fn().mockResolvedValue('child'),
   })
-  ctx.provide('workspaces', { startSession: vi.fn() })
+  if (options.withWorkspaces !== false) ctx.provide('workspaces', { startSession: vi.fn() })
   ctx.provide('theme', { getTheme: () => ({ preference: 'light' }), setTheme: vi.fn() })
   const feature = ctx.plugin({ inject: [...inject], apply })
   await feature.await()
@@ -147,7 +148,7 @@ async function bench() {
 
 describe('shortcut client slot wiring', () => {
   it('declares its client services', () => {
-    expect(inject).toEqual(['slots', 'locale', 'settingsScope', 'sessions', 'remote', 'remote.settings'])
+    expect(inject).toEqual(['slots', 'locale', 'settingsScope', 'sessions', 'connection', 'remote'])
   })
 
   it('registers locale, composer selector and keyed settings card', async () => {
@@ -230,5 +231,14 @@ describe('shortcut client slot wiring', () => {
     expect(b.locale.bind('dsh-shortcuts')('profile.standard.label')).toBe('profile.standard.label')
     expect(b.mutate).toHaveBeenCalledTimes(1)
     expect(b.settings.scope.set).not.toHaveBeenCalled()
+  })
+
+  it('loads without optional workspace capability and hides startSession', async () => {
+    const b = await bench({ withWorkspaces: false })
+    const card = b.slots.entries('settings.plugin.item')[0]!
+    const injected = (card.options.inject as () => { availableGlobalActions: readonly string[] })()
+
+    expect(injected.availableGlobalActions).not.toContain('startSession')
+    await b.feature.dispose()
   })
 })

@@ -7,7 +7,8 @@ import { createBuiltinProfileRegistry } from './profiles/registry.js'
 import { selectShortcut } from './contract/slots.js'
 import { ShortcutComposer } from './components/ShortcutComposer.js'
 import { createShortcutSettingsController } from './settings/controller.js'
-import type { MutateShortcutSettings, ShortcutSettingsFace } from './contract/settings.js'
+import type { ShortcutSettingsFace } from './contract/settings.js'
+import { createDshCompatibility } from './compatibility.js'
 import { NS, en, zh } from './locales.js'
 import type { ShortcutSettings } from '../settings.js'
 import { SHORTCUTS_SETTINGS_NAMESPACE } from '../settings-namespace.js'
@@ -18,79 +19,16 @@ import { detectShortcutPlatform } from './keyboard/visuals.js'
 import { createGlobalKeyboardRouter } from './keyboard/router.js'
 import { expandCollapsedWorkspace } from './actions/workspace-expansion.js'
 
-type SettingsMutationRemote = {
-  readonly settings: {
-    mutate: (
-      namespace: string,
-      ops: readonly [{ op: 'set'; path: readonly [string]; value: unknown }],
-      expectedRevision: number,
-    ) => Promise<SettingsMutationResponse>
-  }
-}
-
-type SettingsMutationResponse =
-  | { readonly ok: true; readonly value: SettingsMutationView }
-  | {
-    readonly ok: false
-    readonly error: {
-      readonly code: string
-      readonly message: string
-      readonly details?: unknown
-    }
-  }
-
-type SettingsMutationView = {
-  readonly value: unknown
-  readonly base?: unknown
-  readonly user?: unknown
-  readonly revision: number
-}
-
-export function createSettingsMutationAdapter(remote: SettingsMutationRemote): MutateShortcutSettings {
-  return async ({ field, value, expectedRevision }) => {
-    try {
-      const response = await remote.settings.mutate(
-        SHORTCUTS_SETTINGS_NAMESPACE,
-        [{ op: 'set', path: [field], value }],
-        expectedRevision,
-      )
-      if (!response.ok) {
-        const actualRevision = numericConflictRevision(response.error.details)
-        return {
-          ok: false,
-          kind: response.error.code === 'settings-conflict' ? 'conflict' : 'rejected',
-          message: response.error.message,
-          ...(actualRevision === undefined ? {} : { actualRevision }),
-        }
-      }
-      return { ok: true, view: response.value }
-    } catch (error) {
-      return {
-        ok: false,
-        kind: 'transport',
-        message: error instanceof Error ? error.message : String(error),
-      }
-    }
-  }
-}
-
-function numericConflictRevision(details: unknown): number | undefined {
-  if (typeof details !== 'object' || details === null || Array.isArray(details)) return undefined
-  const actual = Reflect.get(details, 'actual')
-  return typeof actual === 'number' && Number.isFinite(actual) ? actual : undefined
-}
-
-/** Required browser services. */
-export const inject = ['slots', 'locale', 'settingsScope', 'sessions', 'remote', 'remote.settings'] as const
+/** Required browser services shared by supported DSH versions. */
+export const inject = ['slots', 'locale', 'settingsScope', 'sessions', 'connection', 'remote'] as const
 
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-shortcuts: dictionaries')
   const t = ctx.locale.bind(NS)
   const scope = ctx.settingsScope.bind<ShortcutSettings>({ namespace: SHORTCUTS_SETTINGS_NAMESPACE }) as SettingsScope<ShortcutSettings>
-  const remote = ctx.get('remote') as unknown as SettingsMutationRemote
   const registry = createBuiltinProfileRegistry()
-  const mutate = createSettingsMutationAdapter(remote)
-  const controller = createShortcutSettingsController(scope, registry, mutate, {
+  const compatibility = createDshCompatibility(name => ctx.get(name))
+  const controller = createShortcutSettingsController(scope, registry, compatibility.mutateSettings, {
     createId: () => window.crypto.randomUUID(),
     legacyName: () => t('profile.custom.label'),
   })
@@ -98,18 +36,18 @@ export function apply(ctx: ClientContext): void {
   const getGlobalActions = () => createGlobalActions({
     sessions: ctx.get('sessions') as GlobalActionCapabilities['sessions'],
     workspaces: ctx.get('workspaces') as GlobalActionCapabilities['workspaces'],
+    startSession: compatibility.startSession,
     workspaceView: {
       expandCollapsedWorkspace: title => { expandCollapsedWorkspace(document, title) },
     },
     theme: ctx.get('theme') as GlobalActionCapabilities['theme'],
   })
   const platform = detectShortcutPlatform(window.navigator)
-  const pending = ctx.get('interactions') as { readonly current?: () => unknown } | undefined
   ctx.effect(() => createGlobalKeyboardRouter(window, {
     getProfile: () => registry.active(),
     getActions: () => getGlobalActions(),
     platform,
-    isInteractionPending: () => pending?.current?.() !== undefined,
+    isInteractionPending: compatibility.isInteractionPending,
   }), 'dsh-shortcuts: global keyboard router')
   ctx.effect(() => ctx.slots.inject('conversation.composer', () => ctx.slots.register({
     name: 'conversation.composer', select: selectShortcut, priority: -1, locale: NS,
