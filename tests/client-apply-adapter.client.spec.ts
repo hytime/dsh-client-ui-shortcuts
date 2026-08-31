@@ -66,6 +66,18 @@ describe('settings mutation adapter', () => {
     })
   })
 
+  it('normalizes a current remote rejection response', async () => {
+    const remote = remoteWith({
+      ok: false,
+      error: { code: 'settings-rejected', message: 'rejected' },
+    })
+    const mutate = createDshCompatibility(name => name === 'remote' ? remote : undefined).mutateSettings
+
+    await expect(mutate({ field: 'activeProfile', value: 'vim', expectedRevision: 1 })).resolves.toEqual({
+      ok: false, kind: 'rejected', message: 'rejected',
+    })
+  })
+
   it('uses the legacy connection settings mutation when remote settings is absent', async () => {
     const view = { value: { activeProfile: 'vim' }, revision: 2 }
     const mutate = vi.fn(async (request: unknown) => ({ result: { ok: true, value: view, request } }))
