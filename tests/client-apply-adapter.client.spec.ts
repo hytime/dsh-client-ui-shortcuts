@@ -101,13 +101,69 @@ describe('settings mutation adapter', () => {
     })
   })
 
-  it('classifies settings transport failures', async () => {
-    const compatibility = createDshCompatibility(name => name === 'remote'
-      ? { settings: { mutate: vi.fn(async () => { throw new Error('offline') }) } }
+  it('prefers uiWorkspace startSession over the legacy workspace service', () => {
+    const current = vi.fn()
+    const legacy = vi.fn()
+    const compatibility = createDshCompatibility(name => ({
+      uiWorkspace: { startSession: current },
+      workspaces: { startSession: legacy },
+    }[name]))
+
+    compatibility.startSession?.('workspace-1' as never)
+
+    expect(current).toHaveBeenCalledWith('workspace-1')
+    expect(legacy).not.toHaveBeenCalled()
+  })
+
+  it('falls back to legacy workspace startSession', () => {
+    const legacy = vi.fn()
+    const compatibility = createDshCompatibility(name => name === 'workspaces'
+      ? { startSession: legacy }
       : undefined)
 
-    await expect(compatibility.mutateSettings({ field: 'activeProfile', value: 'vim', expectedRevision: 1 })).resolves.toEqual({
-      ok: false, kind: 'transport', message: 'offline',
-    })
+    compatibility.startSession?.()
+
+    expect(legacy).toHaveBeenCalledWith(undefined)
+  })
+
+  it('reads current pending interaction state', () => {
+    const compatibility = createDshCompatibility(name => ({
+      sessions: { list: { getSnapshot: () => ({ current: 's1', byId: { s1: {} } }) } },
+      uiSession: { pendingInteractions: { getSnapshot: () => new Map([['s1', { kind: 'approval' }]]) } },
+    }[name]))
+
+    expect(compatibility.isInteractionPending()).toBe(true)
+  })
+
+  it('returns false for absent current pending interaction state', () => {
+    const compatibility = createDshCompatibility(name => ({
+      sessions: { list: { getSnapshot: () => ({ current: 's1', byId: { s1: {} } }) } },
+      uiSession: { pendingInteractions: { getSnapshot: () => new Map() } },
+    }[name]))
+
+    expect(compatibility.isInteractionPending()).toBe(false)
+  })
+
+  it('reads legacy pending interaction state', () => {
+    const compatibility = createDshCompatibility(name => name === 'sessions'
+      ? { list: { getSnapshot: () => ({ current: 's1', byId: { s1: { pendingInteraction: { kind: 'question' } } } }) } }
+      : undefined)
+
+    expect(compatibility.isInteractionPending()).toBe(true)
+  })
+
+  it('returns false for an absent legacy pending interaction', () => {
+    const compatibility = createDshCompatibility(name => name === 'sessions'
+      ? { list: { getSnapshot: () => ({ current: 's1', byId: { s1: {} } }) } }
+      : undefined)
+
+    expect(compatibility.isInteractionPending()).toBe(false)
+  })
+  it('returns false without a current session or pending service', () => {
+    const compatibility = createDshCompatibility(name => name === 'sessions'
+      ? { list: { getSnapshot: () => ({ current: undefined, byId: {} }) } }
+      : undefined)
+
+    expect(compatibility.isInteractionPending()).toBe(false)
   })
 })

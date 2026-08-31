@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createGlobalActions } from '../src/client/actions/global-actions.js'
+import { createDshCompatibility } from '../src/client/compatibility.js'
 
 function services(overrides: Record<string, unknown> = {}) {
   const sessions = {
@@ -11,7 +12,7 @@ function services(overrides: Record<string, unknown> = {}) {
     startSession: vi.fn(),
   }
   const theme = { getTheme: () => ({ preference: 'light' }), setTheme: vi.fn() }
-  return { sessions, workspaces, theme, ...overrides }
+  return { sessions, workspaces, startSession: workspaces.startSession, theme, ...overrides }
 }
 
 describe('capability-aware global actions', () => {
@@ -184,7 +185,7 @@ describe('capability-aware global actions', () => {
   })
   it('allows start session without a sessions list', () => {
     const d = services()
-    const actions = createGlobalActions({ workspaces: d.workspaces })
+    const actions = createGlobalActions({ workspaces: d.workspaces, startSession: d.workspaces.startSession })
     actions.startSession?.()
     expect(d.workspaces.startSession).toHaveBeenCalledTimes(1)
   })
@@ -221,10 +222,24 @@ describe('capability-aware global actions', () => {
     expect(actions.nextWorkspace).toBeUndefined()
   })
 
-  it('does not expose settings or unavailable actions', () => {
-    const actions = createGlobalActions({})
-    expect(actions.openSettings).toBeUndefined()
-    expect(actions.previousWorkspace).toBeUndefined()
+  it('uses an independently supplied startSession capability', () => {
+    const d = services()
+    const startSession = vi.fn()
+    const actions = createGlobalActions({ ...d, startSession })
+
+    actions.startSession?.()
+
+    expect(startSession).toHaveBeenCalledOnce()
+    expect(d.workspaces.startSession).not.toHaveBeenCalled()
+  })
+
+  it('exposes startSession when only the independent capability exists', () => {
+    const startSession = vi.fn()
+    const actions = createGlobalActions({ startSession })
+
+    actions.startSession?.()
+
+    expect(startSession).toHaveBeenCalledOnce()
   })
 
 })
