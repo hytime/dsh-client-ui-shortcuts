@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createSettingsMutationAdapter } from '../src/client/apply.js'
+import { createDshCompatibility } from '../src/client/compatibility.js'
 
 function remoteWith(result: unknown) {
   return {
@@ -15,7 +15,7 @@ describe('settings mutation adapter', () => {
       ok: false,
       error: { code: 'settings-conflict', message: 'conflict', details: { actual: 8 } },
     })
-    const mutate = createSettingsMutationAdapter(remote)
+    const mutate = createDshCompatibility(name => name === 'remote' ? remote : undefined).mutateSettings
 
     await expect(mutate({ field: 'activeProfile', value: 'vim', expectedRevision: 1 })).resolves.toEqual({
       ok: false, kind: 'conflict', message: 'conflict', actualRevision: 8,
@@ -32,7 +32,7 @@ describe('settings mutation adapter', () => {
         revision: 2,
       },
     })
-    const mutate = createSettingsMutationAdapter(remote)
+    const mutate = createDshCompatibility(name => name === 'remote' ? remote : undefined).mutateSettings
 
     await expect(mutate({ field: 'activeProfile', value: 'vim', expectedRevision: 1 })).resolves.toEqual({
       ok: true,
@@ -59,10 +59,55 @@ describe('settings mutation adapter', () => {
       ok: false,
       error: { code: 'settings-conflict', message: 'conflict', ...(details === undefined ? {} : { details }) },
     })
-    const mutate = createSettingsMutationAdapter(remote)
+    const mutate = createDshCompatibility(name => name === 'remote' ? remote : undefined).mutateSettings
 
     await expect(mutate({ field: 'activeProfile', value: 'vim', expectedRevision: 1 })).resolves.toEqual({
       ok: false, kind: 'conflict', message: 'conflict',
+    })
+  })
+
+  it('uses the legacy connection settings mutation when remote settings is absent', async () => {
+    const view = { value: { activeProfile: 'vim' }, revision: 2 }
+    const mutate = vi.fn(async (request: unknown) => ({ result: { ok: true, value: view, request } }))
+    const compatibility = createDshCompatibility(name => name === 'connection'
+      ? { api: { settings: { mutate } } }
+      : undefined)
+
+    await expect(compatibility.mutateSettings({ field: 'activeProfile', value: 'vim', expectedRevision: 1 })).resolves.toEqual({
+      ok: true, view,
+    })
+    expect(mutate).toHaveBeenCalledWith({
+      ns: 'dsh-ui-shortcuts',
+      ops: [{ op: 'set', path: ['activeProfile'], value: 'vim' }],
+      expectedRevision: 1,
+    })
+  })
+
+  it('normalizes legacy conflict and rejection responses', async () => {
+    const responses = [
+      { result: { ok: false, error: { code: 'settings-conflict', message: 'conflict', details: { actual: 8 } } } },
+      { result: { ok: false, error: { code: 'settings-rejected', message: 'rejected' } } },
+    ]
+    const mutate = vi.fn(async () => responses.shift())
+    const compatibility = createDshCompatibility(name => name === 'connection'
+      ? { api: { settings: { mutate } } }
+      : undefined)
+
+    await expect(compatibility.mutateSettings({ field: 'activeProfile', value: 'vim', expectedRevision: 1 })).resolves.toEqual({
+      ok: false, kind: 'conflict', message: 'conflict', actualRevision: 8,
+    })
+    await expect(compatibility.mutateSettings({ field: 'activeProfile', value: 'vim', expectedRevision: 8 })).resolves.toEqual({
+      ok: false, kind: 'rejected', message: 'rejected',
+    })
+  })
+
+  it('classifies settings transport failures', async () => {
+    const compatibility = createDshCompatibility(name => name === 'remote'
+      ? { settings: { mutate: vi.fn(async () => { throw new Error('offline') }) } }
+      : undefined)
+
+    await expect(compatibility.mutateSettings({ field: 'activeProfile', value: 'vim', expectedRevision: 1 })).resolves.toEqual({
+      ok: false, kind: 'transport', message: 'offline',
     })
   })
 })
