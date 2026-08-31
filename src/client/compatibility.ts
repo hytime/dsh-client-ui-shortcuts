@@ -95,7 +95,7 @@ function createCurrentMutation(
 }
 
 function createLegacyMutation(
-  mutate: NonNullable<NonNullable<LegacySettingsService['api']>['settings']>['mutate'],
+  mutate: NonNullable<NonNullable<NonNullable<LegacySettingsService['api']>['settings']>['mutate']>,
 ): MutateShortcutSettings {
   return async request => {
     try {
