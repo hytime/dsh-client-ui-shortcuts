@@ -90,7 +90,7 @@ describe('package manifest', () => {
       test: 'vitest run',
     })
     for (const packageName of manifest.dsh.client.inject) {
-      expect(manifest.peerDependencies[packageName]).toBe('>=0.1.0-rc.8 <1.0.0')
+      expect(manifest.peerDependencies[packageName]).toBe('>=0.1.0-rc.8 <0.1.1 || >=0.1.1-rc.2 <0.1.2 || >=0.1.2-alpha.1 <1.0.0')
       expect(manifest.dependencies[packageName]).toBeUndefined()
     }
   })

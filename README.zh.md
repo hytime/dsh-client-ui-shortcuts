@@ -32,7 +32,7 @@ Question 和 Approval 交互快捷键：
 推荐安装 npm 发布包，因为其中已经包含预构建的 `lib/` 产物，不需要在安装阶段执行构建。通过 DSH CLI 安装插件，然后重启或重新加载 Web composition：
 
 ```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.16
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.17
 dsh --profile web
 ```
 
@@ -114,7 +114,7 @@ Session 导航遵循当前 Workspace 保存的 Session 顺序，并跳过 archiv
 
 ## DSH 兼容边界
 
-插件不会修改 DSH core。它只能通过真实的 DSH Web 组合和 DSH 启动与模块加载器加载。安装更新不会替换已经在打开页面中运行的代码；请重新加载 Web 组合，才能加载新的 Client bundle。
+一个发布包支持 DSH `0.1.0-rc.8` 至 `0.1.1-rc.2` 系列，以及声明范围内的 `0.1.2-alpha.1` 和后续版本。浏览器 adapter 按运行时能力探测，不按 DSH 版本号分支：优先使用当前的 `remote.settings`，否则回退旧版 Connection settings API；新建 Session 优先使用 `uiWorkspace.startSession`，否则回退 `workspaces.startSession`；pending interaction 优先读取 `uiSession`，否则读取旧版 Session summary。插件只能通过真实的 DSH Web composition 和 DSH 启动与模块加载器加载。安装更新不会替换已经在打开页面中运行的代码；请重新加载 Web 组合，才能加载新的 Client bundle。
 
 ## 开发与验证
 

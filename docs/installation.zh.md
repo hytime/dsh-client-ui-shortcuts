@@ -17,7 +17,7 @@ DSH CLI 负责 profile 的插件安装、升级和移除。本包声明的 pnpm 
 使用 DSH plugin command 安装到 Web profile：
 
 ```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.16
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.17
 ```
 
 该命令会把包安装到 profile，并根据包中声明的 `dsh.bundle.patch` 将它加入 `dsh.profile.bundles`。
@@ -58,7 +58,7 @@ pnpm pack --pack-destination /tmp/dsh-client-ui-shortcuts-pack
 export DSH_HOME="$(mktemp -d)"
 
 dsh plugin --profile web add \\
-  /tmp/dsh-client-ui-shortcuts-pack/hytime-dsh-client-ui-shortcuts-0.1.16.tgz
+  /tmp/dsh-client-ui-shortcuts-pack/hytime-dsh-client-ui-shortcuts-0.1.17.tgz
 ```
 
 如果希望 profile 在 shell 退出后继续存在，请将 `mktemp -d` 换成持久目录。发布 tarball 必须包含 `lib/client.js`、`lib/index.js`、`lib/invariant.js`、类型声明和 `cordis.patch.yml`。
@@ -90,6 +90,10 @@ dsh --profile web
 ```
 
 快捷键设置卡片会出现在已组合的 settings plugin surface 中。持久化 settings namespace 是 `dsh-ui-shortcuts`，包含 `activeProfile` 和 `customProfiles` 字段。内置的 `standard` 与 `vim` profile 均为只读；`customProfiles` 保存多个可命名、可编辑的 profile。
+
+## DSH 多版本兼容
+
+一个包支持 DSH `0.1.0-rc.8` 至 `0.1.1-rc.2`，以及 peer 范围覆盖的 `0.1.2-alpha.1` 和后续版本。浏览器 adapter 按运行时能力探测：优先使用当前 `remote.settings.mutate`，否则调用旧版 Connection settings mutation；优先使用 `uiWorkspace.startSession`，否则调用 `workspaces.startSession`；优先从 `uiSession.pendingInteractions` 读取 pending interaction，否则读取旧版 Session summary。缺少可选的 Workspace 或 Session UI 服务不会阻断插件加载，对应动作会保持隐藏。
 
 ## 管理命名 Custom profile
 

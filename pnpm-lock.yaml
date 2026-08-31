@@ -9,28 +9,28 @@ importers:
   .:
     dependencies:
       '@deepseek-ai/dsh-client-connection':
-        specifier: '>=0.1.0-rc.8 <1.0.0'
+        specifier: '>=0.1.0-rc.8 <0.1.1 || >=0.1.1-rc.2 <0.1.2 || >=0.1.2-alpha.1 <1.0.0'
         version: 0.1.0-rc.8(fe206655156830a934a8c1ad4c553629)
       '@deepseek-ai/dsh-client-locale':
-        specifier: '>=0.1.0-rc.8 <1.0.0'
+        specifier: '>=0.1.0-rc.8 <0.1.1 || >=0.1.1-rc.2 <0.1.2 || >=0.1.2-alpha.1 <1.0.0'
         version: 0.1.0-rc.8(20c93c06c5971dcda755f9d11cd5f0ec)
       '@deepseek-ai/dsh-client-runtime':
-        specifier: '>=0.1.0-rc.8 <1.0.0'
+        specifier: '>=0.1.0-rc.8 <0.1.1 || >=0.1.1-rc.2 <0.1.2 || >=0.1.2-alpha.1 <1.0.0'
         version: 0.1.0-rc.8(1ec9960cc4210d1d8f8e3b2ce3a4446b)
       '@deepseek-ai/dsh-client-ui-conversation':
-        specifier: '>=0.1.0-rc.8 <1.0.0'
+        specifier: '>=0.1.0-rc.8 <0.1.1 || >=0.1.1-rc.2 <0.1.2 || >=0.1.2-alpha.1 <1.0.0'
         version: 0.1.0-rc.8(233d8e40ad183dc17b032d5560e47869)
       '@deepseek-ai/dsh-client-ui-primitives':
-        specifier: '>=0.1.0-rc.8 <1.0.0'
+        specifier: '>=0.1.0-rc.8 <0.1.1 || >=0.1.1-rc.2 <0.1.2 || >=0.1.2-alpha.1 <1.0.0'
         version: 0.1.0-rc.8(@deepseek-ai/cordis@4.0.1)(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.1))
       '@deepseek-ai/dsh-client-ui-settings':
-        specifier: '>=0.1.0-rc.8 <1.0.0'
+        specifier: '>=0.1.0-rc.8 <0.1.1 || >=0.1.1-rc.2 <0.1.2 || >=0.1.2-alpha.1 <1.0.0'
         version: 0.1.0-rc.8(@deepseek-ai/cordis@4.0.1)(@deepseek-ai/dsh-api-remotes@0.1.0-rc.8(595254fcd6f0e2eefb415cb6827720e3))(@deepseek-ai/dsh-client-connection@0.1.0-rc.8)(@deepseek-ai/dsh-client-runtime@0.1.0-rc.8(1ec9960cc4210d1d8f8e3b2ce3a4446b))(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.1))(@deepseek-ai/dsh-settings@0.1.0-rc.8(@deepseek-ai/cordis@4.0.1)(@deepseek-ai/dsh-brand@0.1.0-rc.8(@deepseek-ai/cordis@4.0.1)(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.1)))(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.1))(@deepseek-ai/schemastery@3.18.1))
       '@deepseek-ai/dsh-client-ui-settings-plugins':
-        specifier: '>=0.1.0-rc.8 <1.0.0'
+        specifier: '>=0.1.0-rc.8 <0.1.1 || >=0.1.1-rc.2 <0.1.2 || >=0.1.2-alpha.1 <1.0.0'
         version: 0.1.0-rc.8(77b05525c23e8561ab169fda2ed9f517)
       '@deepseek-ai/dsh-client-ui-slots':
-        specifier: '>=0.1.0-rc.8 <1.0.0'
+        specifier: '>=0.1.0-rc.8 <0.1.1 || >=0.1.1-rc.2 <0.1.2 || >=0.1.2-alpha.1 <1.0.0'
         version: 0.1.0-rc.8(@deepseek-ai/cordis@4.0.1)(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.1))
       '@iconify-icons/lucide':
         specifier: 1.2.136

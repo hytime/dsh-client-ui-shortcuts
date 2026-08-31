@@ -32,7 +32,7 @@ Global Session and Workspace shortcuts with platform keycaps:
 The recommended path is the npm release because it includes prebuilt `lib/` artifacts and requires no install-time build. Install it through the DSH CLI, then restart or reload the Web composition:
 
 ```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.16
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.17
 dsh --profile web
 ```
 
@@ -110,7 +110,7 @@ Session navigation follows the current Workspace's stored Session order and skip
 
 ## DSH compatibility
 
-The package is loaded only through a real DSH Web composition and DSH boot/module loader. Installing an update does not replace code already running in an open page; reload the Web composition to load the new Client bundle.
+One published package supports the DSH `0.1.0-rc.8` through `0.1.1-rc.2` line and `0.1.2-alpha.1` or later within the declared peer range. The browser adapter detects capabilities at runtime instead of branching on a DSH version: it uses current `remote.settings` when available and falls back to the legacy Connection settings API; it selects `uiWorkspace.startSession` or legacy `workspaces.startSession`; and it reads pending interactions from `uiSession` or the legacy Session summary. The package is loaded only through a real DSH Web composition and DSH boot/module loader. Installing an update does not replace code already running in an open page; reload the Web composition to load the new Client bundle.
 
 ## Development and verification
 

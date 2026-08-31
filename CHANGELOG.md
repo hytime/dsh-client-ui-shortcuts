@@ -6,7 +6,7 @@
 
 - Adapted interaction rendering and responses to the current DSH Web question, plan-review, and approval carriers while retaining legacy compatibility.
 - Switched settings persistence to the current remote settings mutation API.
-- Exported legacy nameless Custom profiles using their visible display name.
+- Added a capability-probing compatibility adapter for DSH `0.1.0-rc.8` through `0.1.1-rc.2` and `0.1.2-alpha.1` or later, covering settings mutation, new-session actions, and pending-interaction guards.
 
 ## 0.1.16 - Reset Custom profile to defaults
 
