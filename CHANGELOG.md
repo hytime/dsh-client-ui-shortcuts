@@ -1,4 +1,9 @@
-# Changelog
+## 0.1.18 - GitHub release automation
+
+### Changed
+
+- Added a structured GitHub bug report form.
+- Added `publish.yml` to test, build, and publish the package through npm Trusted Publishing when a matching GitHub Release is published.
 
 ## 0.1.17 - DSH Web compatibility
 

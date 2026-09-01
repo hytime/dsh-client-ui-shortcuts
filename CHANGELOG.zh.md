@@ -1,4 +1,9 @@
-# Changelog
+## 0.1.18 - GitHub Release 发布自动化
+
+### 变更
+
+- 新增结构化 GitHub 错误报告模板。
+- 新增 `publish.yml`，在匹配的 GitHub Release 发布后通过 npm Trusted Publishing 执行测试、构建和发布。
 
 ## 0.1.17 - DSH Web 兼容性修复
 
