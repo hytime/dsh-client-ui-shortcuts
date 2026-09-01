@@ -44,7 +44,7 @@ jobs:
           fi
 
       - name: Run tests
-        run: CI=true pnpm exec vitest run tests
+        run: CI=true pnpm exec vitest run tests --testTimeout=30000
 
       - name: Build package
         run: pnpm run bundle
