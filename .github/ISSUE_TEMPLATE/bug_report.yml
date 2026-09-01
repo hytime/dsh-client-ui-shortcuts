@@ -1,0 +1,82 @@
+name: 错误报告
+description: 报告可复现的问题，帮助我们快速定位
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢提交错误报告。请不要粘贴 API key、访问令牌、私有路径或其他敏感信息。
+
+  - type: input
+    id: summary
+    attributes:
+      label: 问题摘要
+      description: 用一句话描述发生了什么。
+      placeholder: 快捷键无法提交 Question
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 复现步骤
+      description: 请按实际操作顺序列出最小复现步骤。
+      placeholder: |
+        1. 使用 DSH Web 打开一个会话
+        2. 触发一个 Question
+        3. 按下 Enter
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为
+      description: 描述你认为应该发生什么。
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为
+      description: 描述实际发生了什么，并附上非敏感的错误信息。
+    validations:
+      required: true
+
+  - type: input
+    id: dsh-version
+    attributes:
+      label: DSH 版本
+      description: 例如 0.1.2-alpha.1。
+      placeholder: 0.1.2-alpha.1
+    validations:
+      required: true
+
+  - type: input
+    id: plugin-version
+    attributes:
+      label: 插件版本
+      description: 例如 0.1.17。
+      placeholder: 0.1.17
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: 运行环境
+      description: 请填写操作系统、浏览器和部署方式。
+      placeholder: macOS 15, Chrome 140, DSH Web 本地部署
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志或截图
+      description: 粘贴经过脱敏的日志，或拖入能说明问题的截图。
+      render: text
+    validations:
+      required: false
