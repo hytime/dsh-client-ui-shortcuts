@@ -1,3 +1,10 @@
+## 0.1.19 - DSH Web compatibility fix
+
+### Fixed
+
+- Read the optional `remote.settings` namespace through the guarded service getter instead of traversing the proxied `remote` service.
+- Keep the Client plugin loadable when the Remote provider is unavailable, while preserving legacy `connection.api.settings` fallback.
+
 ## 0.1.18 - GitHub release automation
 
 ### Changed

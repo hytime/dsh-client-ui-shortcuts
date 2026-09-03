@@ -32,7 +32,7 @@ Global Session and Workspace shortcuts with platform keycaps:
 The recommended path is the npm release because it includes prebuilt `lib/` artifacts and requires no install-time build. Install it through the DSH CLI, then restart or reload the Web composition:
 
 ```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.18
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.19
 dsh --profile web
 ```
 

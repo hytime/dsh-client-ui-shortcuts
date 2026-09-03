@@ -20,9 +20,7 @@ type SettingsOperation = readonly [{
   readonly value: unknown
 }]
 type CurrentSettingsService = {
-  readonly settings?: {
-    readonly mutate?: (namespace: string, ops: SettingsOperation, expectedRevision: number) => Promise<unknown>
-  }
+  readonly mutate?: (namespace: string, ops: SettingsOperation, expectedRevision: number) => Promise<unknown>
 }
 type LegacySettingsService = {
   readonly api?: {
@@ -48,15 +46,17 @@ type PendingInteractionService = {
 
 /** Create a compatibility face by probing the services available in one DSH composition. */
 export function createDshCompatibility(get: ServiceGetter): DshCompatibility {
-  const remote = get('remote') as CurrentSettingsService | undefined
-  const connection = get('connection') as LegacySettingsService | undefined
-  const currentMutate = remote?.settings?.mutate
-  const legacyMutate = connection?.api?.settings?.mutate
-  const mutateSettings = currentMutate !== undefined
-    ? createCurrentMutation(currentMutate)
-    : legacyMutate !== undefined
-      ? createLegacyMutation(legacyMutate)
-      : unavailableMutation
+  const mutateSettings: MutateShortcutSettings = async request => {
+    const currentSettings = get('remote.settings') as CurrentSettingsService | undefined
+    const connection = get('connection') as LegacySettingsService | undefined
+    const currentMutate = typeof currentSettings?.mutate === 'function' ? currentSettings.mutate : undefined
+    const legacyMutate = typeof connection?.api?.settings?.mutate === 'function'
+      ? connection.api.settings.mutate
+      : undefined
+    if (currentMutate !== undefined) return createCurrentMutation(currentMutate)(request)
+    if (legacyMutate !== undefined) return createLegacyMutation(legacyMutate)(request)
+    return unavailableMutation(request)
+  }
 
   const uiWorkspace = get('uiWorkspace') as { readonly startSession?: (workspaceId?: WorkspaceId) => void } | undefined
   const workspaces = get('workspaces') as { readonly startSession?: (workspaceId?: WorkspaceId) => void } | undefined
@@ -78,7 +78,7 @@ export function createDshCompatibility(get: ServiceGetter): DshCompatibility {
 }
 
 function createCurrentMutation(
-  mutate: NonNullable<NonNullable<CurrentSettingsService['settings']>['mutate']>,
+  mutate: NonNullable<CurrentSettingsService['mutate']>,
 ): MutateShortcutSettings {
   return async request => {
     try {

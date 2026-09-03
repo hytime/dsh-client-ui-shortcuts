@@ -19,8 +19,8 @@ import { detectShortcutPlatform } from './keyboard/visuals.js'
 import { createGlobalKeyboardRouter } from './keyboard/router.js'
 import { expandCollapsedWorkspace } from './actions/workspace-expansion.js'
 
-/** Required browser services shared by supported DSH versions. */
-export const inject = ['slots', 'locale', 'settingsScope', 'sessions', 'connection', 'remote'] as const
+/** Required browser services; Remote namespaces are probed optionally via `ctx.get`. */
+export const inject = ['slots', 'locale', 'settingsScope', 'sessions', 'connection'] as const
 
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-shortcuts: dictionaries')

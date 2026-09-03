@@ -1,3 +1,10 @@
+## 0.1.19 - DSH Web 兼容层修复
+
+### 修复
+
+- 通过受保护的 service getter 读取可选 `remote.settings` namespace，避免直接遍历 proxied `remote` service。
+- Remote provider 不可用时仍允许 Client 插件加载，并保留旧版 `connection.api.settings` 回退。
+
 ## 0.1.18 - GitHub Release 发布自动化
 
 ### 变更

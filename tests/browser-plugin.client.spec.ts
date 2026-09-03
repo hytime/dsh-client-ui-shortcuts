@@ -98,7 +98,7 @@ function makeScope(value: ShortcutSettings = {
   return { scope }
 }
 
-async function bench(options: { withWorkspaces?: boolean } = {}) {
+async function bench(options: { withWorkspaces?: boolean; withRemote?: boolean } = {}) {
   const ctx = new Context()
   const slots = new FakeSlotRegistry()
   slots.register({
@@ -131,8 +131,10 @@ async function bench(options: { withWorkspaces?: boolean } = {}) {
   })
   const remote = { settings: { mutate } }
   ctx.provide('connection', { api: {} })
-  ctx.provide('remote', remote)
-  ctx.provide('remote.settings', remote.settings)
+  if (options.withRemote !== false) {
+    ctx.provide('remote', remote)
+    ctx.provide('remote.settings', remote.settings)
+  }
   ctx.provide('sessions', {
     scope: vi.fn(() => undefined),
     list: { getSnapshot: () => ({ items: [{ sessionId: 's1' }], current: 's1' }) },
@@ -148,7 +150,7 @@ async function bench(options: { withWorkspaces?: boolean } = {}) {
 
 describe('shortcut client slot wiring', () => {
   it('declares its client services', () => {
-    expect(inject).toEqual(['slots', 'locale', 'settingsScope', 'sessions', 'connection', 'remote'])
+    expect(inject).toEqual(['slots', 'locale', 'settingsScope', 'sessions', 'connection'])
   })
 
   it('registers locale, composer selector and keyed settings card', async () => {
@@ -231,6 +233,13 @@ describe('shortcut client slot wiring', () => {
     expect(b.locale.bind('dsh-shortcuts')('profile.standard.label')).toBe('profile.standard.label')
     expect(b.mutate).toHaveBeenCalledTimes(1)
     expect(b.settings.scope.set).not.toHaveBeenCalled()
+  })
+
+  it('loads without optional remote service', async () => {
+    const b = await bench({ withRemote: false })
+
+    expect(b.slots.entries('settings.plugin.item')).toHaveLength(1)
+    await b.feature.dispose()
   })
 
   it('loads without optional workspace capability and hides startSession', async () => {
