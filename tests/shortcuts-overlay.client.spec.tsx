@@ -1,35 +1,47 @@
 // @vitest-environment jsdom
 import React from 'react'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ShortcutOverlay } from '../src/client/components/ShortcutOverlay.js'
 import type { ShortcutOverlayProps } from '../src/client/contract/overlay.js'
 import type { ManagedShortcutProfile } from '../src/client/contract/settings.js'
 import { standardProfile, vimProfile } from '../src/client/profiles/builtins.js'
+import { ONBOARDING_COMPLETED_VALUE, ONBOARDING_STORAGE_KEY } from '../src/client/onboarding.js'
 
 afterEach(cleanup)
+beforeEach(() => {
+  // The embedded manager panel must not show first-run onboarding in overlay tests.
+  window.localStorage.setItem(ONBOARDING_STORAGE_KEY, ONBOARDING_COMPLETED_VALUE)
+})
 
 const t = (key: string) => key
 
 function settingsStub(activeId = 'standard', profilesInput = [standardProfile, vimProfile]) {
-  const profiles: ManagedShortcutProfile[] = profilesInput.map(profile => ({
-    ...profile, kind: 'builtin', displayName: profile.label, fingerprint: `builtin:${profile.id}`,
-  }))
+  const profiles: ManagedShortcutProfile[] = profilesInput.map(profile => {
+    const withKind = profile as ManagedShortcutProfile
+    return withKind.kind === undefined
+      ? { ...profile, kind: 'builtin', displayName: profile.label, fingerprint: `builtin:${profile.id}` }
+      : withKind
+  })
   return {
     profiles: () => profiles,
     activeProfileId: () => activeId,
     subscribe: () => () => {},
     writable: () => true,
+    available: () => true,
+    error: () => undefined,
   } as unknown as ShortcutOverlayProps['settings']
 }
 
-function controllerStub(open = true) {
-  const state = { open }
+function controllerStub(open = true, command?: string) {
+  const state = { open, command }
   const listeners = new Set<() => void>()
   return {
     isOpen: () => state.open,
-    toggle: () => { state.open = !state.open; listeners.forEach(l => l()) },
-    close: () => { state.open = false; listeners.forEach(l => l()) },
+    toggle: () => { state.open = !state.open; if (!state.open) state.command = undefined; listeners.forEach(l => l()) },
+    close: () => { if (!state.open) return; state.open = false; state.command = undefined; listeners.forEach(l => l()) },
+    openWithFocus: (next?: string) => { state.command = next; if (!state.open) { state.open = true; listeners.forEach(l => l()) } },
+    focusCommand: () => state.command,
     subscribe: (l: () => void) => { listeners.add(l); return () => { listeners.delete(l) } },
   }
 }
@@ -135,5 +147,40 @@ describe('ShortcutOverlay', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(document.activeElement).toBe(owner)
     owner.remove()
+  })
+
+  it('locates the initial-focus command row when opened with one', () => {
+    const controller = controllerStub(true, 'showShortcuts')
+    render(<ShortcutOverlay {...makeProps({ controller })} />)
+    // The search box is prefilled with the command display name so the list narrows to it.
+    expect((screen.getByRole('searchbox') as HTMLInputElement).value).toBe('keyboard.showShortcuts')
+    const row = screen.getByText('keyboard.showShortcuts').closest('[role="listitem"]')
+    expect(row).not.toBeNull()
+    expect(row!.className).toContain('focused')
+  })
+
+  it('shows the read-only hint on the located row when the active profile is built-in', () => {
+    // Active profile is 'standard' (built-in, read-only): locating showShortcuts explains how to edit.
+    const controller = controllerStub(true, 'showShortcuts')
+    render(<ShortcutOverlay {...makeProps({ controller })} />)
+    const row = screen.getByText('keyboard.showShortcuts').closest('[role="listitem"]')
+    expect(row).not.toBeNull()
+    expect(row!.getAttribute('aria-disabled')).toBe('true')
+    expect(screen.getByText('overlay.readonlyHint')).toBeTruthy()
+  })
+
+  it('keeps the located row enabled when the active profile is custom', () => {
+    // A custom active profile may edit the summon key: no read-only hint.
+    const customProfile = { ...standardProfile, id: 'work', label: 'Work', description: '', kind: 'custom' as const, displayName: 'Work', fingerprint: 'custom:work' }
+    const profiles = [standardProfile, customProfile]
+    const controller = controllerStub(true, 'showShortcuts')
+    render(<ShortcutOverlay {...makeProps({ settings: settingsStub('work', profiles), controller })} />)
+    // The located quick-reference row carries the focused class and stays enabled.
+    const located = screen.getAllByText('keyboard.showShortcuts')
+      .map(node => node.closest('[role="listitem"]'))
+      .find(row => row !== null && row.className.includes('focused'))
+    expect(located).toBeTruthy()
+    expect(located!.getAttribute('aria-disabled')).toBeNull()
+    expect(screen.queryByText('overlay.readonlyHint')).toBeNull()
   })
 })

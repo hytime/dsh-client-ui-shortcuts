@@ -220,6 +220,15 @@ describe('shortcut manager panel', () => {
     expect(screen.getByRole('heading', { name: 'Approvals' })).toBeTruthy()
   })
 
+  it('suppresses the built-in legend when hideLegend is set (embedded in overlay)', () => {
+    window.localStorage.clear()
+    const standard = settingsFace('standard')
+    render(<ShortcutManagerPanel settings={standard} availableGlobalActions={[]} platform="linux" t={t} hideLegend />)
+    expect(screen.queryByRole('heading', { name: 'Questions' })).toBeNull()
+    expect(screen.queryByRole('heading', { name: 'Approvals' })).toBeNull()
+    expect(screen.getByRole('combobox', { name: 'Profile' })).toBeTruthy()
+  })
+
   it('surfaces a structured save failure from the settings face', () => {
     window.localStorage.clear()
     const settings = settingsFace()

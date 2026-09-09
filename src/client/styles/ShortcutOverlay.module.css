@@ -28,6 +28,7 @@
   color: var(--dsw-alias-text-primary); font: inherit;
 }
 .list { overflow: auto; padding: 4px 0 12px; }
+.managerArea { overflow: auto; max-height: 220px; border-bottom: 1px solid var(--dsw-alias-border-l2); }
 .groupLabel {
   padding: 12px 16px 4px; font-size: 11px; font-weight: 600;
   text-transform: uppercase; letter-spacing: .06em; color: var(--dsw-alias-label-secondary);
@@ -37,6 +38,7 @@
   gap: 16px; padding: 6px 16px;
 }
 .rowDisabled { opacity: .45; }
+.focused { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: -2px; border-radius: 6px; }
 .rowCommand { color: var(--dsw-alias-text-primary); }
 .rowKeys { display: flex; align-items: center; gap: 4px; }
 .rowReason { color: var(--dsw-alias-label-tertiary); }

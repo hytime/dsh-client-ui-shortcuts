@@ -32,7 +32,7 @@ function IconButton({ name, label, disabled, describedBy, onClick }: {
 }
 
 /** Full profile manager embedded in the shortcuts overlay. Always open while mounted. */
-export function ShortcutManagerPanel({ settings, availableGlobalActions, platform, t }: ShortcutManagerPanelProps): React.ReactElement {
+export function ShortcutManagerPanel({ settings, availableGlobalActions, platform, t, hideLegend = false }: ShortcutManagerPanelProps): React.ReactElement {
   const [runtimeState, setRuntimeState] = useState(0)
   const storage = useState<ReturnType<typeof acquireOnboardingStorage>>(() => acquireOnboardingStorage())[0]
   const [showOnboarding, setShowOnboarding] = useState(() => !hasCompletedOnboarding(storage))
@@ -281,7 +281,7 @@ export function ShortcutManagerPanel({ settings, availableGlobalActions, platfor
       {message !== undefined ? <p role={message.kind} className={message.kind === 'alert' ? styles.error : styles.success}>{message.text}</p> : settingsFailure !== undefined ? <p role="alert" className={styles.error}>{t('settings.error').replace('{message}', settingsFailure.message)}</p> : null}
       {currentProfile === undefined ? <p role="status" className={styles.empty}>{t('settings.conflict')}</p> : currentCustom !== undefined ? <CustomProfileEditor key={currentCustom.id} profile={{ id: currentCustom.id, name: currentCustom.persistedName ?? currentCustom.displayName, bindings: currentCustom.bindings, fingerprint: currentCustom.fingerprint }} availableGlobalActions={availableGlobalActions as readonly GlobalShortcutCommand[] | undefined} platform={platform} t={t} disabled={busy || !settings.writable() || !settings.available()} onSave={saveCustomProfile} onReset={resetCustomProfile} onStateChange={setEditor} /> : <>
         <p className={styles.summary}>{currentProfile.description ? t(currentProfile.description) : ''}</p>
-        <ShortcutLegend bindings={currentProfile.bindings} availableGlobalActions={availableGlobalActions as readonly GlobalShortcutCommand[] | undefined} platform={platform} t={t} />
+        {hideLegend ? null : <ShortcutLegend bindings={currentProfile.bindings} availableGlobalActions={availableGlobalActions as readonly GlobalShortcutCommand[] | undefined} platform={platform} t={t} />}
       </>}
     </>
 

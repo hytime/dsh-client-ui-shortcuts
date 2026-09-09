@@ -3,6 +3,7 @@ import type { ShortcutBinding, GlobalShortcutCommand } from '../contract/profile
 import type { ShortcutOverlayProps } from '../contract/overlay.js'
 import { compatibleBindingSequences, visualizeStroke } from '../keyboard/visuals.js'
 import { ShortcutKeycap, ShortcutKeycapPlus } from './ShortcutKeycap.js'
+import { ShortcutManagerPanel } from './ShortcutManagerPanel.js'
 import styles from '../styles/ShortcutOverlay.module.css'
 
 const SCOPES = ['question', 'approval', 'global'] as const
@@ -11,10 +12,13 @@ function profileChip(profile: { readonly kind: 'builtin' | 'custom'; readonly la
   return profile.kind === 'custom' ? profile.displayName : t(profile.label)
 }
 
-/** Frame-wide centered shortcuts cheatsheet; renders nothing while closed. */
-export function ShortcutOverlay({ settings, controller, availableGlobalActions, platform, t, restoreFocus }: ShortcutOverlayProps): React.ReactElement | null {
+/** Frame-wide centered shortcuts manager + quick reference; renders nothing while closed. */
+export function ShortcutOverlay({ settings, controller, availableGlobalActions, platform, t, restoreFocus, initialFocusCommand }: ShortcutOverlayProps): React.ReactElement | null {
   const [, setTick] = useState(0)
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = useState(() => {
+    const focusCommand = initialFocusCommand ?? controller.focusCommand?.() as GlobalShortcutCommand | undefined
+    return focusCommand === undefined ? '' : t(`keyboard.${focusCommand}`)
+  })
   const wasOpen = useRef(controller.isOpen())
 
   useEffect(() => settings.subscribe(() => setTick(value => value + 1)), [settings])
@@ -23,13 +27,16 @@ export function ShortcutOverlay({ settings, controller, availableGlobalActions, 
   const open = controller.isOpen()
   useEffect(() => {
     if (open && !wasOpen.current) {
-      setQuery('')
+      // On open, prefill the search box with the located command's display name so the
+      // quick-reference narrows to that row; typing afterwards is preserved.
+      const focusCommand = initialFocusCommand ?? controller.focusCommand?.() as GlobalShortcutCommand | undefined
+      setQuery(focusCommand === undefined ? '' : t(`keyboard.${focusCommand}`))
     } else if (!open && wasOpen.current) {
       const target = restoreFocus?.()
       if (target !== undefined && target !== null && target.isConnected) target.focus()
     }
     wasOpen.current = open
-  }, [open])
+  }, [open, controller, initialFocusCommand, restoreFocus, t])
 
   useEffect(() => {
     if (!open) return
@@ -53,22 +60,28 @@ export function ShortcutOverlay({ settings, controller, availableGlobalActions, 
   const unavailable = (binding: ShortcutBinding): boolean => (
     binding.scope === 'global' && !availableGlobalActions.includes(binding.command as GlobalShortcutCommand)
   )
+  const readonlyProfile = activeProfile.kind !== 'custom'
   const hasRows = activeProfile.bindings.some(matches)
 
   const renderRow = (binding: ShortcutBinding, index: number): React.ReactElement[] => {
     const sequences = compatibleBindingSequences(binding, platform)
     if (sequences.length === 0) return []
-    const disabled = unavailable(binding)
+    const located = binding.command === (initialFocusCommand ?? controller.focusCommand?.())
+    const disabled = unavailable(binding) || (located && readonlyProfile)
+    const reason = located && readonlyProfile ? t('overlay.readonlyHint') : undefined
+    const classes = [styles.row]
+    if (located) classes.push(styles.focused)
+    if (disabled) classes.push(styles.rowDisabled)
     return sequences.map((sequence, sequenceIndex) => (
       <div
-        className={disabled ? `${styles.row} ${styles.rowDisabled}` : styles.row}
+        className={classes.join(' ')}
         role="listitem"
         key={`${binding.command}-${binding.scope}-${index}-${sequenceIndex}`}
         {...(disabled ? { 'aria-disabled': true as const } : {})}
       >
         <span className={styles.rowCommand}>{t(`keyboard.${binding.command}`)}</span>
         {disabled
-          ? <span className={styles.rowReason}>{t('overlay.unavailable')}</span>
+          ? <span className={styles.rowReason}>{reason ?? t('overlay.unavailable')}</span>
           : <span className={styles.rowKeys}>{sequence.flatMap(stroke => visualizeStroke(stroke, platform)).map((visual, keyIndex, visuals) => (
             <React.Fragment key={`${visual.ariaLabel}-${keyIndex}`}>
               <ShortcutKeycap visual={visual} />
@@ -93,6 +106,9 @@ export function ShortcutOverlay({ settings, controller, availableGlobalActions, 
         <div className={styles.header}>
           <span className={styles.title}>{t('overlay.title')}<span className={styles.chip}> {profileChip(activeProfile, t)}</span></span>
           <span className={styles.closeHint}>{t('overlay.closeHint')}</span>
+        </div>
+        <div className={styles.managerArea}>
+          <ShortcutManagerPanel settings={settings} availableGlobalActions={availableGlobalActions} platform={platform} t={t} hideLegend />
         </div>
         <input
           className={styles.search}

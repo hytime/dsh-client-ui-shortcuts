@@ -36,4 +36,10 @@ export interface ShortcutOverlayProps {
    * effect would already observe the overlay's own focused search box.
    */
   readonly restoreFocus?: () => HTMLElement | null
+  /**
+   * Optional command to locate (and focus) when the overlay opens, e.g. from the launch card.
+   * Preferred over the controller's focus command when both are present; the launch card
+   * path drives the controller instead, so this prop stays optional.
+   */
+  readonly initialFocusCommand?: GlobalShortcutCommand
 }
