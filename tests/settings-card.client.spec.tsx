@@ -1293,7 +1293,7 @@ describe('shortcut settings card', () => {
     const { rerender } = render(<ShortcutProfileCard settings={settings} profiles={registry.list()} platform="linux" t={zh} />)
     openCard()
     expect((screen.getByRole('combobox', { name: 'Profile' }) as HTMLSelectElement).value).toBe('standard')
-    expect(standardProfile.bindings).toHaveLength(17)
+    expect(standardProfile.bindings).toHaveLength(18)
     rerender(<ShortcutProfileCard settings={settings} profiles={registry.list()} platform="linux" t={t} />)
     expect((screen.getByRole('combobox', { name: 'Profile' }) as HTMLSelectElement).value).toBe('standard')
   })

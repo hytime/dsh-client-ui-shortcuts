@@ -107,6 +107,12 @@ describe('profile-aware keyboard resolver', () => {
     expect(resolveKey(standardProfile, 'global', input('T', { meta: true, alt: true, shift: true }), 'mac')).toEqual({ kind: 'command', command: 'toggleTheme' })
   })
 
+  it('resolves the default showShortcuts global binding', () => {
+    const key: KeyInput = { key: 's', alt: true, ctrl: false, meta: true, shift: true, keyCode: 83, composing: false, repeat: false, disabled: false }
+    expect(resolveKey(standardProfile, 'global', key, 'linux')).toEqual({ kind: 'command', command: 'showShortcuts' })
+    expect(resolveKey(standardProfile, 'global', { ...key, ctrl: true }, 'mac')).toEqual({ kind: 'pass' })
+  })
+
   it('resolves declarative Meta and Alt combinations', () => {
     const stroke: ShortcutStroke = { key: 'p', modifiers: ['Meta', 'Alt'] }
     const profile: ShortcutProfile = {

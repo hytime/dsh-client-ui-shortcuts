@@ -22,6 +22,7 @@ const COMMANDS: readonly ShortcutCommand[] = [
   'nextWorkspace',
   'forkSession',
   'toggleTheme',
+  'showShortcuts',
 ]
 
 const SCOPES: readonly ShortcutScope[] = ['global', 'question', 'approval']

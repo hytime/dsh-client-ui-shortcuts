@@ -68,6 +68,20 @@ describe('custom profile JSON codec', () => {
     expect(JSON.parse(text).profile).not.toHaveProperty('id')
   })
 
+  it('round-trips a showShortcuts global binding through the persisted command allowlist', () => {
+    const showShortcutsBinding = {
+      command: 'showShortcuts',
+      scope: 'global',
+      key: { key: 's', modifiers: ['Meta', 'Alt', 'Shift'] },
+    }
+    const text = encodeCustomProfileJson({ name: 'Shortcuts', bindings: [showShortcutsBinding] })
+
+    expect(decodeCustomProfileJson(text, new TextEncoder().encode(text).byteLength)).toEqual({
+      name: 'Shortcuts',
+      bindings: [showShortcutsBinding],
+    })
+  })
+
   it.each([
     ['wrong format', { format: 'other', version: 1, profile: { name: 'A', bindings: [validCustomBinding] } }],
     ['future version', { format: CUSTOM_PROFILE_JSON_FORMAT, version: 2, profile: { name: 'A', bindings: [validCustomBinding] } }],

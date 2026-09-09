@@ -64,6 +64,21 @@ describe('shortcut Host settings', () => {
     expect(first[0]?.key?.modifiers).not.toBe(second[0]?.key?.modifiers)
   })
 
+  it('includes the showShortcuts global default binding with Meta+Alt+Shift+S', () => {
+    const defaults = defaultShortcutBindings()
+    expect(defaults).toContainEqual({
+      command: 'showShortcuts',
+      scope: 'global',
+      key: { key: 's', modifiers: ['Meta', 'Alt', 'Shift'] },
+    })
+  })
+
+  it('accepts showShortcuts in the persisted command allowlist', () => {
+    expect(() => validatePersistedShortcutBindings([{
+      command: 'showShortcuts', scope: 'global', key: { key: 's', modifiers: ['Meta', 'Alt', 'Shift'] },
+    }])).not.toThrow()
+  })
+
   it.each([
     ['undefined', undefined],
     ['function', () => undefined],

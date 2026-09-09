@@ -36,6 +36,7 @@ const defaultCustomBindings: PersistedShortcutBinding[] = [
   defaultGlobalBinding('nextWorkspace', 'l', ['Meta', 'Alt', 'Shift']),
   defaultGlobalBinding('forkSession', 'b', ['Meta', 'Alt', 'Shift']),
   defaultGlobalBinding('toggleTheme', 't', ['Meta', 'Alt', 'Shift']),
+  defaultGlobalBinding('showShortcuts', 's', ['Meta', 'Alt', 'Shift']),
   { command: 'focusPrevious', scope: 'question', key: { key: 'ArrowUp', modifiers: [] } },
   { command: 'focusNext', scope: 'question', key: { key: 'ArrowDown', modifiers: [] } },
   { command: 'activate', scope: 'question', key: { key: 'Enter', modifiers: [] } },

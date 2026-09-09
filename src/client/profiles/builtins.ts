@@ -25,6 +25,7 @@ const globalBindings = [
   globalBinding('nextWorkspace', 'l', ['Meta', 'Alt', 'Shift']),
   globalBinding('forkSession', 'b', ['Meta', 'Alt', 'Shift']),
   globalBinding('toggleTheme', 't', ['Meta', 'Alt', 'Shift']),
+  globalBinding('showShortcuts', 's', ['Meta', 'Alt', 'Shift']),
 ]
 
 export const standardProfile: ShortcutProfile = {

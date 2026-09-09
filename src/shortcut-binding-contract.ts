@@ -1,4 +1,4 @@
-export const SHORTCUT_COMMANDS = ['focusPrevious', 'focusNext', 'activate', 'cancelTask', 'openCommandPalette', 'openSettings', 'startSession', 'previousSession', 'nextSession', 'previousWorkspace', 'nextWorkspace', 'forkSession', 'toggleTheme'] as const
+export const SHORTCUT_COMMANDS = ['focusPrevious', 'focusNext', 'activate', 'cancelTask', 'openCommandPalette', 'openSettings', 'startSession', 'previousSession', 'nextSession', 'previousWorkspace', 'nextWorkspace', 'forkSession', 'toggleTheme', 'showShortcuts'] as const
 export const SHORTCUT_SCOPES = ['global', 'question', 'approval'] as const
 export const SHORTCUT_MODIFIERS = ['Ctrl', 'Meta', 'Alt', 'Shift'] as const
 

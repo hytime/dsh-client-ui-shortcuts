@@ -15,8 +15,9 @@ export type ShortcutCommand =
   | 'nextWorkspace'
   | 'forkSession'
   | 'toggleTheme'
+  | 'showShortcuts'
 
-export type GlobalShortcutCommand = 'startSession' | 'previousSession' | 'nextSession' | 'previousWorkspace' | 'nextWorkspace' | 'forkSession' | 'toggleTheme'
+export type GlobalShortcutCommand = 'startSession' | 'previousSession' | 'nextSession' | 'previousWorkspace' | 'nextWorkspace' | 'forkSession' | 'toggleTheme' | 'showShortcuts'
 
 export type ShortcutScope = 'global' | 'question' | 'approval'
 
