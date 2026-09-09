@@ -67,21 +67,30 @@ export function ShortcutOverlay({ settings, controller, availableGlobalActions, 
     const sequences = compatibleBindingSequences(binding, platform)
     if (sequences.length === 0) return []
     const located = binding.command === (initialFocusCommand ?? controller.focusCommand?.())
-    const disabled = unavailable(binding) || (located && readonlyProfile)
-    const reason = located && readonlyProfile ? t('overlay.readonlyHint') : undefined
+    // A true capability gap: the row is genuinely unavailable (greyed + aria-disabled).
+    const unavailableRow = unavailable(binding)
+    // Located on a built-in profile: the display row is not interactive, so it is highlighted
+    // (aria-current + focused) with a hint instead of being marked aria-disabled.
+    const locatedReadonly = located && readonlyProfile
+    const reason = unavailableRow
+      ? t('overlay.unavailable')
+      : locatedReadonly
+        ? t('overlay.readonlyHint')
+        : undefined
     const classes = [styles.row]
     if (located) classes.push(styles.focused)
-    if (disabled) classes.push(styles.rowDisabled)
+    if (unavailableRow) classes.push(styles.rowDisabled)
     return sequences.map((sequence, sequenceIndex) => (
       <div
         className={classes.join(' ')}
         role="listitem"
         key={`${binding.command}-${binding.scope}-${index}-${sequenceIndex}`}
-        {...(disabled ? { 'aria-disabled': true as const } : {})}
+        {...(unavailableRow ? { 'aria-disabled': true as const } : {})}
+        {...(located ? { 'aria-current': true as const } : {})}
       >
         <span className={styles.rowCommand}>{t(`keyboard.${binding.command}`)}</span>
-        {disabled
-          ? <span className={styles.rowReason}>{reason ?? t('overlay.unavailable')}</span>
+        {reason !== undefined
+          ? <span className={styles.rowReason}>{reason}</span>
           : <span className={styles.rowKeys}>{sequence.flatMap(stroke => visualizeStroke(stroke, platform)).map((visual, keyIndex, visuals) => (
             <React.Fragment key={`${visual.ariaLabel}-${keyIndex}`}>
               <ShortcutKeycap visual={visual} />

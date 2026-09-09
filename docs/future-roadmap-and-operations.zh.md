@@ -59,11 +59,11 @@ dsh plugin --profile web add github:hytime/dsh-client-ui-shortcuts#v0.1.14
 
 **已实现能力**
 
-- 在设置卡片内联展示首次使用引导，并支持关闭，不阻塞现有设置操作；
+- 在完整快捷键管理面板内联展示首次使用引导，并支持关闭，不阻塞现有设置操作；
 - 说明 Standard、Vim、Custom 和 JSON profile 的适用场景与基本流程；
 - 提供创建 Custom profile 的 New 入口，以及导入 JSON profile 的 Import 入口；
 - 使用带版本的 browser-local v1 marker 记录完成状态，不修改快捷键设置或 profile JSON；
-- 不使用第三方 tour library，也不重复展示完整快捷键表，避免设置卡片过于拥挤。
+- 不使用第三方 tour library，也不重复展示完整快捷键表，避免管理面板过于拥挤。
 
 **后续优化**
 
@@ -137,7 +137,7 @@ README 和安装指南维护 DSH 兼容性表：
 在自定义方案中增加可选 description：
 
 - 名称保持用于下拉列表；
-- description 用于设置卡片详情；
+- description 用于管理面板详情；
 - JSON v1 兼容增加字段前，必须先更新 codec、迁移策略和文档；
 - Standard、Vim 的描述仍由 locale 提供；
 - 自定义 description 按持久化字面显示，不经过 locale 翻译。
@@ -183,7 +183,7 @@ README 和安装指南维护 DSH 兼容性表：
 
 #### Capability 诊断
 
-设置卡片可显示简短诊断：
+管理面板可显示简短诊断：
 
 - 当前 composition 缺少哪些公开 capability；
 - 哪些全局动作因此不可用；
@@ -219,7 +219,7 @@ README 和安装指南维护 DSH 兼容性表：
 
 | 优先级 | 功能 | 主要价值 | 依赖 |
 | --- | --- | --- | --- |
-| P0 | 首次使用引导 | 提高首次激活率 | 当前设置卡片 |
+| P0 | 首次使用引导 | 提高首次激活率 | 当前管理面板 |
 | P0 | 重置当前方案 | 降低误配置恢复成本 | CAS settings 写入 |
 | P0 | 冲突解释 | 降低保存失败后的困惑 | shared binding contract |
 | P0 | 搜索和筛选 | 支持更多动作与方案 | editor 状态模型 |
@@ -455,7 +455,7 @@ git status --short
 - [ ] 使用 DSH CLI 安装 npm 版本；
 - [ ] 使用 `--dump-config` 确认 `dsh-ui-shortcuts` row；
 - [ ] 重载真实 Web composition；
-- [ ] 检查设置卡片和至少一条实际快捷键；
+- [ ] 检查完整快捷键管理面板和至少一条实际快捷键；
 - [ ] 记录 npm 下载量和 Issue 反馈；
 - [ ] 将发现的问题转入下一轮路线图。
 

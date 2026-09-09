@@ -161,11 +161,15 @@ describe('ShortcutOverlay', () => {
 
   it('shows the read-only hint on the located row when the active profile is built-in', () => {
     // Active profile is 'standard' (built-in, read-only): locating showShortcuts explains how to edit.
+    // The quick-reference row is a display row (not interactive), so it is highlighted with
+    // aria-current + focused class rather than marked aria-disabled.
     const controller = controllerStub(true, 'showShortcuts')
     render(<ShortcutOverlay {...makeProps({ controller })} />)
     const row = screen.getByText('keyboard.showShortcuts').closest('[role="listitem"]')
     expect(row).not.toBeNull()
-    expect(row!.getAttribute('aria-disabled')).toBe('true')
+    expect(row!.getAttribute('aria-current')).toBe('true')
+    expect(row!.className).toContain('focused')
+    expect(row!.getAttribute('aria-disabled')).toBeNull()
     expect(screen.getByText('overlay.readonlyHint')).toBeTruthy()
   })
 
