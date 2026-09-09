@@ -88,7 +88,15 @@ export function ShortcutOverlay({ settings, controller, availableGlobalActions, 
   }
 
   return (
-    <div className={styles.backdrop} role="dialog" aria-modal="true" aria-label={t('overlay.title')}>
+    <div
+      className={styles.backdrop}
+      role="dialog"
+      aria-modal="true"
+      aria-label={t('overlay.title')}
+      onClick={event => {
+        if (event.target === event.currentTarget) controller.close()
+      }}
+    >
       <div className={styles.panel}>
         <div className={styles.header}>
           <span className={styles.title}>{t('overlay.title')}<span className={styles.chip}> {profileChip(activeProfile, t)}</span></span>

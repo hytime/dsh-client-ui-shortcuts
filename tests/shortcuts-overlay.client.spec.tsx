@@ -93,6 +93,16 @@ describe('ShortcutOverlay', () => {
     expect(controller.close).toHaveBeenCalled()
   })
 
+  it('closes when the backdrop itself is clicked but not when the panel is', () => {
+    const controller = controllerStub(true)
+    vi.spyOn(controller, 'close')
+    render(<ShortcutOverlay {...makeProps({ controller })} />)
+    fireEvent.click(screen.getByRole('searchbox'))
+    expect(controller.close).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('dialog'))
+    expect(controller.close).toHaveBeenCalledTimes(1)
+  })
+
   it('toggles via controller subscription', () => {
     const controller = controllerStub(true)
     const { unmount } = render(<ShortcutOverlay {...makeProps({ controller })} />)
