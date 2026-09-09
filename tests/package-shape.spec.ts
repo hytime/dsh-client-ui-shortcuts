@@ -57,13 +57,13 @@ describe('package manifest', () => {
     expect(manifest.dsh.client.inject).toEqual([
       '@deepseek-ai/dsh-client-connection',
       '@deepseek-ai/dsh-client-locale',
-      '@deepseek-ai/dsh-client-runtime',
       '@deepseek-ai/dsh-client-ui-conversation',
       '@deepseek-ai/dsh-client-ui-primitives',
       '@deepseek-ai/dsh-client-ui-settings',
       '@deepseek-ai/dsh-client-ui-settings-plugins',
       '@deepseek-ai/dsh-client-ui-slots',
     ])
+    expect(manifest.peerDependencies['@deepseek-ai/dsh-client-runtime']).toBeUndefined()
     expect(manifest.dsh.bundle.patch).toBe('./cordis.patch.yml')
     expect(manifest.files).toEqual([
       'lib/index.js',
