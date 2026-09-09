@@ -2,13 +2,18 @@
  * every consumer import was type-only, so these local shapes keep one source tree valid on
  * rc.8 and 0.1.5-alpha.1 without version-branched imports.
  *
- * SessionId/WorkspaceId come from @deepseek-ai/dsh-client-connection (a stable peer in both
- * DSH generations), which re-exports the real nominal types from @deepseek-ai/dsh-session;
- * local brands would not satisfy the DSH slot registry's session-id contracts. */
+ * SessionId comes from @deepseek-ai/dsh-client-connection (a stable peer in both DSH
+ * generations), which re-exports the real nominal type from @deepseek-ai/dsh-session;
+ * a local brand would not satisfy the DSH slot registry's session-id contracts.
+ * WorkspaceId is a local branded string: 0.1.5-alpha.1's connection/client does not
+ * export WorkspaceId, and this package only uses it in internal structure types and
+ * as-casts, never across a typed DSH boundary. */
 
 import type { Context } from '@deepseek-ai/cordis'
-import type { SessionId, WorkspaceId } from '@deepseek-ai/dsh-client-connection/client'
-export type { SessionId, WorkspaceId }
+import type { SessionId } from '@deepseek-ai/dsh-client-connection/client'
+export type { SessionId }
+/** Local branded workspace id (runtime-carried as a plain string in both DSH generations). */
+export type WorkspaceId = string & { readonly __dshWorkspaceId: unique symbol }
 
 /** Client-side sync state of one settings namespace. */
 export interface SettingsScopeSnapshot<T> {
