@@ -5,8 +5,8 @@ export { apply, inject }
 export type { ShortcutProfile } from './contract/profile.js'
 export type {
   ApprovalWait, QuestionWait, ShortcutWait, ShortcutComposerProps,
-  ShortcutProfileCardProps,
 } from './contract/slots.js'
+export type { ShortcutLaunchCardProps } from './contract/overlay.js'
 export type {
   ManagedShortcutProfile,
   PortableCustomProfile,

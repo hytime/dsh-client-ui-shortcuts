@@ -2,12 +2,9 @@
 import type { PendingWait, QuestionItem } from '../versioned-types.js'
 export type { QuestionItem }
 import type { ComposerChainProps } from '@deepseek-ai/dsh-client-ui-conversation/client'
-import type { SettingsPluginItemOwnerProps } from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
-import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import type { ShortcutProfile } from './profile.js'
 import type { ShortcutPlatform } from './keyboard-visual.js'
-import type { ShortcutSettingsFace } from './settings.js'
 
 /** DSH question carrier narrowed for shortcut consumers. */
 type LegacyQuestionWait = PendingWait<'question'>
@@ -44,14 +41,6 @@ export type ShortcutComposerProps = {
   readonly activeProfile: ShortcutProfile
   readonly t: (key: string) => string
   readonly cancelTask: () => Promise<void>
-  readonly platform: ShortcutPlatform
-}
-
-/** Props consumed by the keyed settings plugin card. */
-export type ShortcutProfileCardProps = SettingsPluginItemOwnerProps & {
-  readonly settings: ShortcutSettingsFace
-  readonly t: (key: string) => string
-  readonly availableGlobalActions: readonly string[]
   readonly platform: ShortcutPlatform
 }
 
