@@ -58,7 +58,8 @@ For upgrades, removal, local tarballs, profile inspection, and troubleshooting, 
 - Browser-reserved shortcut denylist and conflict validation.
 - Capability checks for DSH features that are not available in the current composition.
 - Session, Workspace, session-branch, and theme actions when the corresponding DSH capabilities are available.
-- A `Meta+Alt+Shift+S` shortcuts-overlay that shows the active profile's bindings: searchable, grouped by Question/Approval/Global, and annotated when a DSH capability is missing.
+- A `Meta+Alt+Shift+S` shortcut manager panel: profile switching (Standard / Vim / Custom), New / Import / Export / Delete, in-panel Custom binding editing, and a searchable Question/Approval/Global cheatsheet.
+- A lightweight "open-panel shortcut" entry in the DSH plugin settings section: it shows the current summon key, opens the manager panel on click, and locates that row so the key is easy to change.
 
 ## Shortcut reference
 
@@ -88,13 +89,13 @@ The active profile's default global bindings are:
 | Toggle light/dark theme | `Meta+Alt+Shift+T` |
 | Show shortcuts | `Meta+Alt+Shift+S` |
 
-Global actions are registered only when DSH provides the required capability. `Show shortcuts` is pure browser behavior and is always available: it summons the shortcuts overlay for the active profile.
+Global actions are registered only when DSH provides the required capability. `Show shortcuts` is pure browser behavior and is always available: it opens the full shortcut manager panel for the active profile. Its default key, `Meta+Alt+Shift+S`, can be rebound in a Custom profile, and the settings-page "open-panel shortcut" entry locates it whenever you want to change it.
 
 ## Profiles and Custom bindings
 
 `Standard` uses arrow keys, `Enter`, and `Escape` for question and approval interactions. `Vim` uses `j`/`k`, `Enter`, and `Escape`. These built-in profiles are read-only.
 
-Create multiple named Custom profiles and switch the active profile from the settings card. A new profile copies the current profile's bindings; its name and bindings are saved together. Import always creates a new internal profile ID, while duplicate names receive a continuing numeric suffix such as `Name 1`, `Name 2`, and so on. Export is available only for the active, saved Custom profile and writes a single-profile JSON v1 document without the internal ID. Delete requires confirmation and returns to Standard before removing the active Custom profile. See the [installation guide](docs/installation.md) for the JSON format and limits.
+Create multiple named Custom profiles and switch the active profile from the shortcut manager panel (open it with `Meta+Alt+Shift+S`). A new profile copies the current profile's bindings; its name and bindings are saved together. Import always creates a new internal profile ID, while duplicate names receive a continuing numeric suffix such as `Name 1`, `Name 2`, and so on. Export is available only for the active, saved Custom profile and writes a single-profile JSON v1 document without the internal ID. Delete requires confirmation and returns to Standard before removing the active Custom profile. See the [installation guide](docs/installation.md) for the JSON format and limits.
 
 Custom profiles can edit question, approval, and capability-backed global bindings, including explicit modifiers, alternatives, and two-stroke chords.
 
@@ -141,9 +142,13 @@ Global actions are available only when the current DSH composition provides the 
 
 DSH does not provide a public settings opener, so the retained `Meta+,` binding stays hidden and is not activated.
 
-### How do I see the active profile's shortcuts?
+### How do I view and manage the active profile's shortcuts?
 
-Press `Meta+Alt+Shift+S` at any time (editable in a Custom profile) to summon the shortcuts overlay. It searches the active profile's commands and separates Question, Approval, and Global actions without requiring the DSH settings page.
+Press `Meta+Alt+Shift+S` at any time (the default key; rebindable in a Custom profile) to open the full shortcut manager panel. It searches the active profile's commands and separates Question, Approval, and Global actions, and it also provides profile switching, New / Import / Export / Delete, and in-panel Custom binding editing — no DSH settings page required.
+
+### How do I change the open-panel shortcut?
+
+The "open-panel shortcut" entry in the DSH plugin settings section shows the current summon key. Clicking it opens the manager panel and locates that row. When the active profile is the read-only Standard or Vim profile, the panel tells you to switch to a Custom profile first; once you do, edit the key and save — the next summon uses the new key.
 
 ### Why did installing an update not change the open page?
 

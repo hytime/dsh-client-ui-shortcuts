@@ -6,7 +6,12 @@
 
 ### Added
 
-- New `showShortcuts` global command (default `Meta+Alt+Shift+S`, editable in a Custom profile) that summons a shortcuts overlay: searchable, grouped by Question/Approval/Global, and annotated with a reason when a global action is unavailable in the current DSH.
+- New `showShortcuts` global command (default `Meta+Alt+Shift+S`, editable in a Custom profile) that opens a full shortcut manager panel: profile switching, New / Import / Export / Delete, in-panel Custom binding editing, and a searchable cheatsheet grouped by Question/Approval/Global with reasons when a global action is unavailable in the current DSH.
+- A lightweight "open-panel shortcut" entry in the DSH plugin settings section: it shows the current summon key, opens the manager panel on click and locates that row; read-only profiles show a hint to switch to a Custom profile before editing, without auto-switching.
+
+### Changed
+
+- Profile management moved from the collapsible settings card into the panel opened by `Meta+Alt+Shift+S`; the old collapsible settings-card UI was removed.
 
 ## 0.1.19 - DSH Web compatibility fix
 

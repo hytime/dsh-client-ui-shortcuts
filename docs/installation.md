@@ -89,7 +89,7 @@ After the profile is installed, start the Web surface through DSH:
 dsh --profile web
 ```
 
-The shortcuts settings card is available under the composed settings plugin surface. The persisted settings namespace is `dsh-ui-shortcuts`, with `activeProfile` and `customProfiles` fields. The built-in `standard` and `vim` profiles are read-only; `customProfiles` stores the named editable profiles.
+After startup, press `Meta+Alt+Shift+S` anywhere to open the full shortcut manager panel; the DSH settings page also hosts an "open-panel shortcut" entry (it shows the current summon key and opens the manager panel on click, locating that row). The persisted settings namespace is `dsh-ui-shortcuts`, with `activeProfile` and `customProfiles` fields. The built-in `standard` and `vim` profiles are read-only; `customProfiles` stores the named editable profiles.
 
 ## DSH multi-version compatibility
 
@@ -97,7 +97,7 @@ One package supports DSH `0.1.0-rc.8` through `0.1.1-rc.2`, `0.1.2-alpha.1`, and
 
 ## Manage named Custom profiles
 
-The settings card can create, import, export, and delete multiple named Custom profiles. New creates a profile with the current profile's bindings. Import accepts one profile per file and always allocates a new internal ID; importing the same name repeatedly appends continuing numeric suffixes such as `Name 1`, `Name 2`, and then `Name 3`. Delete requires confirmation, and deleting the active Custom profile first selects Standard.
+The shortcut manager panel (opened with `Meta+Alt+Shift+S`) can create, import, export, and delete multiple named Custom profiles. New creates a profile with the current profile's bindings. Import accepts one profile per file and always allocates a new internal ID; importing the same name repeatedly appends continuing numeric suffixes such as `Name 1`, `Name 2`, and then `Name 3`. Delete requires confirmation, and deleting the active Custom profile first selects Standard.
 
 Custom profile files use the strict single-profile JSON v1 envelope below:
 
@@ -160,7 +160,7 @@ pnpm pack --pack-destination /tmp/dsh-client-ui-shortcuts-pack
 
 For a Host-side profile composition check, run `dsh plugin --profile web add <tarball>` followed by `dsh --profile web --dump-config` with a temporary `DSH_HOME`. These commands verify installation, dependency reconciliation, and the composed Host patch; `--dump-config` does not activate the browser Client.
 
-For browser activation, start `dsh --profile web` and inspect the actual DSH Web page. Confirm that the settings card appears and that question/approval shortcuts work in that page. The package's automated smoke uses the DSH `loadProfile` and `composeEntries` source path when the target checkout provides its `tsx` runner; that smoke validates package/profile resolution, not browser activation.
+For browser activation, start `dsh --profile web` and inspect the actual DSH Web page. Confirm that the "open-panel shortcut" entry appears in the plugin settings section, that `Meta+Alt+Shift+S` opens the manager panel, and that question/approval shortcuts work in that page. The package's automated smoke uses the DSH `loadProfile` and `composeEntries` source path when the target checkout provides its `tsx` runner; that smoke validates package/profile resolution, not browser activation.
 
 ## Troubleshooting
 
@@ -169,4 +169,4 @@ For browser activation, start `dsh --profile web` and inspect the actual DSH Web
 - **The bundle row is absent:** check that the tarball contains `cordis.patch.yml` and that the profile manifest lists `@hytime/dsh-client-ui-shortcuts`.
 - **The browser entry does not activate:** use a DSH Web profile, not the Vite entry by itself, and confirm that the peer packages match the DSH installation.
 - **DSH CLI or profile errors:** use the `dsh` executable from the target DSH installation and do not manage the profile with a direct package-manager command.
-- **The settings card is absent:** confirm that the Host profile exposes `dsh-ui-shortcuts` and that the Web composition includes the settings plugins surface.
+- **The "open-panel shortcut" entry is absent:** confirm that the Host profile exposes `dsh-ui-shortcuts` and that the Web composition includes the settings plugins surface.

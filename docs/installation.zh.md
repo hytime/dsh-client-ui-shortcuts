@@ -89,7 +89,7 @@ profile manifest 也应在 `dependencies` 和 `dsh.profile.bundles` 中列出该
 dsh --profile web
 ```
 
-快捷键设置卡片会出现在已组合的 settings plugin surface 中。持久化 settings namespace 是 `dsh-ui-shortcuts`，包含 `activeProfile` 和 `customProfiles` 字段。内置的 `standard` 与 `vim` profile 均为只读；`customProfiles` 保存多个可命名、可编辑的 profile。
+启动后，在任意界面按 `Meta+Alt+Shift+S` 打开完整快捷键管理面板；DSH 设置页插件区同时提供「呼出面板快捷键」入口（显示当前呼出键，点击打开面板并定位到该行）。持久化 settings namespace 是 `dsh-ui-shortcuts`，包含 `activeProfile` 和 `customProfiles` 字段。内置的 `standard` 与 `vim` profile 均为只读；`customProfiles` 保存多个可命名、可编辑的 profile。
 
 ## DSH 多版本兼容
 
@@ -97,7 +97,7 @@ dsh --profile web
 
 ## 管理命名 Custom profile
 
-可在设置卡片中创建、导入、导出和删除多个命名 Custom profile。New 会使用当前 profile 的 binding 创建方案。Import 每次只读取一个方案，并且始终分配新的内部 ID；重复导入同名方案会依次使用 `Name 1`、`Name 2`、`Name 3` 等连续数字后缀。Delete 需要确认；删除 active Custom profile 前会先切回 Standard。
+可在快捷键管理面板（`Meta+Alt+Shift+S` 打开）中创建、导入、导出和删除多个命名 Custom profile。New 会使用当前 profile 的 binding 创建方案。Import 每次只读取一个方案，并且始终分配新的内部 ID；重复导入同名方案会依次使用 `Name 1`、`Name 2`、`Name 3` 等连续数字后缀。Delete 需要确认；删除 active Custom profile 前会先切回 Standard。
 
 Custom profile 文件使用以下严格的单方案 JSON v1 envelope：
 
@@ -160,7 +160,7 @@ pnpm pack --pack-destination /tmp/dsh-client-ui-shortcuts-pack
 
 要进行 Host 侧 profile composition 检查，请使用临时 `DSH_HOME` 执行 `dsh plugin --profile web add <tarball>`，再执行 `dsh --profile web --dump-config`。这两条命令验证安装、依赖协调和 Host patch 组合；`--dump-config` 不会激活浏览器 Client。
 
-要验证浏览器激活，请启动 `dsh --profile web`，在真实 DSH Web 页面中确认设置卡片出现，并实际操作 question/approval 快捷键。包内自动化 smoke 在目标 checkout 提供 `tsx` runner 时，会使用 DSH 的 `loadProfile` 和 `composeEntries` source path；该 smoke 验证 package/profile resolution，不等同于浏览器激活验证。
+要验证浏览器激活，请启动 `dsh --profile web`，在真实 DSH Web 页面中确认设置页插件区出现「呼出面板快捷键」入口、`Meta+Alt+Shift+S` 能打开管理面板，并实际操作 question/approval 快捷键。包内自动化 smoke 在目标 checkout 提供 `tsx` runner 时，会使用 DSH 的 `loadProfile` 和 `composeEntries` source path；该 smoke 验证 package/profile resolution，不等同于浏览器激活验证。
 
 ## 排错
 
@@ -169,4 +169,4 @@ pnpm pack --pack-destination /tmp/dsh-client-ui-shortcuts-pack
 - **看不到 bundle row：** 确认 tarball 包含 `cordis.patch.yml`，并且 profile manifest 列出了 `@hytime/dsh-client-ui-shortcuts`。
 - **浏览器入口没有激活：** 使用 DSH Web profile，不要单独打开 Vite entry，并确认 peer packages 与 DSH 安装匹配。
 - **pnpm 版本错误：** 使用目标 DSH checkout 声明的 package-manager 版本执行 DSH command。
-- **没有设置卡片：** 确认 Host profile 暴露了 `dsh-ui-shortcuts`，且 Web composition 包含 settings plugins surface。
+- **没有「呼出面板快捷键」入口：** 确认 Host profile 暴露了 `dsh-ui-shortcuts`，且 Web composition 包含 settings plugins surface。

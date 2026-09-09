@@ -58,7 +58,8 @@ Git 安装会在安装阶段执行包的 `prepare` 脚本。pnpm 可能要求将
 - 浏览器保留快捷键 denylist 与冲突检查。
 - 对当前 DSH 组合中不可用功能进行能力检查。
 - 在相应 DSH 能力可用时提供 Session、Workspace、session branch 和主题操作。
-- `Meta+Alt+Shift+S` 呼出快捷键速查悬浮层：搜索、按 Question/Approval/Global 分组、标注当前 DSH 不可用的全局动作。
+- `Meta+Alt+Shift+S` 打开完整快捷键管理面板：方案切换（Standard / Vim / Custom）、新建 / 导入 / 导出 / 删除方案、Custom 键位编辑，以及带搜索的 Question/Approval/Global 速查表。
+- 设置页插件区保留一个轻量的「呼出面板快捷键」入口：显示当前呼出键，点击打开面板并自动定位到该行，方便随时修改呼出键。
 
 ## 快捷键参考
 
@@ -88,13 +89,13 @@ Vim profile 会将两个聚焦绑定替换为 `k` 和 `j`；确认和取消仍�
 | 切换浅色/深色主题 | `Meta+Alt+Shift+T` |
 | 查看快捷键 | `Meta+Alt+Shift+S` |
 
-只有在 DSH 提供所需能力时，才会注册全局动作。`查看快捷键` 是纯浏览器行为、恒可用，按下即呼出当前 profile 的快捷键速查悬浮层。
+只有在 DSH 提供所需能力时，才会注册全局动作。`查看快捷键` 是纯浏览器行为、恒可用，按下即打开当前 profile 的完整快捷键管理面板。默认键 `Meta+Alt+Shift+S` 可在 Custom profile 中改绑；设置页的「呼出面板快捷键」入口可随时定位并修改它。
 
 ## Profile 与 Custom binding
 
 `Standard` 使用方向键、`Enter` 和 `Escape` 处理 Question 与 Approval 交互。`Vim` 使用 `j`/`k`、`Enter` 和 `Escape`。这两个内置 profile 均为只读。
 
-可在设置卡片中创建多个命名 Custom profile，并切换当前 active profile。新建方案会复制当前 profile 的 binding，名称与 binding 在一次操作中保存。每次导入都会创建新的内部 profile ID；重名时会使用连续数字后缀，例如 `Name 1`、`Name 2`。只有当前 active 且已保存的 Custom profile 可以导出，生成不含内部 ID 的单方案 JSON v1 文档。删除操作需要确认；删除 active Custom profile 前会先切回 Standard。JSON 格式与限制见[安装指南](docs/installation.zh.md)。
+可在快捷键管理面板（`Meta+Alt+Shift+S` 打开）中创建多个命名 Custom profile，并切换当前 active profile。新建方案会复制当前 profile 的 binding，名称与 binding 在一次操作中保存。每次导入都会创建新的内部 profile ID；重名时会使用连续数字后缀，例如 `Name 1`、`Name 2`。只有当前 active 且已保存的 Custom profile 可以导出，生成不含内部 ID 的单方案 JSON v1 文档。删除操作需要确认；删除 active Custom profile 前会先切回 Standard。JSON 格式与限制见[安装指南](docs/installation.zh.md)。
 
 Custom profile 可以编辑 Question、Approval 以及由 capability 支持的全局 binding，包括显式修饰键、候选绑定和两段 chord。
 
@@ -145,9 +146,13 @@ pnpm exec vitest run tests
 
 DSH 没有公开的设置打开方式，因此保留的 `Meta+,` 绑定会保持隐藏，不会被激活。
 
-### 如何查看当前 profile 的快捷键？
+### 如何查看和管理当前 profile 的快捷键？
 
-随时按 `Meta+Alt+Shift+S`（可在 Custom profile 中改绑）呼出快捷键速查悬浮层。它搜索当前 profile 的命令并区分 Question、Approval 和 Global 操作，不依赖 DSH 是否打开设置页。
+随时按 `Meta+Alt+Shift+S`（默认键，可在 Custom profile 中改绑）打开完整快捷键管理面板。它搜索当前 profile 的命令并区分 Question、Approval 和 Global 操作，同时提供方案切换、新建 / 导入 / 导出 / 删除与 Custom 键位编辑，不依赖 DSH 是否打开设置页。
+
+### 如何修改打开面板的快捷键？
+
+设置页插件区的「呼出面板快捷键」入口显示当前呼出键，点击会打开管理面板并自动定位到该行。若当前是只读的 Standard / Vim 方案，面板会提示先切换到 Custom 方案即可修改；切到 Custom 后改键保存，下次用新键呼出面板。
 
 ### 安装更新后，当前打开的页面为什么没有变化？
 
