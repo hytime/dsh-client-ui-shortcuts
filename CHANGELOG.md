@@ -1,3 +1,13 @@
+## Unreleased
+
+### Compatibility
+
+- Support DSH `0.1.5-alpha.1`: drop the dependency on the no-longer-published `@deepseek-ai/dsh-client-runtime` and consolidate the client types in a local `versioned-types.ts`, so a single source tree still covers the `0.1.0-rc.8` through `0.1.1-rc.2` and `0.1.2-alpha.1` lines.
+
+### Added
+
+- New `showShortcuts` global command (default `Meta+Alt+Shift+S`, editable in a Custom profile) that summons a shortcuts overlay: searchable, grouped by Question/Approval/Global, and annotated with a reason when a global action is unavailable in the current DSH.
+
 ## 0.1.19 - DSH Web compatibility fix
 
 ### Fixed

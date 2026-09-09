@@ -20,7 +20,7 @@ DSH CLI 负责 profile 的插件安装、升级和移除。本包声明的 pnpm 
 dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.19
 ```
 
-该命令会把包安装到 profile，并根据包中声明的 `dsh.bundle.patch` 将它加入 `dsh.profile.bundles`。
+该命令会把包安装到 profile，并根据包中声明的 `dsh.bundle.patch` 将它加入 `dsh.profile.bundles`。本包支持 DSH `0.1.5-alpha.1` 以及 `0.1.0-rc.8` 至 `0.1.1-rc.2`、`0.1.2-alpha.1` 系列，详见下文「DSH 多版本兼容」。
 
 ## 安装固定版本的 GitHub 源码
 
@@ -93,7 +93,7 @@ dsh --profile web
 
 ## DSH 多版本兼容
 
-一个包支持 DSH `0.1.0-rc.8` 至 `0.1.1-rc.2`，以及 peer 范围覆盖的 `0.1.2-alpha.1` 和后续版本。浏览器 adapter 按运行时能力探测：优先使用当前 `remote.settings.mutate`，否则调用旧版 Connection settings mutation；优先使用 `uiWorkspace.startSession`，否则调用 `workspaces.startSession`；优先从 `uiSession.pendingInteractions` 读取 pending interaction，否则读取旧版 Session summary。缺少可选的 Workspace 或 Session UI 服务不会阻断插件加载，对应动作会保持隐藏。
+一个包支持 DSH `0.1.0-rc.8` 至 `0.1.1-rc.2`、`0.1.2-alpha.1`，以及 `0.1.5-alpha.1` 和后续版本，且不再依赖 `@deepseek-ai/dsh-client-runtime`（该包在 `0.1.5-alpha.1` 已停止发布）。浏览器 adapter 按运行时能力探测：优先使用当前 `remote.settings.mutate`，否则调用旧版 Connection settings mutation；优先使用 `uiWorkspace.startSession`，否则调用 `workspaces.startSession`；优先从 `uiSession.pendingInteractions` 读取 pending interaction，否则读取旧版 Session summary。缺少可选的 Workspace 或 Session UI 服务不会阻断插件加载，对应动作会保持隐藏。
 
 ## 管理命名 Custom profile
 

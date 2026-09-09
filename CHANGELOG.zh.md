@@ -1,3 +1,13 @@
+## Unreleased
+
+### 兼容
+
+- 适配 DSH `0.1.5-alpha.1`：移除对已停发的 `@deepseek-ai/dsh-client-runtime` 的依赖，client 类型收敛到本地 `versioned-types.ts`，单一源码树同时兼容 `0.1.0-rc.8` 至 `0.1.1-rc.2`、`0.1.2-alpha.1` 系列。
+
+### 新增
+
+- 新增全局命令 `showShortcuts`（默认 `Meta+Alt+Shift+S`，可在 Custom profile 中编辑），呼出快捷键速查悬浮层：搜索、按 Question/Approval/Global 分组、对当前 DSH 不可用的全局动作标注原因。
+
 ## 0.1.19 - DSH Web 兼容层修复
 
 ### 修复

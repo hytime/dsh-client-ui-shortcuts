@@ -58,6 +58,7 @@ For upgrades, removal, local tarballs, profile inspection, and troubleshooting, 
 - Browser-reserved shortcut denylist and conflict validation.
 - Capability checks for DSH features that are not available in the current composition.
 - Session, Workspace, session-branch, and theme actions when the corresponding DSH capabilities are available.
+- A `Meta+Alt+Shift+S` shortcuts-overlay that shows the active profile's bindings: searchable, grouped by Question/Approval/Global, and annotated when a DSH capability is missing.
 
 ## Shortcut reference
 
@@ -85,8 +86,9 @@ The active profile's default global bindings are:
 | Next Workspace | `Meta+Alt+Shift+L` |
 | Fork current Session | `Meta+Alt+Shift+B` |
 | Toggle light/dark theme | `Meta+Alt+Shift+T` |
+| Show shortcuts | `Meta+Alt+Shift+S` |
 
-Global actions are registered only when DSH provides the required capability.
+Global actions are registered only when DSH provides the required capability. `Show shortcuts` is pure browser behavior and is always available: it summons the shortcuts overlay for the active profile.
 
 ## Profiles and Custom bindings
 
@@ -110,7 +112,7 @@ Session navigation follows the current Workspace's stored Session order and skip
 
 ## DSH compatibility
 
-One published package supports the DSH `0.1.0-rc.8` through `0.1.1-rc.2` line and `0.1.2-alpha.1` or later within the declared peer range. The browser adapter detects capabilities at runtime instead of branching on a DSH version: it uses current `remote.settings` when available and falls back to the legacy Connection settings API; it selects `uiWorkspace.startSession` or legacy `workspaces.startSession`; and it reads pending interactions from `uiSession` or the legacy Session summary. The package is loaded only through a real DSH Web composition and DSH boot/module loader. Installing an update does not replace code already running in an open page; reload the Web composition to load the new Client bundle.
+One published package supports the DSH `0.1.0-rc.8` through `0.1.1-rc.2` line, `0.1.2-alpha.1`, and `0.1.5-alpha.1` and later, and no longer depends on `@deepseek-ai/dsh-client-runtime` (which is no longer published in `0.1.5-alpha.1`). The browser adapter detects capabilities at runtime instead of branching on a DSH version: it uses current `remote.settings` when available and falls back to the legacy Connection settings API; it selects `uiWorkspace.startSession` or legacy `workspaces.startSession`; and it reads pending interactions from `uiSession` or the legacy Session summary. The package is loaded only through a real DSH Web composition and DSH boot/module loader. Installing an update does not replace code already running in an open page; reload the Web composition to load the new Client bundle.
 
 ## Development and verification
 
@@ -138,6 +140,10 @@ Global actions are available only when the current DSH composition provides the 
 ### Why is the settings shortcut hidden?
 
 DSH does not provide a public settings opener, so the retained `Meta+,` binding stays hidden and is not activated.
+
+### How do I see the active profile's shortcuts?
+
+Press `Meta+Alt+Shift+S` at any time (editable in a Custom profile) to summon the shortcuts overlay. It searches the active profile's commands and separates Question, Approval, and Global actions without requiring the DSH settings page.
 
 ### Why did installing an update not change the open page?
 

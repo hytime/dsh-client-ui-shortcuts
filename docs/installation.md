@@ -20,7 +20,7 @@ Use the DSH plugin command with the Web profile:
 dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.19
 ```
 
-The command forwards the package installation to the profile and reconciles packages that declare `dsh.bundle.patch` into `dsh.profile.bundles`.
+The command forwards the package installation to the profile and reconciles packages that declare `dsh.bundle.patch` into `dsh.profile.bundles`. This package supports DSH `0.1.5-alpha.1` plus the `0.1.0-rc.8` through `0.1.1-rc.2` and `0.1.2-alpha.1` lines; see "DSH multi-version compatibility" below.
 
 ## Install pinned GitHub source
 
@@ -93,7 +93,7 @@ The shortcuts settings card is available under the composed settings plugin surf
 
 ## DSH multi-version compatibility
 
-One package supports DSH `0.1.0-rc.8` through `0.1.1-rc.2`, plus `0.1.2-alpha.1` and later versions covered by the peer range. The browser adapter probes capabilities at runtime: current `remote.settings.mutate` is preferred over the legacy Connection settings mutation; `uiWorkspace.startSession` is preferred over `workspaces.startSession`; and `uiSession.pendingInteractions` is preferred over the legacy Session summary. Missing optional Workspace or Session UI services do not prevent the plugin from loading, and their actions stay hidden.
+One package supports DSH `0.1.0-rc.8` through `0.1.1-rc.2`, `0.1.2-alpha.1`, and `0.1.5-alpha.1` and later, and no longer depends on `@deepseek-ai/dsh-client-runtime` (which is no longer published in `0.1.5-alpha.1`). The browser adapter probes capabilities at runtime: current `remote.settings.mutate` is preferred over the legacy Connection settings mutation; `uiWorkspace.startSession` is preferred over `workspaces.startSession`; and `uiSession.pendingInteractions` is preferred over the legacy Session summary. Missing optional Workspace or Session UI services do not prevent the plugin from loading, and their actions stay hidden.
 
 ## Manage named Custom profiles
 

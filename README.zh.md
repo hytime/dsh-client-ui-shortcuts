@@ -58,6 +58,7 @@ Git 安装会在安装阶段执行包的 `prepare` 脚本。pnpm 可能要求将
 - 浏览器保留快捷键 denylist 与冲突检查。
 - 对当前 DSH 组合中不可用功能进行能力检查。
 - 在相应 DSH 能力可用时提供 Session、Workspace、session branch 和主题操作。
+- `Meta+Alt+Shift+S` 呼出快捷键速查悬浮层：搜索、按 Question/Approval/Global 分组、标注当前 DSH 不可用的全局动作。
 
 ## 快捷键参考
 
@@ -85,8 +86,9 @@ Vim profile 会将两个聚焦绑定替换为 `k` 和 `j`；确认和取消仍�
 | 下一个 Workspace | `Meta+Alt+Shift+L` |
 | Fork 当前 Session | `Meta+Alt+Shift+B` |
 | 切换浅色/深色主题 | `Meta+Alt+Shift+T` |
+| 查看快捷键 | `Meta+Alt+Shift+S` |
 
-只有在 DSH 提供所需能力时，才会注册全局动作。
+只有在 DSH 提供所需能力时，才会注册全局动作。`查看快捷键` 是纯浏览器行为、恒可用，按下即呼出当前 profile 的快捷键速查悬浮层。
 
 ## Profile 与 Custom binding
 
@@ -114,7 +116,7 @@ Session 导航遵循当前 Workspace 保存的 Session 顺序，并跳过 archiv
 
 ## DSH 兼容边界
 
-一个发布包支持 DSH `0.1.0-rc.8` 至 `0.1.1-rc.2` 系列，以及声明范围内的 `0.1.2-alpha.1` 和后续版本。浏览器 adapter 按运行时能力探测，不按 DSH 版本号分支：优先使用当前的 `remote.settings`，否则回退旧版 Connection settings API；新建 Session 优先使用 `uiWorkspace.startSession`，否则回退 `workspaces.startSession`；pending interaction 优先读取 `uiSession`，否则读取旧版 Session summary。插件只能通过真实的 DSH Web composition 和 DSH 启动与模块加载器加载。安装更新不会替换已经在打开页面中运行的代码；请重新加载 Web 组合，才能加载新的 Client bundle。
+一个发布包支持 DSH `0.1.0-rc.8` 至 `0.1.1-rc.2` 系列、`0.1.2-alpha.1`，以及 `0.1.5-alpha.1` 和后续版本，且不再依赖 `@deepseek-ai/dsh-client-runtime`（该包在 `0.1.5-alpha.1` 已停止发布）。浏览器 adapter 按运行时能力探测，不按 DSH 版本号分支：优先使用当前的 `remote.settings`，否则回退旧版 Connection settings API；新建 Session 优先使用 `uiWorkspace.startSession`，否则回退 `workspaces.startSession`；pending interaction 优先读取 `uiSession`，否则读取旧版 Session summary。插件只能通过真实的 DSH Web composition 和 DSH 启动与模块加载器加载。安装更新不会替换已经在打开页面中运行的代码；请重新加载 Web 组合，才能加载新的 Client bundle。
 
 ## 开发与验证
 
@@ -142,6 +144,10 @@ pnpm exec vitest run tests
 ### 为什么隐藏设置快捷键？
 
 DSH 没有公开的设置打开方式，因此保留的 `Meta+,` 绑定会保持隐藏，不会被激活。
+
+### 如何查看当前 profile 的快捷键？
+
+随时按 `Meta+Alt+Shift+S`（可在 Custom profile 中改绑）呼出快捷键速查悬浮层。它搜索当前 profile 的命令并区分 Question、Approval 和 Global 操作，不依赖 DSH 是否打开设置页。
 
 ### 安装更新后，当前打开的页面为什么没有变化？
 
