@@ -147,3 +147,8 @@
 
 @media (max-width: 560px) { .body { padding: 16px 0 8px; } .profileSelectRow, .profileSelect, .profileNameRow { grid-template-columns: 1fr; gap: 6px; } .profileToolbar { width: 100%; } .operationStatus { white-space: normal; } .legendItem { grid-template-columns: 1fr; gap: 4px; } .legendKeys { justify-content: flex-start; } .editorRow { grid-template-columns: 1fr; } .recordButton { justify-self: start; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; } }
+
+.launchCard { display: grid; gap: 10px; max-width: 720px; padding: 16px; box-sizing: border-box; color: var(--dsw-alias-text-primary); background: var(--dsw-alias-bg-layer-3); border: 1px solid var(--dsw-alias-border-l2); border-radius: 12px; }
+.launchHeader { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; }
+.launchHeading { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.launchCard .legendKeys { justify-content: flex-start; }

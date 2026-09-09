@@ -43,3 +43,12 @@ export interface ShortcutOverlayProps {
    */
   readonly initialFocusCommand?: GlobalShortcutCommand
 }
+
+/** Plain props consumed by the settings-page launch card. */
+export interface ShortcutLaunchCardProps {
+  readonly settings: ShortcutSettingsFace
+  readonly platform: ShortcutPlatform
+  readonly t: (key: string) => string
+  /** Open the shortcuts manager panel focused on the open-panel row. */
+  readonly onOpen: () => void
+}

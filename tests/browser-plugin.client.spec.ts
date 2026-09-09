@@ -205,12 +205,12 @@ describe('shortcut client slot wiring', () => {
     const card = b.slots.entries('settings.plugin.item')[0]!
     const injected = (card.options.inject as () => {
       settings: ShortcutSettingsFace
-      availableGlobalActions: readonly string[]
+      onOpen: () => void
     })()
     const face = injected.settings
     expect('profiles' in injected).toBe(false)
+    expect(typeof injected.onOpen).toBe('function')
     expect(face.profiles().map(profile => profile.id)).toEqual(['standard', 'vim'])
-    expect(injected.availableGlobalActions).toEqual(expect.arrayContaining(['startSession', 'forkSession', 'toggleTheme']))
     const off = face.subscribe(listener)
     await face.setActiveProfile('vim')
     expect(face.activeProfileId()).toBe('vim')
@@ -245,10 +245,27 @@ describe('shortcut client slot wiring', () => {
 
   it('loads without optional workspace capability and hides startSession', async () => {
     const b = await bench({ withWorkspaces: false })
-    const card = b.slots.entries('settings.plugin.item')[0]!
-    const injected = (card.options.inject as () => { availableGlobalActions: readonly string[] })()
+    const entry = b.slots.entries('shell.overlay')[0]!
+    const injected = (entry.options.inject as () => { availableGlobalActions: readonly string[] })()
 
     expect(injected.availableGlobalActions).not.toContain('startSession')
+    await b.feature.dispose()
+  })
+
+  it('settings launch card opens the overlay focused on showShortcuts', async () => {
+    const b = await bench()
+    const card = b.slots.entries('settings.plugin.item')[0]!
+    const injected = (card.options.inject as () => { onOpen: () => void })()
+    const overlay = b.slots.entries('shell.overlay')[0]!
+    const overlayInjected = (overlay.options.inject as () => {
+      controller: { isOpen(): boolean; focusCommand(): string | undefined; close(): void }
+    })()
+
+    expect(overlayInjected.controller.isOpen()).toBe(false)
+    injected.onOpen()
+    expect(overlayInjected.controller.isOpen()).toBe(true)
+    expect(overlayInjected.controller.focusCommand()).toBe('showShortcuts')
+    overlayInjected.controller.close()
     await b.feature.dispose()
   })
 

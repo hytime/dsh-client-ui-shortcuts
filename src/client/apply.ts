@@ -14,7 +14,7 @@ import { NS, en, zh } from './locales.js'
 import type { ShortcutSettings } from '../settings.js'
 import { SHORTCUTS_SETTINGS_NAMESPACE } from '../settings-namespace.js'
 import type { ShortcutProfile, GlobalShortcutCommand } from './contract/profile.js'
-import { ShortcutProfileCard } from './components/ShortcutProfileCard.js'
+import { ShortcutLaunchCard } from './components/ShortcutLaunchCard.js'
 import { createGlobalActions, type GlobalActionCapabilities } from './actions/global-actions.js'
 import { detectShortcutPlatform } from './keyboard/visuals.js'
 import { createGlobalKeyboardRouter } from './keyboard/router.js'
@@ -88,8 +88,19 @@ export function apply(ctx: ClientContext): void {
   }, ShortcutComposer)), 'dsh-shortcuts: composer slot')
   ctx.effect(() => ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
     name: 'settings.plugin.item', key: SHORTCUTS_SETTINGS_NAMESPACE, locale: NS,
-    inject: (): { settings: ShortcutSettingsFace; availableGlobalActions: readonly string[]; platform: ReturnType<typeof detectShortcutPlatform>; t: (key: string) => string } => ({ settings: controller, availableGlobalActions: Object.keys(getGlobalActions()) as GlobalShortcutCommand[], platform, t: (key: string) => t(key as never) }),
-  }, ShortcutProfileCard)), 'dsh-shortcuts: settings card slot')
+    inject: (): { settings: ShortcutSettingsFace; platform: ReturnType<typeof detectShortcutPlatform>; t: (key: string) => string; onOpen: () => void } => ({
+      settings: controller,
+      platform,
+      t: (key: string) => t(key as never),
+      onOpen: () => {
+        if (!overlay.isOpen()) {
+          const active = document.activeElement
+          focusBeforeOverlay = active instanceof HTMLElement ? active : null
+        }
+        overlay.openWithFocus('showShortcuts')
+      },
+    }),
+  }, ShortcutLaunchCard)), 'dsh-shortcuts: settings launch card slot')
   ctx.effect(() => ctx.slots.inject('shell.overlay', () => ctx.slots.register({
     name: 'shell.overlay', id: 'hytime-shortcuts-overlay', order: 100, locale: NS,
     inject: (): ShortcutOverlayProps => ({
