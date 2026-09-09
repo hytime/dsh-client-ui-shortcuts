@@ -29,4 +29,14 @@ describe('OverlayController', () => {
     controller.close()
     expect(listener).toHaveBeenCalledTimes(1)
   })
+  it('openWithFocus opens and records the requested command', () => {
+    const controller = new OverlayController()
+    expect(controller.isOpen()).toBe(false)
+    expect(controller.focusCommand()).toBeUndefined()
+    controller.openWithFocus('showShortcuts')
+    expect(controller.isOpen()).toBe(true)
+    expect(controller.focusCommand()).toBe('showShortcuts')
+    controller.toggle() // close
+    expect(controller.focusCommand()).toBeUndefined()
+  })
 })
