@@ -2,6 +2,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createGlobalKeyboardRouter, GLOBAL_SEQUENCE_TIMEOUT_MS } from '../src/client/keyboard/router.js'
 import type { ShortcutProfile } from '../src/client/contract/profile.js'
+import { standardProfile } from '../src/client/profiles/builtins.js'
 
 type RouterEvent = {
   readonly key: string
@@ -489,6 +490,34 @@ describe('global keyboard router', () => {
 
     expect(preventDefault).toHaveBeenCalledOnce()
     expect(stopPropagation).toHaveBeenCalledOnce()
+    dispose()
+  })
+
+  it('closes the overlay and consumes Escape while it is open', () => {
+    const close = vi.fn()
+    const dispose = createGlobalKeyboardRouter(window, {
+      getProfile: () => standardProfile,
+      getActions: () => ({}),
+      overlay: { isOpen: () => true, close },
+    })
+    const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+    document.body.dispatchEvent(event)
+    expect(close).toHaveBeenCalledOnce()
+    expect(event.defaultPrevented).toBe(true)
+    dispose()
+  })
+
+  it('does not consume Escape when the overlay is closed', () => {
+    const close = vi.fn()
+    const dispose = createGlobalKeyboardRouter(window, {
+      getProfile: () => standardProfile,
+      getActions: () => ({}),
+      overlay: { isOpen: () => false, close },
+    })
+    const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+    document.body.dispatchEvent(event)
+    expect(close).not.toHaveBeenCalled()
+    expect(event.defaultPrevented).toBe(false)
     dispose()
   })
 })

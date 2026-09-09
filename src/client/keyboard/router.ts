@@ -16,6 +16,10 @@ export interface GlobalKeyboardRouterOptions {
   readonly getProfile: () => ShortcutProfile
   readonly getActions: () => GlobalActions
   readonly isInteractionPending?: () => boolean
+  readonly overlay?: {
+    readonly isOpen: () => boolean
+    readonly close: () => void
+  }
   readonly platform?: ShortcutPlatform
   readonly timeoutMs?: number
 }
@@ -31,6 +35,12 @@ export function createGlobalKeyboardRouter(target: RouterWindow, options: Global
   }
   const onKeyDown = (event: RouterEvent): void => {
     if (event.isComposing || event.keyCode === 229 || event.repeat) return
+    if (options.overlay?.isOpen() === true && event.key === 'Escape') {
+      consume(event)
+      options.overlay.close()
+      reset()
+      return
+    }
     if (options.isInteractionPending?.() && (event.key === 'Enter' || event.key === 'Escape')) {
       reset()
       return

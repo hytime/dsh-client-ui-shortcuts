@@ -242,4 +242,17 @@ describe('capability-aware global actions', () => {
     expect(startSession).toHaveBeenCalledOnce()
   })
 
+  it('exposes showShortcuts when the overlay toggle capability is supplied', () => {
+    const toggle = vi.fn()
+    const actions = createGlobalActions({ toggleShortcutsOverlay: toggle })
+    expect(actions.showShortcuts).toBeDefined()
+    actions.showShortcuts?.()
+    expect(toggle).toHaveBeenCalledOnce()
+  })
+
+  it('omits showShortcuts when no overlay toggle capability is supplied', () => {
+    const actions = createGlobalActions({})
+    expect(actions.showShortcuts).toBeUndefined()
+  })
+
 })

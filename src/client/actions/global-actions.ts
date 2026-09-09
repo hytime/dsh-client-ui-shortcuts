@@ -1,6 +1,6 @@
 import type { SessionId, WorkspaceId } from '../versioned-types.js'
 
-export type GlobalActionId = 'startSession' | 'previousSession' | 'nextSession' | 'previousWorkspace' | 'nextWorkspace' | 'forkSession' | 'toggleTheme'
+export type GlobalActionId = 'startSession' | 'previousSession' | 'nextSession' | 'previousWorkspace' | 'nextWorkspace' | 'forkSession' | 'toggleTheme' | 'showShortcuts'
 export type GlobalAction = () => void
 export type GlobalActions = Partial<Record<GlobalActionId, GlobalAction>>
 
@@ -13,7 +13,7 @@ export interface SessionActionFace { readonly list: { getSnapshot(): SessionList
 export interface WorkspaceActionFace { readonly list: { getSnapshot(): WorkspaceListSnapshot } }
 export interface ThemeActionFace { getTheme(): { preference: string; active?: { colorScheme: 'light' | 'dark' } }; setTheme(id: string): void }
 export interface WorkspaceViewActionFace { expandCollapsedWorkspace(workspaceTitle: string): void }
-export interface GlobalActionCapabilities { readonly sessions?: SessionActionFace; readonly workspaces?: WorkspaceActionFace; readonly startSession?: GlobalAction; readonly workspaceView?: WorkspaceViewActionFace; readonly theme?: ThemeActionFace }
+export interface GlobalActionCapabilities { readonly sessions?: SessionActionFace; readonly workspaces?: WorkspaceActionFace; readonly startSession?: GlobalAction; readonly toggleShortcutsOverlay?: GlobalAction; readonly workspaceView?: WorkspaceViewActionFace; readonly theme?: ThemeActionFace }
 
 function adjacent<T>(items: readonly T[], current: T | undefined, delta: number): T | undefined {
   if (current === undefined) return undefined
@@ -33,9 +33,10 @@ function navigableSessionIds(
   })
 }
 
-export function createGlobalActions({ sessions, workspaces, startSession, workspaceView, theme }: GlobalActionCapabilities): GlobalActions {
+export function createGlobalActions({ sessions, workspaces, startSession, toggleShortcutsOverlay, workspaceView, theme }: GlobalActionCapabilities): GlobalActions {
   const actions: GlobalActions = {}
   if (startSession !== undefined) actions.startSession = startSession
+  if (toggleShortcutsOverlay !== undefined) actions.showShortcuts = toggleShortcutsOverlay
   if (sessions !== undefined && sessions.open !== undefined && workspaces?.list !== undefined) {
     const navigateSession = (delta: number) => {
       const sessionSnapshot = sessions.list.getSnapshot()
