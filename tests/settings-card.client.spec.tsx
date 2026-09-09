@@ -15,7 +15,7 @@ import type {
 } from '../src/client/contract/settings.js'
 import type { ShortcutProfile } from '../src/client/contract/profile.js'
 import type { MutateShortcutSettings } from '../src/client/contract/settings.js'
-import type { SettingsScope, SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-runtime/client'
+import type { SettingsScope, SettingsScopeSnapshot } from '../src/client/versioned-types.js'
 import { customProfileFilename, customProfileFingerprint } from '../src/custom-profile-contract.js'
 import { encodeCustomProfileJson } from '../src/client/settings/custom-profile-json.js'
 

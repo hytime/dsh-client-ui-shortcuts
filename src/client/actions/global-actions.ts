@@ -1,4 +1,4 @@
-import type { SessionId, WorkspaceId } from '@deepseek-ai/dsh-client-runtime/client'
+import type { SessionId, WorkspaceId } from '../versioned-types.js'
 
 export type GlobalActionId = 'startSession' | 'previousSession' | 'nextSession' | 'previousWorkspace' | 'nextWorkspace' | 'forkSession' | 'toggleTheme'
 export type GlobalAction = () => void

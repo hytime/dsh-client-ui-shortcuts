@@ -1,4 +1,4 @@
-import type { SettingsScope, SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-runtime/client'
+import type { SettingsScope, SettingsScopeSnapshot } from '../versioned-types.js'
 import {
   LEGACY_CUSTOM_PROFILE_ID,
   customProfileFingerprint,

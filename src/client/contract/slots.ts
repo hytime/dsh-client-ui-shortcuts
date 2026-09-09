@@ -1,5 +1,6 @@
 /** Type-only boundary between shortcut code and DSH slot carriers. */
-import type { PendingWait } from '@deepseek-ai/dsh-client-runtime/client'
+import type { PendingWait, QuestionItem } from '../versioned-types.js'
+export type { QuestionItem }
 import type { ComposerChainProps } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { SettingsPluginItemOwnerProps } from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
@@ -16,7 +17,7 @@ type CurrentQuestionWait = {
   readonly kind: 'question' | 'plan-review'
   readonly key: string
   readonly sessionId: LegacyQuestionWait['sessionId']
-  readonly questions: readonly LegacyQuestionWait['payload']['questions'][number][]
+  readonly questions: readonly QuestionItem[]
   readonly answer: (value: unknown) => Promise<void>
 }
 
@@ -30,7 +31,6 @@ type CurrentApprovalWait = {
 }
 
 export type QuestionWait = LegacyQuestionWait | CurrentQuestionWait
-export type QuestionItem = LegacyQuestionWait['payload']['questions'][number]
 
 /** DSH approval carrier narrowed for shortcut consumers. */
 export type ApprovalWait = LegacyApprovalWait | CurrentApprovalWait
@@ -81,8 +81,8 @@ function hasCurrentAnswer(value: object): value is { readonly answer: (...args: 
 }
 
 /** Read question items from either the current or legacy DSH carrier. */
-export function questionItems(matched: QuestionWait): readonly LegacyQuestionWait['payload']['questions'][number][] {
-  if (isRecord(matched) && Array.isArray(matched.questions)) return matched.questions as LegacyQuestionWait['payload']['questions'][number][]
+export function questionItems(matched: QuestionWait): readonly QuestionItem[] {
+  if (isRecord(matched) && Array.isArray(matched.questions)) return matched.questions as readonly QuestionItem[]
   const legacy = matched as LegacyQuestionWait
   return legacy.payload.questions
 }

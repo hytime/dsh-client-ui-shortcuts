@@ -2,7 +2,7 @@
 import { Context } from '@deepseek-ai/cordis'
 import { describe, expect, it, vi } from 'vitest'
 import { apply, inject } from '../src/client/index.ts'
-import type { SettingsScope } from '@deepseek-ai/dsh-client-runtime/client'
+import type { SettingsScope } from '../src/client/versioned-types.js'
 import { defaultShortcutBindings, type ShortcutSettings } from '../src/settings.ts'
 import type { ShortcutSettingsFace } from '../src/client/contract/settings.ts'
 

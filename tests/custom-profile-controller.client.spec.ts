@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { SettingsScope, SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-runtime/client'
+import type { SettingsScope, SettingsScopeSnapshot } from '../src/client/versioned-types.js'
 import { customProfileFingerprint } from '../src/custom-profile-contract.js'
 import { createBuiltinProfileRegistry } from '../src/client/profiles/registry.js'
 import { standardProfile, vimProfile } from '../src/client/profiles/builtins.js'

@@ -1,4 +1,4 @@
-import type { WorkspaceId } from '@deepseek-ai/dsh-client-runtime/client'
+import type { WorkspaceId } from './versioned-types.js'
 import type {
   MutateShortcutSettings,
   ShortcutSettingsMutationResult,
