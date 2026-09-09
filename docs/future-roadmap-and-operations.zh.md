@@ -111,7 +111,7 @@ README 和安装指南维护 DSH 兼容性表：
 | 插件版本 | DSH 版本 | 状态 | 备注 |
 | --- | --- | --- | --- |
 | `0.1.16` | `0.1.0-rc.8` 系列 | 已验证 | 使用公开 Client settings 与 slots 接口 |
-| `0.1.19` | `0.1.5-alpha.1` | 已验证 | 移除 `dsh-client-runtime` 依赖；沿用公开 settings 与 slots 接口 |
+| Unreleased | `0.1.5-alpha.1` | 待真实验收 | 移除 `dsh-client-runtime` 依赖；沿用公开 settings 与 slots 接口 |
 
 新增 DSH 版本后，先运行自动化测试和真实 composition 验证，再更新表格。
 
