@@ -19,6 +19,9 @@ import { createGlobalActions, type GlobalActionCapabilities } from './actions/gl
 import { detectShortcutPlatform } from './keyboard/visuals.js'
 import { createGlobalKeyboardRouter } from './keyboard/router.js'
 import { expandCollapsedWorkspace } from './actions/workspace-expansion.js'
+import { OverlayController } from './overlay/controller.js'
+import { ShortcutOverlay } from './components/ShortcutOverlay.js'
+import type { ShortcutOverlayProps } from './contract/overlay.js'
 
 /** Required browser services; Remote namespaces are probed optionally via `ctx.get`. */
 export const inject = ['slots', 'locale', 'settingsScope', 'sessions', 'connection'] as const
@@ -34,10 +37,12 @@ export function apply(ctx: ClientContext): void {
     legacyName: () => t('profile.custom.label'),
   })
   ctx.effect(() => () => controller.dispose(), 'dsh-shortcuts: settings controller')
+  const overlay = new OverlayController()
   const getGlobalActions = () => createGlobalActions({
     sessions: ctx.get('sessions') as GlobalActionCapabilities['sessions'],
     workspaces: ctx.get('workspaces') as GlobalActionCapabilities['workspaces'],
     startSession: compatibility.startSession,
+    toggleShortcutsOverlay: () => overlay.toggle(),
     workspaceView: {
       expandCollapsedWorkspace: title => { expandCollapsedWorkspace(document, title) },
     },
@@ -49,6 +54,7 @@ export function apply(ctx: ClientContext): void {
     getActions: () => getGlobalActions(),
     platform,
     isInteractionPending: compatibility.isInteractionPending,
+    overlay: { isOpen: () => overlay.isOpen(), close: () => overlay.close() },
   }), 'dsh-shortcuts: global keyboard router')
   ctx.effect(() => ctx.slots.inject('conversation.composer', () => ctx.slots.register({
     name: 'conversation.composer', select: selectShortcut, priority: -1, locale: NS,
@@ -75,4 +81,14 @@ export function apply(ctx: ClientContext): void {
     name: 'settings.plugin.item', key: SHORTCUTS_SETTINGS_NAMESPACE, locale: NS,
     inject: (): { settings: ShortcutSettingsFace; availableGlobalActions: readonly string[]; platform: ReturnType<typeof detectShortcutPlatform>; t: (key: string) => string } => ({ settings: controller, availableGlobalActions: Object.keys(getGlobalActions()) as GlobalShortcutCommand[], platform, t: (key: string) => t(key as never) }),
   }, ShortcutProfileCard)), 'dsh-shortcuts: settings card slot')
+  ctx.effect(() => ctx.slots.inject('shell.overlay', () => ctx.slots.register({
+    name: 'shell.overlay', id: 'hytime-shortcuts-overlay', order: 100, locale: NS,
+    inject: (): ShortcutOverlayProps => ({
+      settings: controller,
+      controller: overlay,
+      availableGlobalActions: Object.keys(getGlobalActions()) as GlobalShortcutCommand[],
+      platform,
+      t: (key: string) => t(key as never),
+    }),
+  }, ShortcutOverlay)), 'dsh-shortcuts: shortcuts overlay slot')
 }

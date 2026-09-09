@@ -106,6 +106,7 @@ async function bench(options: { withWorkspaces?: boolean; withRemote?: boolean }
     children: {
       'conversation.composer': { kind: 'chain', scope: 'session' },
       'settings.plugin.item': { kind: 'keyed', scope: 'root' },
+      'shell.overlay': { kind: 'list', scope: 'root' },
     },
   }, () => null)
   const locale = new FakeLocale()
@@ -249,5 +250,24 @@ describe('shortcut client slot wiring', () => {
 
     expect(injected.availableGlobalActions).not.toContain('startSession')
     await b.feature.dispose()
+  })
+
+  it('registers the shortcuts overlay into shell.overlay with a toggle controller', async () => {
+    const b = await bench()
+    const entries = b.slots.entries('shell.overlay')
+    expect(entries).toHaveLength(1)
+    expect(entries[0]!.options).toMatchObject({ id: 'hytime-shortcuts-overlay', locale: 'dsh-shortcuts' })
+    const injected = (entries[0]!.options.inject as () => {
+      controller: { isOpen(): boolean; toggle(): void; close(): void }
+      availableGlobalActions: readonly string[]
+    })()
+    expect(injected.availableGlobalActions).toContain('showShortcuts')
+    expect(injected.controller.isOpen()).toBe(false)
+    injected.controller.toggle()
+    expect(injected.controller.isOpen()).toBe(true)
+    injected.controller.close()
+    expect(injected.controller.isOpen()).toBe(false)
+    await b.feature.dispose()
+    expect(b.slots.entries('shell.overlay')).toHaveLength(0)
   })
 })
