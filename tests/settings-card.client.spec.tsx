@@ -2,7 +2,7 @@
 import React from 'react'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ShortcutProfileCard } from '../src/client/components/ShortcutProfileCard.js'
+import { ShortcutManagerPanel } from '../src/client/components/ShortcutManagerPanel.js'
 import { ShortcutLegend } from '../src/client/components/ShortcutLegend.js'
 import { findNewShortcutConflicts } from '../src/client/keyboard/conflicts.js'
 import { ShortcutIcon } from '../src/client/components/ShortcutIcon.js'
@@ -105,7 +105,8 @@ const labels: Record<string, string> = {
   'modifier.Meta': 'Meta', 'modifier.Ctrl': 'Ctrl', 'modifier.Alt': 'Alt', 'modifier.Shift': 'Shift',
 }
 const t = (key: string) => labels[key] ?? key
-const openCard = () => fireEvent.click(screen.getByRole('button', { name: 'Expand: Shortcuts' }))
+// ShortcutManagerPanel is always open while mounted — no disclosure header to expand.
+const openCard = () => {}
 
 function settingsFace(initial = 'standard', initialProfiles: readonly ShortcutProfile[] = [standardProfile, vimProfile], writable = true, available = true) {
   let active = initial
@@ -380,7 +381,7 @@ describe('shortcut settings controller custom profile', () => {
 describe('shortcut settings card', () => {
   it('renders the localized Vim profile description', () => {
     const settings = settingsFace()
-    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
     fireEvent.change(screen.getByRole('combobox', { name: 'Profile' }), { target: { value: 'vim' } })
     expect(screen.getByText('Use J and K with Enter for questions and approvals.')).toBeTruthy()
   })
@@ -388,7 +389,7 @@ describe('shortcut settings card', () => {
   it('updates onboarding when settings availability transitions', async () => {
     window.localStorage.clear()
     const settings = settingsFace('standard', [standardProfile, vimProfile], true, false)
-    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
     expect(screen.queryByRole('region', { name: 'Getting started' })).toBeNull()
     settings.setAvailable(true)
     await waitFor(() => expect(screen.queryByRole('region', { name: 'Getting started' })).toBeTruthy())
@@ -400,14 +401,14 @@ describe('shortcut settings card', () => {
     window.localStorage.clear()
     cleanup()
     const busySettings = settingsFace()
-    render(<ShortcutProfileCard settings={busySettings} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={busySettings} availableGlobalActions={[]} platform="linux" t={t} />)
     expect((screen.getByRole('button', { name: 'Close' }) as HTMLButtonElement).disabled).toBe(false)
     fireEvent.click(screen.getByRole('button', { name: 'Close' }))
     await waitFor(() => expect(screen.queryByRole('region', { name: 'Getting started' })).toBeNull())
 
     window.localStorage.clear()
     cleanup()
-    render(<ShortcutProfileCard settings={settingsFace('standard', [standardProfile, vimProfile], false)} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={settingsFace('standard', [standardProfile, vimProfile], false)} availableGlobalActions={[]} platform="linux" t={t} />)
     expect((screen.getByRole('button', { name: 'Close' }) as HTMLButtonElement).disabled).toBe(false)
   })
 
@@ -415,7 +416,7 @@ describe('shortcut settings card', () => {
     window.localStorage.clear()
     const settings = settingsFace()
     settings.importCustomProfile = vi.fn(async () => 'missing-profile')
-    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
     fireEvent.change(screen.getByLabelText('Choose custom profile JSON file'), { target: { files: [new File([encodeCustomProfileJson({ name: 'Imported', bindings: customBindings })], 'profile.json')] } })
     await waitFor(() => expect(settings.importCustomProfile).toHaveBeenCalledOnce())
     expect(window.localStorage.getItem('dsh-client-ui-shortcuts:onboarding:v1')).toBeNull()
@@ -434,20 +435,20 @@ describe('shortcut settings card', () => {
   it('renders final settings-card fixture with available mapping', () => {
     const settings = settingsFace()
     expect(typeof settings.available).toBe('function')
-    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
     expect(screen.getByRole('region', { name: 'Getting started' })).toBeTruthy()
   })
 
   it('does not show onboarding when settings are unavailable', () => {
     window.localStorage.clear()
-    render(<ShortcutProfileCard settings={settingsFace('standard', [standardProfile, vimProfile], true, false)} availableGlobalActions={[]} platform="linux" t={t} />)
-    expect(screen.getByRole('button', { name: 'Collapse: Shortcuts' })).toBeTruthy()
+    render(<ShortcutManagerPanel settings={settingsFace('standard', [standardProfile, vimProfile], true, false)} availableGlobalActions={[]} platform="linux" t={t} />)
+    expect(screen.getByRole('combobox', { name: 'Profile' })).toBeTruthy()
     expect(screen.queryByRole('region', { name: 'Getting started' })).toBeNull()
   })
 
   it('keeps onboarding visible but disables writes for ready readonly settings', () => {
     window.localStorage.clear()
-    render(<ShortcutProfileCard settings={settingsFace('standard', [standardProfile, vimProfile], false)} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={settingsFace('standard', [standardProfile, vimProfile], false)} availableGlobalActions={[]} platform="linux" t={t} />)
     expect(screen.getByRole('region', { name: 'Getting started' })).toBeTruthy()
     expect((screen.getByRole('button', { name: 'New' }) as HTMLButtonElement).disabled).toBe(true)
     expect((screen.getByRole('button', { name: 'Import' }) as HTMLButtonElement).disabled).toBe(true)
@@ -455,7 +456,7 @@ describe('shortcut settings card', () => {
 
   it('closes onboarding and writes its completion marker', () => {
     window.localStorage.clear()
-    render(<ShortcutProfileCard settings={settingsFace()} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={settingsFace()} availableGlobalActions={[]} platform="linux" t={t} />)
     fireEvent.click(screen.getByRole('button', { name: 'Close' }))
     expect(window.localStorage.getItem('dsh-client-ui-shortcuts:onboarding:v1')).toBe('completed')
     expect(screen.queryByRole('region', { name: 'Getting started' })).toBeNull()
@@ -465,7 +466,7 @@ describe('shortcut settings card', () => {
     window.localStorage.clear()
     const settings = settingsFace()
     settings.createCustomProfile = vi.fn(async () => 'created')
-    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
     fireEvent.click(screen.getByRole('button', { name: 'New' }))
     await waitFor(() => expect(settings.createCustomProfile).toHaveBeenCalledOnce())
     expect(window.localStorage.getItem('dsh-client-ui-shortcuts:onboarding:v1')).toBe('completed')
@@ -483,7 +484,7 @@ describe('shortcut settings card', () => {
       window.localStorage.clear()
       const settings = settingsFace()
       scenario.setup(settings)
-      render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+      render(<ShortcutManagerPanel settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
       const input = screen.getByLabelText('Choose custom profile JSON file') as HTMLInputElement
       if (scenario.file === undefined) fireEvent.change(input, { target: { files: [] } })
       else fireEvent.change(input, { target: { files: [scenario.file] } })
@@ -503,7 +504,7 @@ describe('shortcut settings card', () => {
         }
         return 'imported'
       })
-      render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+      render(<ShortcutManagerPanel settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
       fireEvent.change(screen.getByLabelText('Choose custom profile JSON file'), { target: { files: [new File([encodeCustomProfileJson({ name: 'Imported', bindings: customBindings })], 'profile.json')] } })
       await waitFor(() => expect(settings.importCustomProfile).toHaveBeenCalledOnce())
       expect(window.localStorage.getItem('dsh-client-ui-shortcuts:onboarding:v1')).toBeNull()
@@ -515,24 +516,24 @@ describe('shortcut settings card', () => {
     const descriptor = Object.getOwnPropertyDescriptor(window, 'localStorage')
     Object.defineProperty(window, 'localStorage', { configurable: true, get: () => { throw new Error('blocked') } })
     try {
-      expect(() => render(<ShortcutProfileCard settings={settingsFace()} availableGlobalActions={[]} platform="linux" t={t} />)).not.toThrow()
+      expect(() => render(<ShortcutManagerPanel settings={settingsFace()} availableGlobalActions={[]} platform="linux" t={t} />)).not.toThrow()
       expect(screen.getByRole('region', { name: 'Getting started' })).toBeTruthy()
     } finally {
       if (descriptor) Object.defineProperty(window, 'localStorage', descriptor)
     }
   })
 
-  it('opens the card and renders first-use onboarding on the first visit', () => {
+  it('renders the manager with first-use onboarding on the first visit', () => {
     window.localStorage.clear()
-    render(<ShortcutProfileCard settings={settingsFace()} availableGlobalActions={[]} platform="linux" t={t} />)
-    expect(screen.getByRole('button', { name: 'Collapse: Shortcuts' })).toBeTruthy()
+    render(<ShortcutManagerPanel settings={settingsFace()} availableGlobalActions={[]} platform="linux" t={t} />)
+    expect(screen.getByRole('combobox', { name: 'Profile' })).toBeTruthy()
     expect(screen.getByRole('region', { name: 'Getting started' })).toBeTruthy()
   })
 
-  it('keeps the card collapsed after onboarding is completed', () => {
+  it('hides onboarding after it is completed while keeping the manager visible', () => {
     window.localStorage.setItem('dsh-client-ui-shortcuts:onboarding:v1', 'completed')
-    render(<ShortcutProfileCard settings={settingsFace()} availableGlobalActions={[]} platform="linux" t={t} />)
-    expect(screen.getByRole('button', { name: 'Expand: Shortcuts' })).toBeTruthy()
+    render(<ShortcutManagerPanel settings={settingsFace()} availableGlobalActions={[]} platform="linux" t={t} />)
+    expect(screen.getByRole('combobox', { name: 'Profile' })).toBeTruthy()
     expect(screen.queryByRole('region', { name: 'Getting started' })).toBeNull()
   })
 
@@ -629,7 +630,7 @@ describe('shortcut settings card', () => {
 
   it('reads profile options reactively from the settings face', async () => {
     const settings = settingsFace()
-    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
     openCard()
     expect(screen.queryByRole('option', { name: 'Custom' })).toBeNull()
 
@@ -642,7 +643,7 @@ describe('shortcut settings card', () => {
 
   it('shows accessible create and import tools for built-ins but no custom-only tools', () => {
     const settings = settingsFace()
-    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
     openCard()
 
     const create = screen.getByRole('button', { name: 'New profile' })
@@ -667,7 +668,7 @@ describe('shortcut settings card', () => {
       legacyName: () => 'Custom',
     })
     const setActiveProfile = vi.spyOn(controller, 'setActiveProfile')
-    render(<ShortcutProfileCard settings={controller} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={controller} availableGlobalActions={[]} platform="linux" t={t} />)
     openCard()
 
     fireEvent.click(screen.getByRole('button', { name: 'New profile' }))
@@ -690,7 +691,7 @@ describe('shortcut settings card', () => {
       return 'custom-imported'
     })
     settings.setActiveProfile = vi.fn(async id => { settings.setExternal(id) })
-    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
     openCard()
     const input = screen.getByLabelText('Choose custom profile JSON file') as HTMLInputElement
     const valid = new File([encodeCustomProfileJson({ name: 'Imported', bindings: customBindings })], 'profile.json', { type: 'application/json' })
@@ -716,7 +717,7 @@ describe('shortcut settings card', () => {
     settings.importCustomProfile = scenario === 'controller failure'
       ? vi.fn().mockRejectedValue(new Error('denied'))
       : vi.fn(settings.importCustomProfile)
-    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
     openCard()
     const input = screen.getByLabelText('Choose custom profile JSON file') as HTMLInputElement
 
@@ -740,7 +741,7 @@ describe('shortcut settings card', () => {
       settings.setFailure({ code: 'NOT_APPLIED', operation: 'import', phase: 'selection', message: 'selection failed', profileId: 'imported-id', partial: 'profile-saved' })
       throw new Error('selection failed')
     })
-    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
     openCard()
 
     fireEvent.change(screen.getByLabelText('Choose custom profile JSON file'), { target: { files: [new File([encodeCustomProfileJson({ name: 'Imported', bindings: customBindings })], 'profile.json')] } })
@@ -759,7 +760,7 @@ describe('shortcut settings card', () => {
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
       expect(this.download).toBe(customProfileFilename('CON'))
     })
-    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
     openCard()
 
     fireEvent.click(screen.getByRole('button', { name: 'Export profile' }))
@@ -775,7 +776,7 @@ describe('shortcut settings card', () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     registry.replaceCustomProfiles([{ id: 'custom', name: 'Custom', bindings: customBindings }])
     const settings = settingsFace('custom', registry.list())
-    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
     openCard()
     const name = screen.getByRole('textbox', { name: 'Profile name' })
 
@@ -795,7 +796,7 @@ describe('shortcut settings card', () => {
         settings.setFailure({ code: 'NOT_APPLIED', operation: 'delete', phase: 'collection', message: 'delete failed', profileId: 'custom', partial: 'selection-changed' })
         throw new Error('delete failed')
       })
-    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
     openCard()
     fireEvent.change(screen.getByRole('textbox', { name: 'Profile name' }), { target: { value: 'Draft' } })
 
@@ -818,7 +819,7 @@ describe('shortcut settings card', () => {
     const oldSettings = settingsFace()
     oldSettings.createCustomProfile = vi.fn(() => new Promise<string>(resolve => { resolveCreate = () => resolve('old-created') }))
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const mounted = render(<ShortcutProfileCard settings={oldSettings} availableGlobalActions={[]} platform="linux" t={t} />)
+    const mounted = render(<ShortcutManagerPanel settings={oldSettings} availableGlobalActions={[]} platform="linux" t={t} />)
     openCard()
     fireEvent.click(screen.getByRole('button', { name: 'New profile' }))
     mounted.unmount()
@@ -831,10 +832,10 @@ describe('shortcut settings card', () => {
     const first = settingsFace()
     first.setActiveProfile = vi.fn(() => new Promise<void>((_resolve, reject) => { rejectSelection = reject }))
     const second = settingsFace()
-    const replaced = render(<ShortcutProfileCard settings={first} availableGlobalActions={[]} platform="linux" t={t} />)
+    const replaced = render(<ShortcutManagerPanel settings={first} availableGlobalActions={[]} platform="linux" t={t} />)
     openCard()
     fireEvent.change(screen.getByRole('combobox', { name: 'Profile' }), { target: { value: 'vim' } })
-    replaced.rerender(<ShortcutProfileCard settings={second} availableGlobalActions={[]} platform="linux" t={t} />)
+    replaced.rerender(<ShortcutManagerPanel settings={second} availableGlobalActions={[]} platform="linux" t={t} />)
     rejectSelection(new Error('stale selection'))
     await Promise.resolve()
     await Promise.resolve()
@@ -847,7 +848,7 @@ describe('shortcut settings card', () => {
     Object.defineProperty(pendingFile, 'text', { value: () => new Promise<string>(resolve => { resolveText = resolve }) })
     const fileSettings = settingsFace()
     const readError = vi.spyOn(fileSettings, 'error')
-    const pendingRead = render(<ShortcutProfileCard settings={fileSettings} availableGlobalActions={[]} platform="linux" t={t} />)
+    const pendingRead = render(<ShortcutManagerPanel settings={fileSettings} availableGlobalActions={[]} platform="linux" t={t} />)
     openCard()
     fireEvent.change(screen.getByLabelText('Choose custom profile JSON file'), { target: { files: [pendingFile] } })
     const readsBeforeUnmount = readError.mock.calls.length
@@ -860,39 +861,6 @@ describe('shortcut settings card', () => {
     consoleError.mockRestore()
   })
 
-   it.each(['select', 'create', 'import', 'save', 'delete'] as const)('keeps the disclosure header enabled while %s is pending', async operation => {
-    const registry = createProfileRegistry([standardProfile, vimProfile])
-    registry.replaceCustomProfiles([{ id: 'custom', name: 'Work', bindings: customBindings }])
-    const settings = settingsFace(operation === 'save' || operation === 'delete' ? 'custom' : 'standard', registry.list())
-    let resolve!: () => void
-    const pending = () => new Promise<void>(done => { resolve = done })
-    if (operation === 'select') settings.setActiveProfile = vi.fn(pending)
-    if (operation === 'create') settings.createCustomProfile = vi.fn(async () => { await pending(); return 'custom-created' })
-    if (operation === 'import') settings.importCustomProfile = vi.fn(async () => { await pending(); return 'custom-imported' })
-    if (operation === 'save') settings.saveCustomProfile = vi.fn(async () => { await pending() })
-    if (operation === 'delete') settings.deleteCustomProfile = vi.fn(pending)
-    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
-    openCard()
-
-    if (operation === 'select') fireEvent.change(screen.getByRole('combobox', { name: 'Profile' }), { target: { value: 'vim' } })
-    if (operation === 'create') fireEvent.click(screen.getByRole('button', { name: 'New profile' }))
-    if (operation === 'import') fireEvent.change(screen.getByLabelText('Choose custom profile JSON file'), { target: { files: [new File([encodeCustomProfileJson({ name: 'Imported', bindings: customBindings })], 'profile.json')] } })
-    if (operation === 'save') {
-      fireEvent.change(screen.getByRole('textbox', { name: 'Profile name' }), { target: { value: 'Draft' } })
-      fireEvent.click(screen.getByRole('button', { name: 'Save' }))
-    }
-    if (operation === 'delete') {
-      fireEvent.click(screen.getByRole('button', { name: 'Delete profile' }))
-      fireEvent.click(screen.getByRole('button', { name: 'Confirm delete' }))
-    }
-
-    await waitFor(() => expect((screen.getByRole('button', { name: 'Collapse: Shortcuts' }) as HTMLButtonElement).disabled).toBe(false))
-    fireEvent.click(screen.getByRole('button', { name: 'Collapse: Shortcuts' }))
-    expect(screen.queryByRole('combobox', { name: 'Profile' })).toBeNull()
-    resolve()
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Expand: Shortcuts' })).toBeTruthy())
-  })
-
   it('shows inline reset confirmation only for the current custom profile and resets authoritatively', async () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     registry.replaceCustomProfiles([{ id: 'custom', name: 'Work', bindings: customBindings }])
@@ -902,7 +870,7 @@ describe('shortcut settings card', () => {
       expect(fingerprint).toBe(settings.profiles().find(profile => profile.id === 'custom')?.fingerprint)
       settings.setProfiles([{ ...standardProfile }, { ...vimProfile }, { id: 'custom', label: 'profile.custom.label', description: 'profile.custom.description', bindings: standardProfile.bindings }])
     })
-    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
     openCard()
 
     expect(screen.getByRole('button', { name: 'Reset to default' })).toBeTruthy()
@@ -925,7 +893,7 @@ describe('shortcut settings card', () => {
     registry.replaceCustomProfiles([{ id: 'custom', name: 'Work', bindings: customBindings }])
     const settings = settingsFace('custom', registry.list())
     settings.resetCustomProfile = vi.fn().mockRejectedValue(new Error('denied'))
-    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
     openCard()
     fireEvent.change(screen.getByRole('textbox', { name: 'Profile name' }), { target: { value: 'Draft' } })
     fireEvent.click(screen.getByRole('button', { name: 'Reset to default' }))
@@ -939,7 +907,7 @@ describe('shortcut settings card', () => {
 
   it('disables reset for built-ins, dirty external state, readonly, busy, and unavailable settings', async () => {
     const builtins = settingsFace('standard')
-    render(<ShortcutProfileCard settings={builtins} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={builtins} availableGlobalActions={[]} platform="linux" t={t} />)
     openCard()
     expect(screen.queryByRole('button', { name: 'Reset to default' })).toBeNull()
     cleanup()
@@ -947,13 +915,13 @@ describe('shortcut settings card', () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     registry.replaceCustomProfiles([{ id: 'custom', name: 'Work', bindings: customBindings }])
     const readonly = settingsFace('custom', registry.list(), false)
-    render(<ShortcutProfileCard settings={readonly} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={readonly} availableGlobalActions={[]} platform="linux" t={t} />)
     openCard()
     expect((screen.getByRole('button', { name: 'Reset to default' }) as HTMLButtonElement).disabled).toBe(true)
     cleanup()
 
     const unavailable = settingsFace('custom', registry.list(), true, false)
-    render(<ShortcutProfileCard settings={unavailable} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={unavailable} availableGlobalActions={[]} platform="linux" t={t} />)
     openCard()
     expect((screen.getByRole('button', { name: 'Reset to default' }) as HTMLButtonElement).disabled).toBe(true)
   })
@@ -968,7 +936,7 @@ describe('shortcut settings card', () => {
       return authoritative
     })
     settings.saveCustomProfile = vi.fn(async (...args) => { expect(args[1]).toBe('authoritative-fingerprint'); expect(args[2]).toBe('Canonical') })
-    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
     openCard()
     fireEvent.change(screen.getByRole('textbox', { name: 'Profile name' }), { target: { value: 'Draft' } })
     fireEvent.click(screen.getByRole('button', { name: 'Reset to default' }))
@@ -981,7 +949,7 @@ describe('shortcut settings card', () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     registry.replaceCustomProfiles([{ id: 'custom', name: 'Work', bindings: customBindings }])
     const settings = settingsFace('custom', registry.list())
-    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
     openCard()
     fireEvent.change(screen.getByRole('textbox', { name: 'Profile name' }), { target: { value: 'Draft' } })
     settings.setProfiles([{ id: 'custom', name: 'Changed elsewhere', bindings: vimProfile.bindings }])
@@ -995,7 +963,7 @@ describe('shortcut settings card', () => {
     const settings = settingsFace('custom', registry.list())
     let resolve!: (value: { id: string; name: string; bindings: typeof standardProfile.bindings; fingerprint: string }) => void
     settings.resetCustomProfile = vi.fn(() => new Promise(done => { resolve = done }))
-    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
     openCard()
     fireEvent.click(screen.getByRole('button', { name: 'Reset to default' }))
     fireEvent.click(screen.getByRole('button', { name: 'Confirm reset' }))
@@ -1011,7 +979,7 @@ describe('shortcut settings card', () => {
     const settings = settingsFace('custom', [{ ...standardProfile }, { ...vimProfile }, { id: 'custom', label: 'profile.custom.label', description: 'profile.custom.description', bindings: customBindings }, { id: 'custom-b', label: 'profile.custom.label', description: 'profile.custom.description', bindings: vimProfile.bindings }])
     const beforeB = settings.profiles().find(profile => profile.id === 'custom-b')
     settings.resetCustomProfile = vi.fn(async () => ({ id: 'custom', name: 'Custom reset', bindings: standardProfile.bindings, fingerprint: 'reset-fingerprint' }))
-    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
     if (screen.queryByRole('button', { name: 'Expand: Shortcuts' })) openCard()
     fireEvent.click(screen.getByRole('button', { name: 'Reset to default' }))
     await waitFor(() => expect((screen.getByRole('textbox', { name: 'Profile name' }) as HTMLInputElement).value).toBe('Custom'))
@@ -1023,7 +991,7 @@ describe('shortcut settings card', () => {
     registry.replaceCustomProfiles([{ id: 'custom', name: 'Work', bindings: customBindings }])
     const settings = settingsFace('custom', registry.list())
     settings.resetCustomProfile = vi.fn(async () => ({ id: 'custom', name: 'Custom', bindings: standardProfile.bindings, fingerprint: 'reset-fingerprint' }))
-    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
     openCard()
     fireEvent.click(screen.getByRole('button', { name: 'Reset to default' }))
     fireEvent.click(screen.getByRole('button', { name: 'Confirm reset' }))
@@ -1041,7 +1009,7 @@ describe('shortcut settings card', () => {
     })
     const { createShortcutSettingsController } = await import('../src/client/settings/controller.js')
     const controller = createShortcutSettingsController(scope.scope, registry, scope.mutate, controllerOptions)
-    render(<ShortcutProfileCard settings={controller} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={controller} availableGlobalActions={[]} platform="linux" t={t} />)
     openCard()
     fireEvent.change(screen.getByRole('textbox', { name: 'Profile name' }), { target: { value: 'Detached draft' } })
 
@@ -1062,7 +1030,7 @@ describe('shortcut settings card', () => {
     registry.replaceCustomProfiles([{ id: 'custom', name: 'Readonly', bindings: customBindings }])
     const settings = settingsFace('custom', registry.list(), false)
     settings.exportActiveCustomProfile = vi.fn(() => ({ name: 'Readonly', bindings: customBindings }))
-    render(<ShortcutProfileCard settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
     openCard()
 
     expect((screen.getByRole('button', { name: 'New profile' }) as HTMLButtonElement).disabled).toBe(true)
@@ -1072,24 +1040,10 @@ describe('shortcut settings card', () => {
     expect((screen.getByRole('button', { name: 'Export profile' }) as HTMLButtonElement).disabled).toBe(false)
   })
 
-  it('starts collapsed and toggles profile details with an accessible disclosure header', () => {
-    const registry = createProfileRegistry([standardProfile, vimProfile])
-    const settings = settingsFace()
-    render(<ShortcutProfileCard settings={settings} profiles={registry.list()} availableGlobalActions={[]} platform="linux" t={t} />)
-    const trigger = screen.getByRole('button', { name: 'Expand: Shortcuts' })
-    expect(trigger.getAttribute('aria-expanded')).toBe('false')
-    expect(screen.queryByRole('combobox', { name: 'Profile' })).toBeNull()
-    fireEvent.click(trigger)
-    expect(screen.getByRole('button', { name: 'Collapse: Shortcuts' }).getAttribute('aria-expanded')).toBe('true')
-    expect((screen.getByRole('combobox', { name: 'Profile' }) as HTMLSelectElement).value).toBe('standard')
-    fireEvent.click(screen.getByRole('button', { name: 'Collapse: Shortcuts' }))
-    expect(screen.getByRole('button', { name: 'Expand: Shortcuts' }).getAttribute('aria-expanded')).toBe('false')
-    expect(screen.queryByRole('combobox', { name: 'Profile' })).toBeNull()
-  })
   it('renders accessible radios, selected state, and legends grouped by scope', () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     const settings = settingsFace()
-    render(<ShortcutProfileCard settings={settings} profiles={registry.list()} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
     openCard()
     expect((screen.getByRole('combobox', { name: 'Profile' }) as HTMLSelectElement).value).toBe('standard')
     expect(screen.getByText('Current profile')).toBeTruthy()
@@ -1116,12 +1070,12 @@ describe('shortcut settings card', () => {
     let resolve!: () => void
     const settings = settingsFace()
     settings.setActiveProfile = vi.fn(() => new Promise<void>(r => { resolve = r }))
-    render(<ShortcutProfileCard settings={settings} profiles={registry.list()} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
     openCard()
     fireEvent.change(screen.getByRole('combobox', { name: 'Profile' }), { target: { value: 'vim' } })
     expect(settings.setActiveProfile).toHaveBeenCalledWith('vim')
     expect((screen.getByRole('group') as HTMLFieldSetElement).disabled).toBe(true)
-    expect(screen.getAllByText('Saving...')).toHaveLength(2)
+    expect(screen.getAllByText('Saving...')).toHaveLength(1)
     resolve()
     await waitFor(() => expect((screen.getByRole('group') as HTMLFieldSetElement).disabled).toBe(false))
   })
@@ -1130,7 +1084,7 @@ describe('shortcut settings card', () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     const settings = settingsFace()
     settings.failNext('no permission')
-    render(<ShortcutProfileCard settings={settings} profiles={registry.list()} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
     openCard()
     fireEvent.change(screen.getByRole('combobox', { name: 'Profile' }), { target: { value: 'vim' } })
     await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('no permission'))
@@ -1149,7 +1103,7 @@ describe('shortcut settings card', () => {
       message: 'permission denied',
     })
 
-    render(<ShortcutProfileCard settings={settings} profiles={registry.list()} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
     openCard()
 
     expect(screen.getByRole('alert').textContent).toContain('permission denied')
@@ -1161,7 +1115,7 @@ describe('shortcut settings card', () => {
     const settings = settingsFace()
     let settle!: (error?: Error) => void
     settings.setActiveProfile = vi.fn(() => new Promise<void>((resolve, reject) => { settle = error => error ? reject(error) : resolve() }))
-    render(<ShortcutProfileCard settings={settings} profiles={registry.list()} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
     openCard()
     fireEvent.change(screen.getByRole('combobox', { name: 'Profile' }), { target: { value: 'vim' } })
     settings.setExternal('standard')
@@ -1183,7 +1137,7 @@ describe('shortcut settings card', () => {
       { command: 'openCommandPalette', scope: 'global', key: { key: 'n', modifiers: ['Meta'] } },
     ])
     const settings = settingsFace('standard', registry.list())
-    render(<ShortcutProfileCard settings={settings} profiles={[...registry.list()]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={settings} platform="linux" t={t} />)
     openCard()
     expect(screen.getByRole('option', { name: 'Custom' })).toBeTruthy()
     fireEvent.change(screen.getByRole('combobox', { name: 'Profile' }), { target: { value: 'custom' } })
@@ -1202,7 +1156,7 @@ describe('shortcut settings card', () => {
       'startSession', 'previousSession', 'nextSession', 'previousWorkspace', 'nextWorkspace', 'forkSession', 'toggleTheme',
     ] as const
 
-    render(<ShortcutProfileCard settings={settings} profiles={registry.list()} availableGlobalActions={availableGlobalActions} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={settings} availableGlobalActions={availableGlobalActions} platform="linux" t={t} />)
     openCard()
     expect(screen.getByRole('heading', { name: 'Global' })).toBeTruthy()
     expect(screen.getByText('New session')).toBeTruthy()
@@ -1242,7 +1196,7 @@ describe('shortcut settings card', () => {
       await new Promise<void>(done => { resolve = done })
       await persist(...args)
     })
-    render(<ShortcutProfileCard settings={settings} profiles={registry.list()} availableGlobalActions={['openCommandPalette']} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={settings} availableGlobalActions={['openCommandPalette']} platform="linux" t={t} />)
     openCard()
     fireEvent.change(screen.getByRole('textbox', { name: 'Profile name' }), { target: { value: 'Review' } })
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
@@ -1257,7 +1211,7 @@ describe('shortcut settings card', () => {
     const { createShortcutSettingsController } = await import('../src/client/settings/controller.js')
     const controller = createShortcutSettingsController(scope.scope, registry, scope.mutate, controllerOptions)
 
-    render(<ShortcutProfileCard settings={controller} profiles={registry.list()} availableGlobalActions={[]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={controller} availableGlobalActions={[]} platform="linux" t={t} />)
     openCard()
     fireEvent.change(screen.getByRole('combobox', { name: 'Profile' }), { target: { value: 'custom' } })
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Questions' })).toBeTruthy())
@@ -1278,7 +1232,7 @@ describe('shortcut settings card', () => {
   it('keeps standard and Vim profiles read-only', () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     const settings = settingsFace()
-    render(<ShortcutProfileCard settings={settings} profiles={[...registry.list(), { id: 'custom', label: 'profile.custom.label', description: 'profile.custom.description', bindings: standardProfile.bindings }]} platform="linux" t={t} />)
+    render(<ShortcutManagerPanel settings={settings} platform="linux" t={t} />)
     openCard()
     expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Record shortcut' })).toBeNull()
@@ -1290,11 +1244,11 @@ describe('shortcut settings card', () => {
     const registry = createProfileRegistry([standardProfile, vimProfile])
     const settings = settingsFace()
     const zh = (key: string) => key === 'profile.standard.label' ? '标准' : key === 'legend.scope.question' ? '问题' : t(key)
-    const { rerender } = render(<ShortcutProfileCard settings={settings} profiles={registry.list()} platform="linux" t={zh} />)
+    const { rerender } = render(<ShortcutManagerPanel settings={settings} platform="linux" t={zh} />)
     openCard()
     expect((screen.getByRole('combobox', { name: 'Profile' }) as HTMLSelectElement).value).toBe('standard')
     expect(standardProfile.bindings).toHaveLength(18)
-    rerender(<ShortcutProfileCard settings={settings} profiles={registry.list()} platform="linux" t={t} />)
+    rerender(<ShortcutManagerPanel settings={settings} platform="linux" t={t} />)
     expect((screen.getByRole('combobox', { name: 'Profile' }) as HTMLSelectElement).value).toBe('standard')
   })
 })
