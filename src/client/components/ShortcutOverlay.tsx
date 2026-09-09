@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import type { ShortcutBinding, ShortcutCommand, GlobalShortcutCommand } from '../contract/profile.js'
+import type { ShortcutBinding, GlobalShortcutCommand } from '../contract/profile.js'
 import type { ShortcutOverlayProps } from '../contract/overlay.js'
 import { compatibleBindingSequences, visualizeStroke } from '../keyboard/visuals.js'
 import { ShortcutKeycap, ShortcutKeycapPlus } from './ShortcutKeycap.js'
@@ -7,22 +7,15 @@ import styles from '../styles/ShortcutOverlay.module.css'
 
 const SCOPES = ['question', 'approval', 'global'] as const
 
-function isGlobal(command: ShortcutCommand): command is GlobalShortcutCommand {
-  return command === 'startSession' || command === 'previousSession' || command === 'nextSession'
-    || command === 'previousWorkspace' || command === 'nextWorkspace' || command === 'forkSession'
-    || command === 'toggleTheme' || command === 'showShortcuts'
-}
-
 function profileChip(profile: { readonly kind: 'builtin' | 'custom'; readonly label: string; readonly displayName: string }, t: (key: string) => string): string {
   return profile.kind === 'custom' ? profile.displayName : t(profile.label)
 }
 
 /** Frame-wide centered shortcuts cheatsheet; renders nothing while closed. */
-export function ShortcutOverlay({ settings, controller, availableGlobalActions, platform, t }: ShortcutOverlayProps): React.ReactElement | null {
+export function ShortcutOverlay({ settings, controller, availableGlobalActions, platform, t, restoreFocus }: ShortcutOverlayProps): React.ReactElement | null {
   const [, setTick] = useState(0)
   const [query, setQuery] = useState('')
   const wasOpen = useRef(controller.isOpen())
-  const restoreFocus = useRef<HTMLElement | null>(null)
 
   useEffect(() => settings.subscribe(() => setTick(value => value + 1)), [settings])
   useEffect(() => controller.subscribe(() => setTick(value => value + 1)), [controller])
@@ -30,11 +23,10 @@ export function ShortcutOverlay({ settings, controller, availableGlobalActions, 
   const open = controller.isOpen()
   useEffect(() => {
     if (open && !wasOpen.current) {
-      restoreFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
       setQuery('')
-    } else if (!open && wasOpen.current && restoreFocus.current !== null) {
-      restoreFocus.current.focus()
-      restoreFocus.current = null
+    } else if (!open && wasOpen.current) {
+      const target = restoreFocus?.()
+      if (target !== undefined && target !== null && target.isConnected) target.focus()
     }
     wasOpen.current = open
   }, [open])
@@ -59,7 +51,7 @@ export function ShortcutOverlay({ settings, controller, availableGlobalActions, 
     return commandName.toLowerCase().includes(trimmed) || scopeName.toLowerCase().includes(trimmed) || binding.command.toLowerCase().includes(trimmed)
   }
   const unavailable = (binding: ShortcutBinding): boolean => (
-    binding.scope === 'global' && isGlobal(binding.command) && !availableGlobalActions.includes(binding.command)
+    binding.scope === 'global' && !availableGlobalActions.includes(binding.command as GlobalShortcutCommand)
   )
   const hasRows = activeProfile.bindings.some(matches)
 

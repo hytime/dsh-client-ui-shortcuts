@@ -38,11 +38,20 @@ export function apply(ctx: ClientContext): void {
   })
   ctx.effect(() => () => controller.dispose(), 'dsh-shortcuts: settings controller')
   const overlay = new OverlayController()
+  /** Element focused before the overlay opened; captured before autoFocus moves it. */
+  let focusBeforeOverlay: HTMLElement | null = null
+  const toggleShortcutsOverlay = (): void => {
+    if (!overlay.isOpen()) {
+      const active = document.activeElement
+      focusBeforeOverlay = active instanceof HTMLElement ? active : null
+    }
+    overlay.toggle()
+  }
   const getGlobalActions = () => createGlobalActions({
     sessions: ctx.get('sessions') as GlobalActionCapabilities['sessions'],
     workspaces: ctx.get('workspaces') as GlobalActionCapabilities['workspaces'],
     startSession: compatibility.startSession,
-    toggleShortcutsOverlay: () => overlay.toggle(),
+    toggleShortcutsOverlay,
     workspaceView: {
       expandCollapsedWorkspace: title => { expandCollapsedWorkspace(document, title) },
     },
@@ -89,6 +98,7 @@ export function apply(ctx: ClientContext): void {
       availableGlobalActions: Object.keys(getGlobalActions()) as GlobalShortcutCommand[],
       platform,
       t: (key: string) => t(key as never),
+      restoreFocus: () => focusBeforeOverlay,
     }),
   }, ShortcutOverlay)), 'dsh-shortcuts: shortcuts overlay slot')
 }

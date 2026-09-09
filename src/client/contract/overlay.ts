@@ -29,4 +29,11 @@ export interface ShortcutOverlayProps {
   readonly availableGlobalActions: readonly GlobalShortcutCommand[]
   readonly platform: ShortcutPlatform
   readonly t: (key: string) => string
+  /**
+   * Resolve the element that owned focus before the overlay opened, so closing
+   * restores it. The caller captures it (before the search input's autoFocus
+   * runs in the React commit phase) rather than the component, whose open
+   * effect would already observe the overlay's own focused search box.
+   */
+  readonly restoreFocus?: () => HTMLElement | null
 }

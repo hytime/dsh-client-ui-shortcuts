@@ -19,7 +19,6 @@ export const CLIENT_EXTERNALS = [
   '@deepseek-ai/dsh-client-ui-primitives',
   '@deepseek-ai/dsh-client-ui-attachment',
   '@deepseek-ai/dsh-client-schema-form',
-  '@deepseek-ai/dsh-client-runtime/client',
 ] as const
 
 const SKIP_WORKSPACE_BUILD: UserConfig = { entry: '' }

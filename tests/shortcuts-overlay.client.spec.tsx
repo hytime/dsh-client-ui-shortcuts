@@ -85,6 +85,17 @@ describe('ShortcutOverlay', () => {
     expect(screen.getAllByText('overlay.unavailable').length).toBeGreaterThanOrEqual(1)
   })
 
+  it('never renders dead legacy commands (openSettings/openCommandPalette) as enabled', () => {
+    render(<ShortcutOverlay {...makeProps()} />)
+    // standardProfile carries legacy global bindings that are never available actions.
+    for (const command of ['keyboard.openSettings', 'keyboard.openCommandPalette']) {
+      const row = screen.getByText(command).closest('[aria-disabled="true"]')
+      expect(row).toBeTruthy()
+    }
+    // Disabled rows render the reason instead of keycaps.
+    expect(screen.queryByText('keyboard.openSettings')!.closest('[aria-disabled="true"]')!.querySelector('[aria-label="Command"]')).toBeNull()
+  })
+
   it('closes on an Escape keydown', () => {
     const controller = controllerStub(true)
     vi.spyOn(controller, 'close')
@@ -110,5 +121,19 @@ describe('ShortcutOverlay', () => {
     act(() => { controller.close() })
     expect(screen.queryByRole('dialog')).toBeNull()
     unmount()
+  })
+
+  it('restores focus to the element that owned it before the overlay opened', () => {
+    const owner = document.createElement('input')
+    document.body.append(owner)
+    owner.focus()
+    expect(document.activeElement).toBe(owner)
+    const controller = controllerStub(true)
+    render(<ShortcutOverlay {...makeProps({ controller, restoreFocus: () => owner })} />)
+    expect(screen.getByRole('dialog')).toBeTruthy()
+    act(() => { controller.close() })
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(document.activeElement).toBe(owner)
+    owner.remove()
   })
 })
