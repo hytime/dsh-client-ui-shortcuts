@@ -21,11 +21,12 @@ export interface CustomProfileEditorProps {
   readonly onSave: (id: string, baselineFingerprint: string, name: string, bindings: readonly ShortcutBinding[]) => Promise<EditableCustomProfile>
   readonly onReset?: (id: string, baselineFingerprint: string) => Promise<EditableCustomProfile>
   readonly onStateChange: (state: { dirty: boolean; saving: boolean; externalChange: boolean }) => void
+  readonly query?: string
 }
 
 const bindingSnapshot = (bindings: readonly ShortcutBinding[]): string => JSON.stringify(bindings)
 
-export function CustomProfileEditor({ profile, availableGlobalActions, platform, t, disabled = false, onSave, onReset, onStateChange }: CustomProfileEditorProps): React.ReactElement {
+export function CustomProfileEditor({ profile, availableGlobalActions, platform, t, disabled = false, onSave, onReset, onStateChange, query }: CustomProfileEditorProps): React.ReactElement {
   const [name, setName] = useState(profile.name)
   const [bindings, setBindings] = useState(profile.bindings)
   const [baseline, setBaseline] = useState(profile)
@@ -139,7 +140,7 @@ export function CustomProfileEditor({ profile, availableGlobalActions, platform,
     </label>
     {nameError !== undefined ? <p id={nameErrorId} className={styles.error}>{nameError}</p> : null}
     {externalChange ? <div role="status" className={styles.externalChange}><span>{t('editor.externalChange')}</span><button type="button" disabled={disabled || saving} onClick={() => reset(externalProfile)}>{t('editor.loadLatest')}</button></div> : null}
-    <ShortcutBindingEditor bindings={bindings} availableGlobalActions={availableGlobalActions} platform={platform} t={t} onChange={next => { setBindings(next); setMessage(undefined) }} onValidityChange={setBindingsValid} disabled={disabled || saving} />
+    <ShortcutBindingEditor bindings={bindings} availableGlobalActions={availableGlobalActions} platform={platform} t={t} onChange={next => { setBindings(next); setMessage(undefined) }} onValidityChange={setBindingsValid} disabled={disabled || saving} query={query} />
     {message !== undefined ? <p role={message.kind} className={message.kind === 'alert' ? styles.error : styles.success}>{message.text}</p> : null}
     {onReset !== undefined ? <div className={styles.resetActions}>
       {!confirmReset ? <button type="button" onClick={() => setConfirmReset(true)} disabled={disabled || saving || externalChange}>{t('editor.reset')}</button> : <div className={styles.resetConfirm}>

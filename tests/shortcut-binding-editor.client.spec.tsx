@@ -13,6 +13,7 @@ const t = (key: string) => ({
   'editor.profileName': 'Profile name', 'editor.nameCount': '{count} / 64', 'editor.save': 'Save', 'editor.cancel': 'Cancel',
   'editor.saveSucceeded': 'Saved', 'editor.saveFailed': 'Failed: {message}', 'editor.externalChange': 'EXTERNAL_CHANGE', 'editor.loadLatest': 'Load latest',
   'editor.nameRequired': 'Enter a profile name.', 'editor.nameTooLong': 'Profile names are limited to 64 characters.',
+  'keyboard.showShortcuts': 'Show shortcuts', 'legend.scope.global': 'Global',
 }[key] ?? key)
 
 afterEach(cleanup)
@@ -108,7 +109,56 @@ describe('ShortcutBindingEditor', () => {
   })
 })
 
+describe('ShortcutBindingEditor query filtering', () => {
+  const showShortcuts = { command: 'showShortcuts' as const, scope: 'global' as const, key: { key: 's', modifiers: ['Meta'] as const } }
+  const nextQuestion = { command: 'focusNext' as const, scope: 'question' as const, key: { key: 'ArrowDown', modifiers: [] as const } }
+
+  it('filters displayed rows by command label and restores all rows when cleared', () => {
+    const { rerender } = render(<ShortcutBindingEditor platform="mac" bindings={[nextQuestion, showShortcuts]} availableGlobalActions={['showShortcuts']} t={t} query="Show shortcuts" onChange={vi.fn()} />)
+    expect(screen.getByText('Show shortcuts')).toBeTruthy()
+    expect(screen.queryByText('keyboard.focusNext')).toBeNull()
+
+    rerender(<ShortcutBindingEditor platform="mac" bindings={[nextQuestion, showShortcuts]} availableGlobalActions={['showShortcuts']} t={t} query="" onChange={vi.fn()} />)
+    expect(screen.getByText('Show shortcuts')).toBeTruthy()
+    expect(screen.getByText('keyboard.focusNext')).toBeTruthy()
+  })
+
+  it('updates a displayed row by its complete bindings index and preserves hidden rows', () => {
+    const onChange = vi.fn()
+    const hidden = { command: 'openSettings' as const, scope: 'global' as const, key: { key: ',', modifiers: ['Ctrl'] as const } }
+    render(<ShortcutBindingEditor platform="mac" bindings={[hidden, showShortcuts]} availableGlobalActions={['showShortcuts']} t={t} query="showShortcuts" onChange={onChange} />)
+    const row = screen.getByText('Show shortcuts').closest('[class*="editorRow"]')
+    expect(row).not.toBeNull()
+    fireEvent.click(row!.querySelector('input[type="checkbox"]')!)
+    expect(onChange).toHaveBeenCalledWith([hidden, { ...showShortcuts, key: { key: 's', modifiers: [] } }])
+  })
+
+  it('validates complete bindings even when the conflicting row is filtered out', () => {
+    const conflicting = { command: 'focusNext' as const, scope: 'global' as const, key: { key: 's', modifiers: ['Meta'] as const } }
+    render(<ShortcutBindingEditor platform="mac" bindings={[showShortcuts, conflicting]} availableGlobalActions={['showShortcuts', 'focusNext']} t={t} query="showShortcuts" onChange={vi.fn()} />)
+    expect(screen.getByRole('alert')).toBeTruthy()
+    expect(screen.getByText('Show shortcuts')).toBeTruthy()
+    expect(screen.queryByText('keyboard.focusNext')).toBeNull()
+  })
+})
+
 describe('CustomProfileEditor', () => {
+  it('forwards query to the binding editor without dropping the profile name', () => {
+    const profile = {
+      id: 'custom-query',
+      name: 'Query profile',
+      bindings: [
+        { command: 'showShortcuts' as const, scope: 'global' as const, key: { key: 's', modifiers: ['Meta'] as const } },
+        { command: 'focusNext' as const, scope: 'question' as const, key: { key: 'ArrowDown', modifiers: [] as const } },
+      ],
+      fingerprint: 'query-baseline',
+    }
+    render(<CustomProfileEditor profile={profile} availableGlobalActions={['showShortcuts']} platform="mac" t={t} query="show shortcuts" onSave={vi.fn()} onStateChange={vi.fn()} />)
+    expect(screen.getByRole('textbox', { name: 'Profile name' })).toBeTruthy()
+    expect(screen.getByText('Show shortcuts')).toBeTruthy()
+    expect(screen.queryByText('keyboard.focusNext')).toBeNull()
+  })
+
   const profile = { id: 'custom-a', name: 'Work', bindings, fingerprint: 'baseline-a' }
   const props = { availableGlobalActions: ['openCommandPalette', 'openSettings'] as const, platform: 'linux' as const, t }
 
