@@ -275,23 +275,27 @@ export function ShortcutManagerPanel({ settings, availableGlobalActions, platfor
     </div>
   </section> : null
 
+  const controls = registryProfiles.length === 0 ? null : <div className={styles.managerControls}>
+    <fieldset className={styles.profileSelectGroup} disabled={busy}>
+      <legend>{t('settings.profile')}</legend>
+      <div className={styles.profileSelectRow}>
+        <label className={styles.profileSelect}>
+          <span>{t('settings.currentProfile')}</span>
+          <select aria-label={t('settings.profile')} value={selection} onChange={event => void choose(event.target.value)}>
+            {registryProfiles.map(profile => <option key={profile.id} value={profile.id}>{profile.kind === 'custom' ? profile.displayName : t(profile.label)}</option>)}
+          </select>
+        </label>
+        {toolbar}
+        {busy ? <span role="status" className={styles.operationStatus}>{t('settings.saving')}</span> : null}
+      </div>
+    </fieldset>
+  </div>
+
   const body = registryProfiles.length === 0
     ? <p role="status" className={styles.empty}>{t('settings.empty')}</p>
     : <>
       {onboarding}
-      <fieldset className={styles.profileSelectGroup} disabled={busy}>
-        <legend>{t('settings.profile')}</legend>
-        <div className={styles.profileSelectRow}>
-          <label className={styles.profileSelect}>
-            <span>{t('settings.currentProfile')}</span>
-            <select aria-label={t('settings.profile')} value={selection} onChange={event => void choose(event.target.value)}>
-              {registryProfiles.map(profile => <option key={profile.id} value={profile.id}>{profile.kind === 'custom' ? profile.displayName : t(profile.label)}</option>)}
-            </select>
-          </label>
-          {toolbar}
-          {busy ? <span role="status" className={styles.operationStatus}>{t('settings.saving')}</span> : null}
-        </div>
-      </fieldset>
+
       {exportReason !== undefined ? <p id={exportReasonId} className={styles.operationReason}>{exportReason}</p> : null}
       {confirmDelete && currentCustom !== undefined ? <div className={styles.deleteConfirm}>
         <span>{t('settings.deleteConfirm')}</span>
@@ -323,6 +327,7 @@ export function ShortcutManagerPanel({ settings, availableGlobalActions, platfor
         {currentProfile !== undefined ? <span className={styles.managerSearchHint}>{t('overlay.searchScope').replace('{name}', profileChip(currentProfile, t))}</span> : null}
       </label>
     </header>
+    {controls}
     <div className={styles.managerContent}>{body}</div>
   </div>
 }

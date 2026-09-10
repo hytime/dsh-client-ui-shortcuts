@@ -92,13 +92,13 @@
 .legend { display: grid; gap: 10px; margin-top: 10px; padding-top: 0; border-top: 0; }
 .legendGroup { display: grid; gap: 5px; min-width: 0; padding: 9px 10px 0; border: 1px solid var(--dsw-alias-border-subtle); border-radius: 8px; background: var(--dsw-alias-bg-layer-2); }
 .legendGroup + .legendGroup { padding-top: 9px; border-top: 1px solid var(--dsw-alias-border-subtle); }
-.legendGroup h3 { margin: 0; color: var(--dsw-alias-text-primary); font-size: 11px; font-weight: 650; line-height: 1.35; text-transform: uppercase; letter-spacing: .04em; }
+.legendGroup h3 { margin: 0; color: var(--dsw-alias-text-primary); font-size: 14px; font-weight: 600; line-height: 1.4; text-transform: uppercase; letter-spacing: .04em; }
 .legendList { min-width: 0; margin: 0 -10px; }
 .legendItem { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; min-width: 0; padding: 6px 10px; border-top: 1px solid var(--dsw-alias-border-subtle); transition: background .16s; }
 .legendItem:hover, .legendItem:focus-within { background: var(--dsw-alias-bg-module-platform); }
 .legendItemDisabled { opacity: .48; }
 .legendReason { color: var(--dsw-alias-label-tertiary); font-size: 12px; }
-.legendCommand { display: inline-flex; align-items: center; gap: 8px; min-width: 0; overflow-wrap: anywhere; color: var(--dsw-alias-text-secondary); }
+.legendCommand { display: inline-flex; align-items: center; gap: 8px; min-width: 0; overflow-wrap: anywhere; color: var(--dsw-alias-text-secondary); font-size: 14px; line-height: 1.4; }
 .legendKeys { display: flex; flex-wrap: nowrap; align-items: center; justify-content: flex-end; gap: 4px; min-width: 0; overflow-x: auto; color: var(--dsw-alias-text-secondary); white-space: nowrap; }
 .keycap {
   display: inline-flex;
@@ -135,7 +135,7 @@
 .editor { display: grid; gap: 10px; padding: 10px; border: 1px solid var(--dsw-alias-border-subtle); border-radius: 8px; background: var(--dsw-alias-bg-layer-2); }
 .editorGroup { display: grid; gap: 5px; }
 .editorGroup + .editorGroup { padding-top: 10px; border-top: 1px solid var(--dsw-alias-border-subtle); }
-.editorGroup h3 { margin: 0; color: var(--dsw-alias-text-primary); font-size: 11px; font-weight: 650; text-transform: uppercase; }
+.editorGroup h3 { margin: 0; color: var(--dsw-alias-text-primary); font-size: 14px; font-weight: 600; line-height: 1.4; text-transform: uppercase; }
 .editorList { display: grid; margin: 0 -10px; }
 .editorRow { display: grid; grid-template-columns: minmax(120px, 1fr) minmax(0, 2fr) auto; gap: 8px; align-items: center; padding: 7px 10px; border-top: 1px solid var(--dsw-alias-border-subtle); }
 .modifierToggles { display: flex; flex-wrap: wrap; gap: 5px; }
@@ -174,6 +174,9 @@
 .managerSearch input { width: 100%; box-sizing: border-box; border: 1px solid var(--dsw-alias-border-subtle); border-radius: 7px; padding: 9px 11px; background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-text-primary); font: inherit; }
 .managerSearch input:focus-visible { outline: 2px solid var(--dsw-alias-border-focus); outline-offset: 1px; }
 .managerSearchHint { color: var(--dsw-alias-label-tertiary); font-size: 11px; }
+.managerControls { flex: 0 0 auto; min-width: 0; padding: 10px 16px; border-bottom: 1px solid var(--dsw-alias-border-subtle); background: var(--dsw-alias-bg-layer-3); }
+.managerControls .profileSelectRow { padding-bottom: 0; border-bottom: 0; }
+.managerControls .profileSelectGroup legend { margin-bottom: 6px; }
 .managerContent { min-width: 0; flex: 1 1 auto; min-height: 0; overflow: auto; padding: 12px 16px 16px; }
 .managerReadonlyHint { margin: 0 0 8px; color: var(--dsw-alias-label-tertiary); font-size: 12px; }
 
@@ -192,8 +195,9 @@
 
 @media (max-width: 560px) {
   .managerHeader { padding-inline: 14px; }
-  .managerContent { padding-inline: 14px; }
+  .managerControls, .managerContent { padding-inline: 14px; }
   .managerHeaderTop { gap: 10px; }
   .managerTitle { font-size: 16px; }
   .managerClose, .managerCloseHint { font-size: 11px; }
+  .legendGroup h3, .editorGroup h3 { font-size: 13px; }
 }
