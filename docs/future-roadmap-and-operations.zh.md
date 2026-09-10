@@ -4,7 +4,7 @@
 
 ## 当前基线
 
-当前基线版本：`0.1.19`（后续版本号由 GitHub Release 触发 publish action 写入）
+当前基线版本：`0.1.20`（后续版本号由 GitHub Release 触发 publish action 写入）
 
 当前核心能力：
 

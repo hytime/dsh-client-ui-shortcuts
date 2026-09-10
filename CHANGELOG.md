@@ -1,4 +1,4 @@
-## Unreleased
+## 0.1.20 - DSH 0.1.5-alpha.1 support and shortcut manager panel
 
 ### Compatibility
 
@@ -12,6 +12,14 @@
 ### Changed
 
 - Profile management moved from the collapsible settings card into the panel opened by `Meta+Alt+Shift+S`; the old collapsible settings-card UI was removed.
+- Panel geometry and elevation now follow the DSH component conventions: capsule buttons (radius 18, height 36), inputs (0.5px border, radius 8, layer-1 fill), modal mask and blur, dialog radius and shadow, and the group-label and row type scale.
+- The editor action bar (Save / Cancel / Reset) moved out of the scrolling content and is pinned to the panel footer; the page behind the panel no longer scrolls while it is open.
+
+### Fixed
+
+- Fixed 15 theme tokens that do not exist in any supported DSH generation (`0.1.0-rc.8`, `0.1.1-rc.2`, `0.1.2-alpha.1`, `0.1.5-alpha.1`). Those variables resolved to the empty value, which silently dropped borders, made the primary button background transparent (it read as plain text), and disabled the error / success / warning state colors. A new style-token guard test now only allows tokens shared by every supported DSH generation.
+- Raised the panel above the settings dialog and portal-mounted it to `document.body`, fixing the panel being covered when opened from the settings entry.
+- Removed the dead style classes left behind by the settings-card migration.
 
 ## 0.1.19 - DSH Web compatibility fix
 
