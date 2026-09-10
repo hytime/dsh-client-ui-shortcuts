@@ -89,7 +89,7 @@ profile manifest 也应在 `dependencies` 和 `dsh.profile.bundles` 中列出该
 dsh --profile web
 ```
 
-启动后，在任意界面按 `Meta+Alt+Shift+S` 打开完整快捷键管理面板；DSH 设置页插件区同时提供「呼出面板快捷键」入口（显示当前呼出键，点击打开面板并定位到该行）。持久化 settings namespace 是 `dsh-ui-shortcuts`，包含 `activeProfile` 和 `customProfiles` 字段。内置的 `standard` 与 `vim` profile 均为只读；`customProfiles` 保存多个可命名、可编辑的 profile。
+启动后，在任意界面按 `Meta+Alt+Shift+S` 打开完整快捷键管理面板；面板只有一个快捷键列表，搜索只作用于当前 profile，Custom profile 直接编辑，Standard 与 Vim 只读；DSH 设置页插件区同时提供「呼出面板快捷键」入口（显示当前呼出键，点击打开面板并定位到该行）。持久化 settings namespace 是 `dsh-ui-shortcuts`，包含 `activeProfile` 和 `customProfiles` 字段。内置的 `standard` 与 `vim` profile 均为只读；`customProfiles` 保存多个可命名、可编辑的 profile。
 
 ## DSH 多版本兼容
 

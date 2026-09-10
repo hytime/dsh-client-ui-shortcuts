@@ -58,7 +58,7 @@ Git 安装会在安装阶段执行包的 `prepare` 脚本。pnpm 可能要求将
 - 浏览器保留快捷键 denylist 与冲突检查。
 - 对当前 DSH 组合中不可用功能进行能力检查。
 - 在相应 DSH 能力可用时提供 Session、Workspace、session branch 和主题操作。
-- `Meta+Alt+Shift+S` 打开完整快捷键管理面板：方案切换（Standard / Vim / Custom）、新建 / 导入 / 导出 / 删除方案、Custom 键位编辑，以及带搜索的 Question/Approval/Global 速查表。
+- `Meta+Alt+Shift+S` 打开完整快捷键管理面板：方案切换（Standard / Vim / Custom）、新建 / 导入 / 导出 / 删除方案、Custom 键位编辑，以及一个带搜索的、按 Question/Approval/Global 分组的统一快捷键列表。
 - 设置页插件区保留一个轻量的「呼出面板快捷键」入口：显示当前呼出键，点击打开面板并自动定位到该行，方便随时修改呼出键。
 
 ## 快捷键参考

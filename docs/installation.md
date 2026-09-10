@@ -89,7 +89,7 @@ After the profile is installed, start the Web surface through DSH:
 dsh --profile web
 ```
 
-After startup, press `Meta+Alt+Shift+S` anywhere to open the full shortcut manager panel; the DSH settings page also hosts an "open-panel shortcut" entry (it shows the current summon key and opens the manager panel on click, locating that row). The persisted settings namespace is `dsh-ui-shortcuts`, with `activeProfile` and `customProfiles` fields. The built-in `standard` and `vim` profiles are read-only; `customProfiles` stores the named editable profiles.
+After startup, press `Meta+Alt+Shift+S` anywhere to open the full shortcut manager panel. It contains one unified shortcut list: search applies only to the active profile, Custom profiles edit that list directly, and Standard/Vim are read-only. The DSH settings page also hosts an "open-panel shortcut" entry (it shows the current summon key and opens the manager panel on click, locating that row). The persisted settings namespace is `dsh-ui-shortcuts`, with `activeProfile` and `customProfiles` fields. The built-in `standard` and `vim` profiles are read-only; `customProfiles` stores the named editable profiles.
 
 ## DSH multi-version compatibility
 

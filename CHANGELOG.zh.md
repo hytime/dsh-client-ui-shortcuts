@@ -6,7 +6,7 @@
 
 ### 新增
 
-- 新增全局命令 `showShortcuts`（默认 `Meta+Alt+Shift+S`，可在 Custom profile 中编辑），打开完整快捷键管理面板：方案切换、新建 / 导入 / 导出 / 删除、Custom 键位编辑，以及带搜索、按 Question/Approval/Global 分组、对当前 DSH 不可用全局动作标注原因的速查表。
+- 新增全局命令 `showShortcuts`（默认 `Meta+Alt+Shift+S`，可在 Custom profile 中编辑），打开完整快捷键管理面板：方案切换、新建 / 导入 / 导出 / 删除、Custom 键位编辑，以及一个带搜索、按 Question/Approval/Global 分组、对当前 DSH 不可用全局动作标注原因的统一快捷键列表。
 - 设置页插件区保留「呼出面板快捷键」轻量入口：显示当前呼出键，点击打开管理面板并自动定位到该行；只读方案下提示切换 Custom 后可改，不自动切换。
 
 ### 变更

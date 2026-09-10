@@ -58,7 +58,7 @@ For upgrades, removal, local tarballs, profile inspection, and troubleshooting, 
 - Browser-reserved shortcut denylist and conflict validation.
 - Capability checks for DSH features that are not available in the current composition.
 - Session, Workspace, session-branch, and theme actions when the corresponding DSH capabilities are available.
-- A `Meta+Alt+Shift+S` shortcut manager panel: profile switching (Standard / Vim / Custom), New / Import / Export / Delete, in-panel Custom binding editing, and a searchable Question/Approval/Global cheatsheet.
+- A `Meta+Alt+Shift+S` shortcut manager panel: profile switching (Standard / Vim / Custom), New / Import / Export / Delete, in-panel Custom binding editing, and one searchable unified shortcut list grouped by Question/Approval/Global.
 - A lightweight "open-panel shortcut" entry in the DSH plugin settings section: it shows the current summon key, opens the manager panel on click, and locates that row so the key is easy to change.
 
 ## Shortcut reference
