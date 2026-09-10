@@ -19,13 +19,17 @@ This plugin runs inside DSH Web, adds predictable keyboard control for question 
 
 ## Screenshots
 
-Question and approval interaction shortcuts:
+The unified shortcut manager panel opened with `Meta+Alt+Shift+S` (read-only Standard profile):
 
-![Question and approval shortcut settings](https://raw.githubusercontent.com/hytime/dsh-client-ui-shortcuts/main/docs/ScreenShot_2026-08-24_011032_061.png)
+![Unified shortcut manager panel](https://raw.githubusercontent.com/hytime/dsh-client-ui-shortcuts/main/docs/panel-standard.png)
 
-Global Session and Workspace shortcuts with platform keycaps:
+A Custom profile edits in the same list, with Save / Cancel / Reset pinned to the panel footer:
 
-![Global Session and Workspace shortcut settings](https://raw.githubusercontent.com/hytime/dsh-client-ui-shortcuts/main/docs/ScreenShot_2026-08-24_011111_040.png)
+![Custom profile editing](https://raw.githubusercontent.com/hytime/dsh-client-ui-shortcuts/main/docs/panel-custom.png)
+
+The "open-panel shortcut" entry in the DSH plugin settings section opens the panel and locates that row:
+
+![Open-panel shortcut entry in settings](https://raw.githubusercontent.com/hytime/dsh-client-ui-shortcuts/main/docs/settings-entry.png)
 
 ## Install in 60 seconds
 

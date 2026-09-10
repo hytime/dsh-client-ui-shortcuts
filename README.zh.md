@@ -19,13 +19,17 @@
 
 ## 展示图
 
-Question 和 Approval 交互快捷键：
+`Meta+Alt+Shift+S` 打开的统一快捷键管理面板（Standard 只读方案）：
 
-![Question 和 Approval 快捷键设置](https://raw.githubusercontent.com/hytime/dsh-client-ui-shortcuts/main/docs/ScreenShot_2026-08-24_011032_061.png)
+![统一快捷键管理面板](https://raw.githubusercontent.com/hytime/dsh-client-ui-shortcuts/main/docs/panel-standard.png)
 
-带平台键帽的全局 Session 和 Workspace 快捷键：
+Custom 方案在同一列表中直接编辑，保存 / 取消 / 恢复默认固定在面板底部：
 
-![全局 Session 和 Workspace 快捷键设置](https://raw.githubusercontent.com/hytime/dsh-client-ui-shortcuts/main/docs/ScreenShot_2026-08-24_011111_040.png)
+![Custom 方案编辑](https://raw.githubusercontent.com/hytime/dsh-client-ui-shortcuts/main/docs/panel-custom.png)
+
+设置页插件区的「呼出面板快捷键」入口，点击即可打开面板并定位到该行：
+
+![设置页呼出面板快捷键入口](https://raw.githubusercontent.com/hytime/dsh-client-ui-shortcuts/main/docs/settings-entry.png)
 
 ## 60 秒安装
 
