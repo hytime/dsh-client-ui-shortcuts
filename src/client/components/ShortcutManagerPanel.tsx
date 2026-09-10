@@ -19,6 +19,11 @@ function acquireOnboardingStorage(): import('../onboarding.js').OnboardingStorag
   try { return window.localStorage } catch { return undefined }
 }
 
+function profileChip(profile: { readonly kind: 'builtin' | 'custom'; readonly label: string; readonly displayName: string } | undefined, t: (key: string) => string): string {
+  if (profile === undefined) return ''
+  return profile.kind === 'custom' ? profile.displayName : t(profile.label)
+}
+
 function IconButton({ name, label, disabled, describedBy, onClick }: {
   readonly name: ShortcutIconName
   readonly label: string
@@ -32,7 +37,7 @@ function IconButton({ name, label, disabled, describedBy, onClick }: {
 }
 
 /** Full profile manager embedded in the shortcuts overlay. Always open while mounted. */
-export function ShortcutManagerPanel({ settings, availableGlobalActions, platform, t, initialFocusCommand, showUnavailableGlobalActions = false }: ShortcutManagerPanelProps): React.ReactElement {
+export function ShortcutManagerPanel({ settings, availableGlobalActions, platform, t, initialFocusCommand, showUnavailableGlobalActions = false, onClose }: ShortcutManagerPanelProps): React.ReactElement {
   const [runtimeState, setRuntimeState] = useState(0)
   const storage = useState<ReturnType<typeof acquireOnboardingStorage>>(() => acquireOnboardingStorage())[0]
   const [showOnboarding, setShowOnboarding] = useState(() => !hasCompletedOnboarding(storage))
@@ -294,10 +299,6 @@ export function ShortcutManagerPanel({ settings, availableGlobalActions, platfor
         <button type="button" disabled={busy} onClick={() => void deleteProfile()}>{t('settings.deleteConfirmAction')}</button>
       </div> : null}
       {message !== undefined ? <p role={message.kind} className={message.kind === 'alert' ? styles.error : styles.success}>{message.text}</p> : settingsFailure !== undefined ? <p role="alert" className={styles.error}>{t('settings.error').replace('{message}', settingsFailure.message)}</p> : null}
-             <label className={styles.managerSearch}>
-         <span className={styles.visuallyHidden}>{t('overlay.searchPlaceholder')}</span>
-         <input type="search" role="searchbox" aria-label={t('overlay.searchPlaceholder')} placeholder={t('overlay.searchPlaceholder')} value={query} onChange={event => setQuery(event.target.value)} />
-       </label>
        {locatedReadonly ? <p className={styles.managerReadonlyHint}>{t('overlay.readonlyHint')}</p> : null}
        {currentProfile === undefined ? <p role="status" className={styles.empty}>{t('settings.conflict')}</p> : currentCustom !== undefined ? <CustomProfileEditor key={currentCustom.id} profile={{ id: currentCustom.id, name: currentCustom.persistedName ?? currentCustom.displayName, bindings: currentCustom.bindings, fingerprint: currentCustom.fingerprint }} query={query} availableGlobalActions={availableGlobalActions as readonly GlobalShortcutCommand[] | undefined} platform={platform} t={t} disabled={busy || !settings.writable() || !settings.available()} onSave={saveCustomProfile} onReset={resetCustomProfile} onStateChange={setEditor} /> : <>
         <p className={styles.summary}>{currentProfile.description ? t(currentProfile.description) : ''}</p>
@@ -305,7 +306,25 @@ export function ShortcutManagerPanel({ settings, availableGlobalActions, platfor
       </>}
     </>
 
-  return body
+  return <div className={styles.managerPanel}>
+    <header className={styles.managerHeader}>
+      <div className={styles.managerHeaderTop}>
+        <div className={styles.managerTitleBlock}>
+          <span className={styles.managerEyebrow}>{t('launch.title')}</span>
+          <span className={styles.managerTitle}>{t('overlay.title')} {currentProfile !== undefined ? <span className={styles.managerProfileChip}>{profileChip(currentProfile, t)}</span> : null}</span>
+        </div>
+        {onClose !== undefined
+          ? <button type="button" className={styles.managerClose} onClick={onClose}>{t('overlay.closeHint')}</button>
+          : <span className={styles.managerCloseHint}>{t('overlay.closeHint')}</span>}
+      </div>
+      <label className={styles.managerSearch}>
+        <span className={styles.visuallyHidden}>{t('overlay.searchPlaceholder')}</span>
+        <input type="search" role="searchbox" aria-label={t('overlay.searchPlaceholder')} placeholder={t('overlay.searchPlaceholder')} value={query} onChange={event => setQuery(event.target.value)} />
+        {currentProfile !== undefined ? <span className={styles.managerSearchHint}>{t('overlay.searchScope').replace('{name}', profileChip(currentProfile, t))}</span> : null}
+      </label>
+    </header>
+    <div className={styles.managerContent}>{body}</div>
+  </div>
 }
 
 function errorText(reason: unknown): string {

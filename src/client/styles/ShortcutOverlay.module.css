@@ -5,28 +5,18 @@
   background: rgba(0, 0, 0, .35);
 }
 .panel {
-  width: min(760px, calc(100vw - 24px));
+  width: min(880px, calc(100vw - 24px));
   max-height: calc(100vh - 24px);
   display: flex; flex-direction: column;
   background: var(--dsw-alias-bg-layer-3);
   border: 1px solid var(--dsw-alias-border-l2);
   border-radius: 12px;
   box-shadow: 0 16px 40px rgba(0, 0, 0, .3);
-  overflow: auto;
+  overflow: hidden;
 }
-.header {
-  flex: none;
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 12px; padding: 10px 16px;
-  border-bottom: 1px solid var(--dsw-alias-border-l2);
-}
-.title { font-size: 15px; font-weight: 600; color: var(--dsw-alias-text-primary); }
-.chip { font-size: 12px; color: var(--dsw-alias-label-secondary); }
-.closeHint { font-size: 12px; color: var(--dsw-alias-label-tertiary); }
-.managerArea { min-width: 0; }
+.managerArea { min-width: 0; overflow: auto; }
 
 @media (max-width: 640px) {
   .backdrop { padding: 8px; }
   .panel { width: calc(100vw - 16px); max-height: calc(100vh - 16px); border-radius: 10px; }
-  .header { padding: 9px 12px; }
 }

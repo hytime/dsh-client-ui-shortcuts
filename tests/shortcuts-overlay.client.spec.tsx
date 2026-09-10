@@ -80,6 +80,18 @@ describe('ShortcutOverlay', () => {
     expect(screen.getAllByLabelText('Control').length).toBeGreaterThanOrEqual(1)
   })
 
+  it('renders the modal through document.body with one header and one list', () => {
+    const { container } = render(<ShortcutOverlay {...makeProps()} />)
+    expect(container.querySelector('[role="dialog"]')).toBeNull()
+    expect(document.body.querySelectorAll('[role="dialog"]')).toHaveLength(1)
+    expect(screen.getByText('overlay.title')).toBeTruthy()
+    expect(screen.getAllByText('profile.standard.label').length).toBeGreaterThanOrEqual(2)
+    expect(screen.getByRole('searchbox')).toBeTruthy()
+    expect(screen.getAllByText('legend.scope.question')).toHaveLength(1)
+    expect(screen.getAllByText('legend.scope.approval')).toHaveLength(1)
+    expect(screen.getAllByText('legend.scope.global')).toHaveLength(1)
+  })
+
   it('filters rows by search query and restores on clear', () => {
     render(<ShortcutOverlay {...makeProps()} />)
     expect(screen.getAllByText('keyboard.focusNext').length).toBeGreaterThanOrEqual(1)

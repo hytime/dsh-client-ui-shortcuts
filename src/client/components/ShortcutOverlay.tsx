@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { GlobalShortcutCommand } from '../contract/profile.js'
 import type { ShortcutOverlayProps } from '../contract/overlay.js'
 import { ShortcutManagerPanel } from './ShortcutManagerPanel.js'
@@ -33,7 +34,7 @@ export function ShortcutOverlay({ settings, controller, availableGlobalActions, 
   if (!open) return null
   const focusCommand = initialFocusCommand ?? controller.focusCommand?.() as GlobalShortcutCommand | undefined
 
-  return (
+  return typeof document === 'undefined' ? null : createPortal(
     <div
       className={styles.backdrop}
       role="dialog"
@@ -44,10 +45,6 @@ export function ShortcutOverlay({ settings, controller, availableGlobalActions, 
       }}
     >
       <div className={styles.panel}>
-        <div className={styles.header}>
-          <span className={styles.title}>{t('overlay.title')}</span>
-          <span className={styles.closeHint}>{t('overlay.closeHint')}</span>
-        </div>
         <div className={styles.managerArea}>
           <ShortcutManagerPanel
             settings={settings}
@@ -56,9 +53,11 @@ export function ShortcutOverlay({ settings, controller, availableGlobalActions, 
             t={t}
             initialFocusCommand={focusCommand}
             showUnavailableGlobalActions
+            onClose={() => controller.close()}
           />
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

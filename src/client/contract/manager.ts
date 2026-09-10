@@ -10,4 +10,5 @@ export interface ShortcutManagerPanelProps {
   readonly t: (key: string) => string
   readonly initialFocusCommand?: GlobalShortcutCommand
   readonly showUnavailableGlobalActions?: boolean
+  readonly onClose?: () => void
 }
