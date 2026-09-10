@@ -23,18 +23,19 @@
 - 基于 settings revision 的并发安全写入；
 - `showShortcuts` 全局命令（默认 `Meta+Alt+Shift+S`，Custom 可改绑）打开完整快捷键管理面板：方案切换、New / Import / Export / Delete、Custom 键位编辑，以及一个带搜索、按 Question/Approval/Global 分组、标注不可用动作的统一快捷键列表；
 - 设置页插件区「呼出面板快捷键」轻入口：显示当前呼出键，点击打开面板并定位该行，只读方案下提示切换 Custom 后可改（不自动切换）；
+- 界面语言除 DSH 自带的简体中文与英文外，另注册日文与韩文为可选语言；两者通过 locale 服务的 `addLanguage` 加入，该 API 在 `0.1.2-alpha.1` 才出现，旧版按能力探测跳过并仅保留中英；
 - 单一源码树兼容 DSH `0.1.0-rc.8` 至 `0.1.1-rc.2`、`0.1.2-alpha.1` 及 `0.1.5-alpha.1`（不再依赖已停发的 `@deepseek-ai/dsh-client-runtime`）。
 
 安装入口：
 
 ```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.15
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.20
 ```
 
 GitHub 源码安装必须固定 tag 或 commit：
 
 ```bash
-dsh plugin --profile web add github:hytime/dsh-client-ui-shortcuts#v0.1.14
+dsh plugin --profile web add github:hytime/dsh-client-ui-shortcuts#v0.1.20
 ```
 
 ## 产品目标

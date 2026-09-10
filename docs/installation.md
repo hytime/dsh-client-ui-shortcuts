@@ -1,5 +1,7 @@
 # Installing DSH Client UI Shortcuts
 
+English | [中文](installation.zh.md)
+
 This guide installs `@hytime/dsh-client-ui-shortcuts` into a DSH Web profile. The plugin is loaded by the DSH Web composition; it is not a standalone browser application.
 
 ## Prerequisites

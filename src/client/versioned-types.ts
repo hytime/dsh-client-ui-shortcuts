@@ -64,3 +64,15 @@ export interface PendingWait<K extends string = string> {
 
 /** Cordis context with the optional client services this package touches. */
 export type ClientContextLike = Context
+
+/** Locale capability this package probes instead of assuming.
+ *
+ * `addLanguage` — which is what makes an extra language *selectable* rather than merely
+ * carrying a dictionary — landed after `0.1.1-rc.2`: `0.1.0-rc.8` and `0.1.1-rc.2` have no
+ * such method, while `0.1.2-alpha.1` and `0.1.5-alpha.1` do. The three-argument `register`
+ * overload exists in every generation, so dictionaries for those languages stay registerable
+ * everywhere and simply go unused where the language cannot be selected. */
+export interface ClientLocaleLike {
+  readonly getSnapshot: () => { readonly locales: readonly { readonly id: string }[] }
+  readonly addLanguage?: (input: { readonly id: string; readonly label: string; readonly fallback: string }) => () => void
+}

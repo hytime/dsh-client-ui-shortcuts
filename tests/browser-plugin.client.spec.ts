@@ -64,10 +64,37 @@ class FakeSlotRegistry {
 
 class FakeLocale {
   private readonly dictionaries = new Map<string, Record<string, string>>()
+  private readonly languages: { id: string; label: string; fallback?: string }[] = [
+    { id: 'en', label: 'English' },
+    { id: 'zh', label: '中文', fallback: 'en' },
+  ]
+  /** Locale ids this package contributed, in registration order. */
+  readonly added: string[] = []
 
-  register(namespace: string, dictionaries: { zh: Record<string, string>; en: Record<string, string> }): () => void {
-    this.dictionaries.set(namespace, dictionaries.zh)
-    return () => { this.dictionaries.delete(namespace) }
+  getSnapshot(): { active: string; locales: readonly { id: string; label: string; fallback?: string }[] } {
+    return { active: 'en', locales: [...this.languages] }
+  }
+
+  addLanguage(input: { id: string; label: string; fallback: string }): () => void {
+    this.languages.push(input)
+    this.added.push(input.id)
+    return () => {
+      this.added.splice(this.added.indexOf(input.id), 1)
+      const index = this.languages.findIndex(language => language.id === input.id)
+      if (index >= 0) this.languages.splice(index, 1)
+    }
+  }
+
+  register(namespace: string, dictionaries: { zh: Record<string, string>; en: Record<string, string> }): () => void
+  register(namespace: string, locale: string, dictionary: Record<string, string>): () => void
+  register(namespace: string, localeOrDictionaries: string | { zh: Record<string, string>; en: Record<string, string> }, dictionary?: Record<string, string>): () => void {
+    const key = typeof localeOrDictionaries === 'string' ? `${namespace}:${localeOrDictionaries}` : namespace
+    this.dictionaries.set(key, typeof localeOrDictionaries === 'string' ? dictionary ?? {} : localeOrDictionaries.zh)
+    return () => { this.dictionaries.delete(key) }
+  }
+
+  dictionary(namespace: string, locale: string): Record<string, string> | undefined {
+    return this.dictionaries.get(`${namespace}:${locale}`)
   }
 
   bind(namespace: string): (key: string) => string {
@@ -98,7 +125,7 @@ function makeScope(value: ShortcutSettings = {
   return { scope }
 }
 
-async function bench(options: { withWorkspaces?: boolean; withRemote?: boolean } = {}) {
+async function bench(options: { withWorkspaces?: boolean; withRemote?: boolean; preRegisteredLanguages?: readonly string[]; withoutAddLanguage?: boolean } = {}) {
   const ctx = new Context()
   const slots = new FakeSlotRegistry()
   slots.register({
@@ -110,6 +137,9 @@ async function bench(options: { withWorkspaces?: boolean; withRemote?: boolean }
     },
   }, () => null)
   const locale = new FakeLocale()
+  for (const id of options.preRegisteredLanguages ?? []) locale.addLanguage({ id, label: id, fallback: 'en' })
+  // 0.1.0-rc.8 and 0.1.1-rc.2 expose no addLanguage at all.
+  if (options.withoutAddLanguage) (locale as unknown as { addLanguage?: unknown }).addLanguage = undefined
   ctx.provide('slots', slots)
   ctx.provide('locale', locale)
   const settings = makeScope()
@@ -152,6 +182,34 @@ async function bench(options: { withWorkspaces?: boolean; withRemote?: boolean }
 describe('shortcut client slot wiring', () => {
   it('declares its client services', () => {
     expect(inject).toEqual(['slots', 'locale', 'settingsScope', 'sessions', 'connection'])
+  })
+
+  it('contributes Japanese and Korean as selectable languages with their dictionaries', async () => {
+    const b = await bench()
+    expect(b.locale.added).toEqual(['ja', 'ko'])
+    expect(b.locale.getSnapshot().locales.map(locale => locale.label)).toEqual(expect.arrayContaining(['日本語', '한국어']))
+    expect(b.locale.dictionary('dsh-shortcuts', 'ja')?.['keyboard.showShortcuts']).toBe('ショートカットを表示')
+    expect(b.locale.dictionary('dsh-shortcuts', 'ko')?.['keyboard.showShortcuts']).toBe('단축키 보기')
+    await b.feature.dispose()
+    expect(b.locale.added).toEqual([])
+    expect(b.locale.dictionary('dsh-shortcuts', 'ja')).toBeUndefined()
+  })
+
+  it('leaves a language another pack already registered untouched', async () => {
+    const b = await bench({ preRegisteredLanguages: ['ja'] })
+    const ids = b.locale.getSnapshot().locales.map(locale => locale.id)
+    expect(ids.filter(id => id === 'ja')).toHaveLength(1)
+    expect(ids).toContain('ko')
+    await b.feature.dispose()
+  })
+
+  it('keeps loading where the locale service exposes no addLanguage', async () => {
+    const b = await bench({ withoutAddLanguage: true })
+    expect(b.locale.added).toEqual([])
+    expect(b.locale.dictionary('dsh-shortcuts', 'ja')?.['keyboard.showShortcuts']).toBe('ショートカットを表示')
+    expect(b.locale.dictionary('dsh-shortcuts', 'ko')?.['keyboard.showShortcuts']).toBe('단축키 보기')
+    expect(b.slots.entries('settings.plugin.item')).toHaveLength(1)
+    await b.feature.dispose()
   })
 
   it('registers locale, composer selector and keyed settings card', async () => {

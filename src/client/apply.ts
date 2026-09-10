@@ -1,4 +1,4 @@
-import type { SettingsScope, SessionId } from './versioned-types.js'
+import type { ClientLocaleLike, SettingsScope, SessionId } from './versioned-types.js'
 import type { ClientContextLike as ClientContext } from './versioned-types.js'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
@@ -10,7 +10,7 @@ import { ShortcutComposer } from './components/ShortcutComposer.js'
 import { createShortcutSettingsController } from './settings/controller.js'
 import type { ShortcutSettingsFace } from './contract/settings.js'
 import { createDshCompatibility } from './compatibility.js'
-import { NS, en, zh } from './locales.js'
+import { NS, en, ja, ko, zh } from './locales.js'
 import type { ShortcutSettings } from '../settings.js'
 import { SHORTCUTS_SETTINGS_NAMESPACE } from '../settings-namespace.js'
 import type { ShortcutProfile, GlobalShortcutCommand } from './contract/profile.js'
@@ -28,6 +28,22 @@ export const inject = ['slots', 'locale', 'settingsScope', 'sessions', 'connecti
 
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-shortcuts: dictionaries')
+  ctx.effect(() => ctx.locale.register(NS, 'ja', ja), 'dsh-shortcuts: ja dictionary')
+  ctx.effect(() => ctx.locale.register(NS, 'ko', ko), 'dsh-shortcuts: ko dictionary')
+  // Japanese and Korean are not built into DSH, so making them selectable needs
+  // `addLanguage`, which 0.1.0-rc.8 and 0.1.1-rc.2 do not expose; there the dictionaries
+  // above stay registered but unselectable. Both languages fall back to English, which
+  // every lookup chain must reach, and an id another language pack already claimed is
+  // left as that pack defined it.
+  const locale = ctx.locale as unknown as ClientLocaleLike
+  const addLanguage = (id: string, label: string): (() => void) => {
+    const add = locale.addLanguage
+    if (add === undefined) return () => {}
+    if (locale.getSnapshot().locales.some(entry => entry.id === id)) return () => {}
+    return add.call(locale, { id, label, fallback: 'en' })
+  }
+  ctx.effect(() => addLanguage('ja', '日本語'), 'dsh-shortcuts: ja language')
+  ctx.effect(() => addLanguage('ko', '한국어'), 'dsh-shortcuts: ko language')
   const t = ctx.locale.bind(NS)
   const scope = ctx.settingsScope.bind<ShortcutSettings>({ namespace: SHORTCUTS_SETTINGS_NAMESPACE }) as SettingsScope<ShortcutSettings>
   const registry = createBuiltinProfileRegistry()

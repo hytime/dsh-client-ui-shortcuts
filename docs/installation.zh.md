@@ -1,5 +1,7 @@
 # 安装 DSH Client UI Shortcuts
 
+[English](installation.md) | 中文
+
 本指南用于将 `@hytime/dsh-client-ui-shortcuts` 安装到 DSH Web profile。插件由 DSH Web composition 加载，不是可以独立打开的浏览器应用。
 
 ## 前置条件

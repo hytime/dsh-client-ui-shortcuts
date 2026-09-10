@@ -115,9 +115,15 @@ The browser denylist covers known Chrome, Safari, Firefox, and Edge combinations
 
 Session navigation follows the current Workspace's stored Session order and skips archived, subagent, and blank Sessions. Workspace navigation opens an existing non-blank Session in the target Workspace. When a target Workspace is collapsed, the plugin expands it automatically before opening the eligible Session; navigation does not create a blank Session or call `connectWorkspace` to manufacture a target.
 
+## Languages
+
+The panel ships Simplified Chinese and English, the two languages DSH provides itself, plus Japanese and Korean, which this package contributes as selectable languages. Choose one in DSH settings under Language; every surface this plugin renders follows it, and each contributed language falls back to English for a key it does not carry.
+
+Making Japanese and Korean *selectable* relies on the locale service's `addLanguage`, which `0.1.0-rc.8` and `0.1.1-rc.2` do not expose. On those two releases the plugin still loads normally and simply offers Chinese and English.
+
 ## DSH compatibility
 
-One published package supports the DSH `0.1.0-rc.8` through `0.1.1-rc.2` line, `0.1.2-alpha.1`, and `0.1.5-alpha.1` and later, and no longer depends on `@deepseek-ai/dsh-client-runtime` (which is no longer published in `0.1.5-alpha.1`). The browser adapter detects capabilities at runtime instead of branching on a DSH version: it uses current `remote.settings` when available and falls back to the legacy Connection settings API; it selects `uiWorkspace.startSession` or legacy `workspaces.startSession`; and it reads pending interactions from `uiSession` or the legacy Session summary. The package is loaded only through a real DSH Web composition and DSH boot/module loader. Installing an update does not replace code already running in an open page; reload the Web composition to load the new Client bundle.
+One published package supports the DSH `0.1.0-rc.8` through `0.1.1-rc.2` line, `0.1.2-alpha.1`, and `0.1.5-alpha.1` and later, and no longer depends on `@deepseek-ai/dsh-client-runtime` (which is no longer published in `0.1.5-alpha.1`). The browser adapter detects capabilities at runtime instead of branching on a DSH version: it uses current `remote.settings` when available and falls back to the legacy Connection settings API; it selects `uiWorkspace.startSession` or legacy `workspaces.startSession`; it reads pending interactions from `uiSession` or the legacy Session summary; and it contributes the Japanese and Korean language entries only where the locale service exposes `addLanguage`. The package is loaded only through a real DSH Web composition and DSH boot/module loader. Installing an update does not replace code already running in an open page; reload the Web composition to load the new Client bundle.
 
 ## Development and verification
 

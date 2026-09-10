@@ -1,3 +1,17 @@
+## Unreleased
+
+### Added
+
+- Japanese and Korean UI languages, selectable in DSH settings under Language. Every surface this plugin renders follows the active language, and a contributed language falls back to English for a key it does not carry.
+
+### Compatibility
+
+- Registering Japanese and Korean as selectable languages relies on the locale service's `addLanguage`, which first appears in `0.1.2-alpha.1`. On `0.1.0-rc.8` and `0.1.1-rc.2` the plugin detects the missing capability, skips that registration, and still loads with Chinese and English; the dictionaries themselves register on every version.
+
+### Documentation
+
+- The installation guides now link to each other's language.
+
 ## 0.1.20 - DSH 0.1.5-alpha.1 support and shortcut manager panel
 
 ### Compatibility

@@ -119,9 +119,15 @@ Session 导航遵循当前 Workspace 保存的 Session 顺序，并跳过 archiv
 
 如果目标 Workspace 处于折叠状态，插件会先自动展开它，再打开符合条件的已有 Session。导航不会创建 blank Session，也不会调用 `connectWorkspace` 来制造目标。
 
+## 界面语言
+
+面板提供简体中文与英文（DSH 自带的两种语言），另外提供日文与韩文——这两种语言由本插件注册为可选语言。在 DSH 设置的「语言」中选择即可，插件渲染的所有界面都会跟随切换；新增语言在缺少某个键时回退到英文。
+
+日文与韩文能否「被选择」依赖 locale 服务的 `addLanguage`，而 `0.1.0-rc.8` 与 `0.1.1-rc.2` 未提供该方法。在这两个版本上插件仍正常加载，只是仅提供中文与英文。
+
 ## DSH 兼容边界
 
-一个发布包支持 DSH `0.1.0-rc.8` 至 `0.1.1-rc.2` 系列、`0.1.2-alpha.1`，以及 `0.1.5-alpha.1` 和后续版本，且不再依赖 `@deepseek-ai/dsh-client-runtime`（该包在 `0.1.5-alpha.1` 已停止发布）。浏览器 adapter 按运行时能力探测，不按 DSH 版本号分支：优先使用当前的 `remote.settings`，否则回退旧版 Connection settings API；新建 Session 优先使用 `uiWorkspace.startSession`，否则回退 `workspaces.startSession`；pending interaction 优先读取 `uiSession`，否则读取旧版 Session summary。插件只能通过真实的 DSH Web composition 和 DSH 启动与模块加载器加载。安装更新不会替换已经在打开页面中运行的代码；请重新加载 Web 组合，才能加载新的 Client bundle。
+一个发布包支持 DSH `0.1.0-rc.8` 至 `0.1.1-rc.2` 系列、`0.1.2-alpha.1`，以及 `0.1.5-alpha.1` 和后续版本，且不再依赖 `@deepseek-ai/dsh-client-runtime`（该包在 `0.1.5-alpha.1` 已停止发布）。浏览器 adapter 按运行时能力探测，不按 DSH 版本号分支：优先使用当前的 `remote.settings`，否则回退旧版 Connection settings API；新建 Session 优先使用 `uiWorkspace.startSession`，否则回退 `workspaces.startSession`；pending interaction 优先读取 `uiSession`，否则读取旧版 Session summary；只有在 locale 服务提供 `addLanguage` 时才注册日文与韩文语言项。插件只能通过真实的 DSH Web composition 和 DSH 启动与模块加载器加载。安装更新不会替换已经在打开页面中运行的代码；请重新加载 Web 组合，才能加载新的 Client bundle。
 
 ## 开发与验证
 
