@@ -14,7 +14,7 @@
   box-shadow: 0 16px 40px rgba(0, 0, 0, .3);
   overflow: hidden;
 }
-.managerArea { min-width: 0; overflow: auto; }
+.managerArea { min-width: 0; min-height: 0; flex: 1 1 auto; display: flex; overflow: hidden; }
 
 @media (max-width: 640px) {
   .backdrop { padding: 8px; }
