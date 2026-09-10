@@ -6,6 +6,7 @@
 }
 .panel {
   width: min(880px, calc(100vw - 24px));
+  height: min(860px, calc(100vh - 24px));
   max-height: calc(100vh - 24px);
   display: flex; flex-direction: column;
   background: var(--dsw-alias-bg-layer-3);
@@ -18,5 +19,5 @@
 
 @media (max-width: 640px) {
   .backdrop { padding: 8px; }
-  .panel { width: calc(100vw - 16px); max-height: calc(100vh - 16px); border-radius: 10px; }
+  .panel { width: calc(100vw - 16px); height: calc(100vh - 16px); max-height: calc(100vh - 16px); border-radius: 10px; }
 }
