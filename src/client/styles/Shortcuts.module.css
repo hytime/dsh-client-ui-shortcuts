@@ -124,7 +124,7 @@
 .error { color: var(--dsw-alias-text-danger); }
 .empty { color: var(--dsw-alias-text-secondary); }
 .summary { margin: 0; color: var(--dsw-alias-text-secondary); }
-.customProfileEditor { display: grid; gap: 10px; margin-top: 10px; }
+.customProfileEditor { display: flex; flex-direction: column; min-height: 100%; gap: 10px; margin-top: 10px; }
 .profileNameRow { display: grid; grid-template-columns: minmax(100px, auto) minmax(0, 1fr) auto; gap: 10px; align-items: center; }
 .profileNameRow input { min-width: 0; border: 1px solid var(--dsw-alias-border-subtle); border-radius: 6px; padding: 8px 10px; background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-text-primary); font: inherit; }
 .profileNameRow input:focus-visible { outline: 2px solid var(--dsw-alias-border-focus); outline-offset: 2px; }
@@ -132,7 +132,7 @@
 .externalChange { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; border: 1px solid var(--dsw-alias-border-focus); border-radius: 6px; color: var(--dsw-alias-text-secondary); }
 .externalChange button { border: 0; background: transparent; color: var(--dsw-alias-action-primary); font: inherit; cursor: pointer; }
 .success { color: var(--dsw-alias-text-success); }
-.editor { display: grid; gap: 10px; padding: 10px; border: 1px solid var(--dsw-alias-border-subtle); border-radius: 8px; background: var(--dsw-alias-bg-layer-2); }
+.editor { display: flex; flex: 1 1 auto; min-height: 0; flex-direction: column; gap: 10px; padding: 10px; border: 1px solid var(--dsw-alias-border-subtle); border-radius: 8px; background: var(--dsw-alias-bg-layer-2); }
 .editorGroup { display: grid; gap: 5px; }
 .editorGroup + .editorGroup { padding-top: 10px; border-top: 1px solid var(--dsw-alias-border-subtle); }
 .editorGroup h3 { margin: 0; color: var(--dsw-alias-text-primary); font-size: 14px; font-weight: 600; line-height: 1.4; text-transform: uppercase; }
@@ -171,9 +171,12 @@
 .managerClose:hover { color: var(--dsw-alias-text-primary); }
 .managerClose:focus-visible { outline: 2px solid var(--dsw-alias-border-focus); outline-offset: 3px; border-radius: 4px; }
 .managerSearch { display: grid; gap: 4px; margin: 0; }
-.managerSearch input { width: 100%; min-height: 38px; box-sizing: border-box; border: 1px solid var(--dsw-alias-border-l2); border-radius: 7px; padding: 8px 11px; background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-text-primary); font: inherit; }
+.managerSearchField { display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 38px; box-sizing: border-box; padding: 0 11px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 7px; background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-text-primary); }
+.managerSearchField:focus-within { border-color: var(--dsw-alias-border-focus); box-shadow: 0 0 0 2px color-mix(in srgb, var(--dsw-alias-border-focus) 24%, transparent); }
+.managerSearchIcon { flex: 0 0 auto; color: var(--dsw-alias-label-secondary); }
+.managerSearch input { flex: 1 1 auto; min-width: 0; min-height: 36px; box-sizing: border-box; border: 0; padding: 8px 0; background: transparent; color: inherit; font: inherit; outline: 0; }
 .managerSearch input::placeholder { color: var(--dsw-alias-label-secondary); opacity: 1; }
-.managerSearch input:focus-visible { outline: 2px solid var(--dsw-alias-border-focus); outline-offset: 1px; }
+.managerSearch input:focus-visible { outline: 0; }
 .managerSearchHint { color: var(--dsw-alias-label-tertiary); font-size: 11px; }
 .managerControls { flex: 0 0 auto; min-width: 0; padding: 10px 16px; border-bottom: 1px solid var(--dsw-alias-border-subtle); background: var(--dsw-alias-bg-layer-3); }
 .managerControls .profileSelectRow { padding-bottom: 0; border-bottom: 0; }
@@ -185,6 +188,7 @@
   position: sticky;
   bottom: 0;
   z-index: 1;
+  flex: 0 0 auto;
   display: flex;
   justify-content: flex-end;
   gap: 8px;
@@ -192,6 +196,7 @@
   padding: 12px 2px 2px;
   border-top: 1px solid var(--dsw-alias-border-l2);
   background: var(--dsw-alias-bg-layer-3);
+  box-shadow: 0 -8px 16px color-mix(in srgb, var(--dsw-alias-bg-layer-3) 86%, transparent);
 }
 .editorActions button { min-height: 34px; padding: 6px 12px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 6px; background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-text-primary); font: inherit; cursor: pointer; }
 .editorActions button:hover:not(:disabled), .resetActions > button:hover:not(:disabled), .resetConfirm button:hover:not(:disabled), .deleteConfirm button:hover:not(:disabled) { border-color: var(--dsw-alias-border-focus); }

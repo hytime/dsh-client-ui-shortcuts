@@ -225,6 +225,7 @@ describe('shortcut manager panel', () => {
     const standard = settingsFace('standard')
     render(<ShortcutManagerPanel settings={standard} availableGlobalActions={['showShortcuts']} platform="linux" t={t} />)
     expect(screen.getByRole('searchbox')).toBeTruthy()
+    expect(screen.getByRole('searchbox').parentElement?.querySelector('svg')).not.toBeNull()
     expect(screen.getByRole('heading', { name: 'Questions' })).toBeTruthy()
     expect(screen.getByRole('heading', { name: 'Approvals' })).toBeTruthy()
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'Show shortcuts' } })

@@ -1,4 +1,6 @@
 import React, { useEffect, useId, useRef, useState } from 'react'
+import { Icon } from '@iconify/react/offline'
+import searchIcon from '@iconify-icons/lucide/search.js'
 import { customProfileFilename } from '../../custom-profile-contract.js'
 import type { ShortcutProfile, GlobalShortcutCommand } from '../contract/profile.js'
 import type { ShortcutManagerPanelProps } from '../contract/manager.js'
@@ -323,7 +325,10 @@ export function ShortcutManagerPanel({ settings, availableGlobalActions, platfor
       </div>
       <label className={styles.managerSearch}>
         <span className={styles.visuallyHidden}>{t('overlay.searchPlaceholder')}</span>
-        <input type="search" role="searchbox" aria-label={t('overlay.searchPlaceholder')} placeholder={t('overlay.searchPlaceholder')} value={query} onChange={event => setQuery(event.target.value)} />
+        <span className={styles.managerSearchField}>
+          <Icon icon={searchIcon} className={styles.managerSearchIcon} width={16} height={16} aria-hidden="true" />
+          <input type="search" role="searchbox" aria-label={t('overlay.searchPlaceholder')} placeholder={t('overlay.searchPlaceholder')} value={query} onChange={event => setQuery(event.target.value)} />
+        </span>
         {currentProfile !== undefined ? <span className={styles.managerSearchHint}>{t('overlay.searchScope').replace('{name}', profileChip(currentProfile, t))}</span> : null}
       </label>
     </header>
