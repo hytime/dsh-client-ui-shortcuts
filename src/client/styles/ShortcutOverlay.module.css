@@ -1,24 +1,26 @@
 .backdrop {
   position: fixed; inset: 0; z-index: 1200;
   display: flex; align-items: center; justify-content: center;
-  padding: 12px; box-sizing: border-box;
-  background: rgba(0, 0, 0, .35);
+  padding: 24px; box-sizing: border-box;
+  background: var(--dsw-alias-bg-mask-1);
+  backdrop-filter: var(--dsw-mask-blur);
   overscroll-behavior: contain;
 }
 .panel {
-  width: min(880px, calc(100vw - 24px));
-  height: min(860px, calc(100vh - 24px));
-  max-height: calc(100vh - 24px);
+  width: min(880px, 100%);
+  height: min(860px, calc(100vh - 48px));
+  max-height: calc(100vh - 48px);
   display: flex; flex-direction: column;
-  background: var(--dsw-alias-bg-layer-3);
-  border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 12px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, .3);
+  background: var(--dsw-alias-bg-layer-2);
+  border-radius: 24px;
+  /* elevation-prominent exists only in current DSH; shadow-lv2 is the
+     cross-version fallback present in every supported generation. */
+  box-shadow: var(--dsw-elevation-prominent, var(--dsw-shadow-lv2));
   overflow: hidden;
 }
 .managerArea { min-width: 0; min-height: 0; flex: 1 1 auto; display: flex; overflow: hidden; }
 
 @media (max-width: 640px) {
-  .backdrop { padding: 8px; }
-  .panel { width: calc(100vw - 16px); height: calc(100vh - 16px); max-height: calc(100vh - 16px); border-radius: 10px; }
+  .backdrop { padding: 12px; }
+  .panel { width: 100%; height: calc(100vh - 24px); max-height: calc(100vh - 24px); border-radius: 20px; }
 }

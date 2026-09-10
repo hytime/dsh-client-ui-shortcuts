@@ -32,8 +32,8 @@
   margin: 0 auto;
   overflow: hidden;
   border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 8px;
-  background: var(--dsw-alias-bg-layer-3);
+  border-radius: 20px;
+  background: var(--dsw-specific-input-major);
   box-shadow: var(--dsw-shadow-lv2, 0 8px 24px rgb(0 0 0 / 12%));
 }
 
@@ -74,45 +74,59 @@
 .optionGroup { display: grid; gap: 6px; min-width: 0; }
 
 .customInput {
-  border: 1px solid var(--dsw-alias-border-l2);
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 10px;
+  border: 0.5px solid var(--dsw-alias-border-l4);
   border-radius: 8px;
-  background: var(--dsw-alias-bg-layer-2);
+  background: var(--dsw-alias-bg-layer-1);
   color: var(--dsw-alias-label-primary);
   font: inherit;
+  font-size: 14px;
+  line-height: 22px;
 }
+.customInput:focus-visible { outline: 0; border-color: var(--dsw-alias-brand-primary); }
 
 .option {
   display: flex;
   align-items: center;
   gap: 8px;
   width: 100%;
+  min-height: 40px;
+  flex-shrink: 0;
   appearance: none;
-  border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 6px;
-  padding: 8px 10px;
-  background: var(--dsw-alias-bg-layer-2);
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 8px 12px 8px 8px;
+  background: transparent;
   color: var(--dsw-alias-label-primary);
   font: inherit;
   font-size: 14px;
+  line-height: 22px;
   text-align: left;
   cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
 }
 
-.option:hover,
-.option:focus-visible {
-  border-color: var(--dsw-alias-brand-primary);
-  box-shadow: 0 0 0 2px var(--dsw-alias-bg-module-platform);
+.option:hover:not(:disabled),
+.option:focus-visible,
+.optionSelected {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.optionSelected {
+  border-color: var(--dsw-alias-border-l2);
 }
 
 .option:disabled {
   cursor: default;
-  opacity: 0.6;
 }
 
 .optionContent { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 2px; }
 .optionLabel { min-width: 0; overflow-wrap: anywhere; }
 .optionDescription { min-width: 0; color: var(--dsw-alias-label-tertiary); font-size: 13px; line-height: 1.4; overflow-wrap: anywhere; white-space: pre-wrap; }
-.optionMark { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 18px; height: 18px; border: 1px solid transparent; border-radius: 4px; color: var(--dsw-alias-label-primary-foreground); }
+.optionMark { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 20px; height: 20px; border: 1px solid transparent; border-radius: 6px; background: var(--dsw-alias-bg-overlay); color: var(--dsw-alias-label-secondary); }
 .optionMarkSelected {
   border-color: var(--dsw-alias-label-primary);
   background: var(--dsw-alias-label-primary);
@@ -125,13 +139,6 @@
   background: var(--dsw-alias-bg-module-platform);
 }
 
-.customInput {
-  box-sizing: border-box;
-  width: 100%;
-  min-height: 42px;
-  padding: 9px 10px;
-}
-
 textarea.customInput {
   min-height: 64px;
   resize: vertical;
@@ -142,72 +149,72 @@ textarea.customInput {
   color: var(--dsw-alias-state-error-primary);
 }
 
-.action {
+.action,
+.approvalAllow,
+.approvalReject {
   appearance: none;
-  border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 6px;
-  padding: 7px 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 0.5px solid var(--dsw-alias-border-l3);
+  border-radius: 18px;
   background: transparent;
-  color: var(--dsw-alias-label-secondary);
+  color: var(--dsw-alias-label-primary);
   font: inherit;
+  font-size: 14px;
+  line-height: 22px;
   cursor: pointer;
 }
 
 .action:hover:not(:disabled),
 .action:focus-visible,
-.actionSelected {
-  border-color: var(--dsw-alias-brand-primary);
-  color: var(--dsw-alias-label-primary);
+.actionSelected,
+.approvalReject:hover:not(:disabled) {
+  background: var(--dsw-alias-interactive-bg-hover);
 }
 
 .actionPrimary {
-  border-color: var(--dsw-alias-button-primary-fill);
+  border: none;
   background: var(--dsw-alias-button-primary-fill);
   color: var(--dsw-alias-label-primary-foreground);
 }
 
 .actionPrimary:hover:not(:disabled) {
-  border-color: var(--dsw-alias-button-primary-hover);
   background: var(--dsw-alias-button-primary-hover);
   color: var(--dsw-alias-label-primary-foreground);
 }
 
-.actionPrimary:focus-visible {
+.actionPrimary:focus-visible,
+.action:focus-visible,
+.approvalAllow:focus-visible,
+.approvalReject:focus-visible {
   outline: 2px solid var(--dsw-alias-brand-primary);
   outline-offset: 2px;
-  color: var(--dsw-alias-label-primary-foreground);
 }
 
-.action:disabled {
-  cursor: default;
-  opacity: 0.6;
-}
-
-.approvalAllow,
-.approvalReject {
-  border: 1px solid transparent;
-  border-radius: 6px;
-  padding: 7px 14px;
-  font: inherit;
-  cursor: pointer;
+.action:disabled,
+.approvalAllow:disabled,
+.approvalReject:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
 }
 
 .approvalAllow {
-  border-color: var(--dsw-alias-button-primary-fill);
+  border: none;
   background: var(--dsw-alias-button-primary-fill);
   color: var(--dsw-alias-label-primary-foreground);
 }
 
-.approvalReject {
-  border-color: var(--dsw-alias-state-error-primary);
-  background: transparent;
-  color: var(--dsw-alias-state-error-primary);
+.approvalAllow:hover:not(:disabled) {
+  background: var(--dsw-alias-button-primary-hover);
 }
 
-.approvalAllow:disabled,
-.approvalReject:disabled {
-  cursor: default;
-  opacity: 0.6;
+.approvalReject {
+  border-color: var(--dsw-alias-state-error-primary);
+  color: var(--dsw-alias-state-error-primary);
 }
 
 @media (max-width: 560px) {
