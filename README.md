@@ -36,7 +36,7 @@ The "open-panel shortcut" entry in the DSH plugin settings section opens the pan
 The recommended path is the npm release because it includes prebuilt `lib/` artifacts and requires no install-time build. Install it through the DSH CLI, then restart or reload the Web composition:
 
 ```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.20
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.21
 dsh --profile web
 ```
 

@@ -36,7 +36,7 @@ Custom 方案在同一列表中直接编辑，保存 / 取消 / 恢复默认固�
 推荐安装 npm 发布包，因为其中已经包含预构建的 `lib/` 产物，不需要在安装阶段执行构建。通过 DSH CLI 安装插件，然后重启或重新加载 Web composition：
 
 ```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.20
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.21
 dsh --profile web
 ```
 
