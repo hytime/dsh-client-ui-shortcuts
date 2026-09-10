@@ -63,6 +63,16 @@ describe('ShortcutOverlay', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
   })
 
+  it('locks and restores body scrolling while open', () => {
+    document.body.style.overflow = 'scroll'
+    const controller = controllerStub(true)
+    render(<ShortcutOverlay {...makeProps({ controller })} />)
+    expect(document.body.style.overflow).toBe('hidden')
+    act(() => { controller.close() })
+    expect(document.body.style.overflow).toBe('scroll')
+    document.body.style.overflow = ''
+  })
+
   it('renders scopes and reuses the shared legend visuals', () => {
     const ctrlProfile = {
       ...standardProfile,

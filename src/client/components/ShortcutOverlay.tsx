@@ -15,6 +15,14 @@ export function ShortcutOverlay({ settings, controller, availableGlobalActions, 
 
   const open = controller.isOpen()
   useEffect(() => {
+    if (!open || typeof document === 'undefined' || document.body === null) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [open])
+  useEffect(() => {
     if (!open && wasOpen.current) {
       const target = restoreFocus?.()
       if (target !== undefined && target !== null && target.isConnected) target.focus()
