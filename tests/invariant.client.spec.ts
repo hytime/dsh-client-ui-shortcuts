@@ -21,6 +21,7 @@ const profile = {
 const STYLE_FILES = [
   'src/client/styles/Shortcuts.module.css',
   'src/client/styles/InteractionSurface.module.css',
+  'src/client/styles/ShortcutOverlay.module.css',
 ] as const
 
 /**
