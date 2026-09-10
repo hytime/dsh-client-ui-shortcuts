@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 import React from 'react'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ShortcutManagerPanel } from '../src/client/components/ShortcutManagerPanel.js'
+import { CustomProfileEditor } from '../src/client/components/CustomProfileEditor.js'
 import { createProfileRegistry } from '../src/client/profiles/registry.js'
 import { standardProfile, vimProfile } from '../src/client/profiles/builtins.js'
 import type { ManagedShortcutProfile, ShortcutSettingsFace, ShortcutSettingsFailure } from '../src/client/contract/settings.js'
@@ -260,5 +261,53 @@ describe('shortcut manager panel', () => {
     settings.setFailure({ code: 'NOT_APPLIED', operation: 'save', phase: 'collection', message: 'permission denied' })
     render(<ShortcutManagerPanel settings={settings} availableGlobalActions={[]} platform="linux" t={t} />)
     expect(screen.getByRole('alert').textContent).toContain('Save failed: permission denied')
+  })
+
+  it('portals custom reset and save actions into the external footer', async () => {
+    window.localStorage.clear()
+    const registry = createProfileRegistry([standardProfile, vimProfile])
+    registry.replaceCustomProfiles([{ id: 'custom', name: 'Work', bindings: standardProfile.bindings as never }])
+    const settings = settingsFace('custom', registry.list())
+    const save = vi.spyOn(settings, 'saveCustomProfile')
+    render(<ShortcutManagerPanel settings={settings} availableGlobalActions={['showShortcuts']} platform="linux" t={t} />)
+
+    const footer = await waitFor(() => {
+      const element = document.querySelector('[class*="managerFooter"]')
+      expect(element).not.toBeNull()
+      return element as HTMLElement
+    })
+    expect(within(footer).getByRole('button', { name: 'Save' })).toBeTruthy()
+    expect(within(footer).getByRole('button', { name: 'Cancel' })).toBeTruthy()
+    expect(within(footer).getByRole('button', { name: 'editor.reset' })).toBeTruthy()
+    const content = document.querySelector('[class*="managerContent"]') as HTMLElement
+    expect(within(content).queryByRole('button', { name: 'Save' })).toBeNull()
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Profile name' }), { target: { value: 'Renamed' } })
+    fireEvent.click(within(footer).getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(save).toHaveBeenCalledOnce())
+  })
+
+  it('does not create an empty footer for a built-in profile', () => {
+    window.localStorage.clear()
+    render(<ShortcutManagerPanel settings={settingsFace('standard')} availableGlobalActions={[]} platform="linux" t={t} />)
+    expect(document.querySelector('[class*="managerFooter"]')).toBeNull()
+  })
+
+  it('keeps custom editor actions inline when no portal target is provided', () => {
+    window.localStorage.clear()
+    const profile = {
+      id: 'custom', name: 'Work', bindings: standardProfile.bindings, fingerprint: 'custom:work',
+    }
+    render(<CustomProfileEditor
+      profile={profile}
+      availableGlobalActions={['showShortcuts']}
+      platform="linux"
+      t={t}
+      onSave={async next => ({ ...profile, ...next })}
+      onReset={async () => profile}
+      onStateChange={vi.fn()}
+    />)
+    expect(screen.getByRole('button', { name: 'Save' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeTruthy()
   })
 })

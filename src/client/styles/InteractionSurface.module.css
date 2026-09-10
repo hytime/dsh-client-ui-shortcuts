@@ -8,20 +8,20 @@
 }
 
 .root[data-interaction-kind='approval'] {
-  --interaction-warn-border: var(--dsw-alias-border-warning, var(--dsw-alias-text-warning, var(--dsw-alias-label-warning, #d97706)));
-  --interaction-warn-surface: var(--dsw-alias-bg-warning, var(--dsw-alias-bg-warning-light, rgb(217 119 6 / 10%)));
-  --interaction-warn-text: var(--dsw-alias-text-warning, var(--dsw-alias-label-warning, #b45309));
+  --interaction-warn-border: var(--dsw-alias-state-warn-primary);
+  --interaction-warn-surface: var(--dsw-alias-state-warn-tertiary);
+  --interaction-warn-text: var(--dsw-alias-state-warn-label);
 }
 
 .root[data-interaction-kind='approval'] .card {
-  border-color: var(--interaction-warn-border, #d97706);
+  border-color: var(--interaction-warn-border);
 }
 
 .root[data-interaction-kind='approval'] .header {
   padding: 10px 14px;
   border-bottom: 1px solid var(--interaction-warn-border, var(--dsw-alias-border-l2));
-  background: var(--interaction-warn-surface, rgb(217 119 6 / 10%));
-  color: var(--interaction-warn-text, #b45309);
+  background: var(--interaction-warn-surface);
+  color: var(--interaction-warn-text);
 }
 
 .root[data-interaction-kind='approval'] .body { padding: 10px 14px 12px; }
@@ -112,7 +112,7 @@
 .optionContent { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 2px; }
 .optionLabel { min-width: 0; overflow-wrap: anywhere; }
 .optionDescription { min-width: 0; color: var(--dsw-alias-label-tertiary); font-size: 13px; line-height: 1.4; overflow-wrap: anywhere; white-space: pre-wrap; }
-.optionMark { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 18px; height: 18px; border: 1px solid transparent; border-radius: 4px; color: var(--dsw-alias-label-white, #fff); }
+.optionMark { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 18px; height: 18px; border: 1px solid transparent; border-radius: 4px; color: var(--dsw-alias-label-primary-foreground); }
 .optionMarkSelected {
   border-color: var(--dsw-alias-label-primary);
   background: var(--dsw-alias-label-primary);
@@ -139,7 +139,7 @@ textarea.customInput {
 
 .error {
   margin: 0;
-  color: var(--dsw-alias-text-danger, var(--dsw-alias-label-error));
+  color: var(--dsw-alias-state-error-primary);
 }
 
 .action {
@@ -161,21 +161,21 @@ textarea.customInput {
 }
 
 .actionPrimary {
-  border-color: var(--dsw-alias-button-primary-fill, var(--dsw-alias-brand-primary));
-  background: var(--dsw-alias-button-primary-fill, var(--dsw-alias-brand-primary));
-  color: var(--dsw-alias-label-primary-foreground, #fff);
+  border-color: var(--dsw-alias-button-primary-fill);
+  background: var(--dsw-alias-button-primary-fill);
+  color: var(--dsw-alias-label-primary-foreground);
 }
 
 .actionPrimary:hover:not(:disabled) {
-  border-color: var(--dsw-alias-button-primary-hover, var(--dsw-alias-brand-primary));
-  background: var(--dsw-alias-button-primary-hover, var(--dsw-alias-brand-primary));
-  color: var(--dsw-alias-label-primary-foreground, #fff);
+  border-color: var(--dsw-alias-button-primary-hover);
+  background: var(--dsw-alias-button-primary-hover);
+  color: var(--dsw-alias-label-primary-foreground);
 }
 
 .actionPrimary:focus-visible {
   outline: 2px solid var(--dsw-alias-brand-primary);
   outline-offset: 2px;
-  color: var(--dsw-alias-label-primary-foreground, #fff);
+  color: var(--dsw-alias-label-primary-foreground);
 }
 
 .action:disabled {
@@ -193,15 +193,15 @@ textarea.customInput {
 }
 
 .approvalAllow {
-  border-color: var(--dsw-alias-button-primary-fill, var(--dsw-alias-brand-primary));
-  background: var(--dsw-alias-button-primary-fill, var(--dsw-alias-brand-primary));
-  color: var(--dsw-alias-label-primary-foreground, #fff);
+  border-color: var(--dsw-alias-button-primary-fill);
+  background: var(--dsw-alias-button-primary-fill);
+  color: var(--dsw-alias-label-primary-foreground);
 }
 
 .approvalReject {
-  border-color: var(--dsw-alias-text-danger, var(--dsw-alias-label-error));
+  border-color: var(--dsw-alias-state-error-primary);
   background: transparent;
-  color: var(--dsw-alias-text-danger, var(--dsw-alias-label-error));
+  color: var(--dsw-alias-state-error-primary);
 }
 
 .approvalAllow:disabled,
