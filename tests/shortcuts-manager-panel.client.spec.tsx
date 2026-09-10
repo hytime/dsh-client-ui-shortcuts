@@ -243,6 +243,16 @@ describe('shortcut manager panel', () => {
     fireEvent.change(screen.getByRole('combobox', { name: 'Profile' }), { target: { value: 'custom' } })
     expect(screen.getByText('Show shortcuts')).toBeTruthy()
   })
+  it('filters custom editor rows without dropping hidden bindings', () => {
+    window.localStorage.clear()
+    const registry = createProfileRegistry([standardProfile, vimProfile])
+    registry.replaceCustomProfiles([{ id: 'custom', name: 'Work', bindings: standardProfile.bindings as never }])
+    const settings = settingsFace('custom', registry.list())
+    render(<ShortcutManagerPanel settings={settings} availableGlobalActions={['showShortcuts']} platform="linux" t={t} />)
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'Show shortcuts' } })
+    expect(screen.getAllByText('Show shortcuts').length).toBeGreaterThan(0)
+    expect(screen.queryByText('Previous')).toBeNull()
+  })
   it('surfaces a structured save failure from the settings face', () => {
     window.localStorage.clear()
     const settings = settingsFace()
