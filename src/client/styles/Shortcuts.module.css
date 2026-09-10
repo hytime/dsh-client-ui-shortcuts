@@ -1,39 +1,6 @@
-.card {
-  max-width: 720px;
-  max-height: min(640px, 70vh);
-  overflow: auto;
-  color: var(--dsw-alias-label-primary);
-  background: var(--dsw-alias-bg-layer-3);
-  border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 12px;
-  transition: border-color .16s, background .16s;
-}
-.card:hover, .cardOpen { border-color: var(--dsw-alias-label-dimmed); }
-.cardOpen { background: var(--dsw-alias-bg-layer-2); }
-
-.header {
-  width: 100%;
-  appearance: none;
-  border: 0;
-  background: none;
-  font: inherit;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  border-radius: 12px;
-}
-.header:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: -2px; }
-.headerText { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+/* Launch-card heading text (only remaining consumer of this block). */
 .title { font-size: 15px; font-weight: 600; line-height: 1.4; }
 .description { font-size: 13px; line-height: 1.5; color: var(--dsw-alias-label-tertiary); }
-.chevron { flex: none; color: var(--dsw-alias-label-tertiary); transition: transform .16s; }
-.chevronOpen { transform: rotate(180deg); }
-.pending { flex: none; border-radius: 999px; padding: 1px 8px; font-size: 11px; line-height: 17px; background: var(--dsw-alias-bg-module-platform); color: var(--dsw-alias-label-secondary); }
-.body { border-top: 1px solid var(--dsw-alias-border-l2); margin: 0 16px; padding: 16px 0 12px; }
 .onboarding { min-width: 0; max-width: 100%; box-sizing: border-box;
   display: grid;
   gap: 10px;
@@ -87,12 +54,6 @@
 .deleteConfirm span { flex: 1 1 180px; color: var(--dsw-alias-label-secondary); }
 .deleteConfirm button { display: inline-flex; align-items: center; justify-content: center; min-width: 0; max-width: 100%; min-height: 36px; overflow-wrap: anywhere; border: 0.5px solid var(--dsw-alias-border-l3); border-radius: 18px; padding: 0 14px; background: transparent; color: var(--dsw-alias-label-primary); font: inherit; font-size: 14px; line-height: 22px; cursor: pointer; }
 .deleteConfirm button:last-child { border: none; background: var(--dsw-alias-button-primary-fill); color: var(--dsw-alias-label-primary-foreground); }
-.profile { display: flex; gap: 12px; align-items: center; padding: 12px; border: 1px solid var(--dsw-alias-border-l1); cursor: pointer; }
-.profile:hover, .selected { border-color: var(--dsw-alias-brand-primary); }
-.profile input { accent-color: var(--dsw-alias-button-primary-fill); }
-.profile span { display: grid; gap: 3px; flex: 1; min-width: 0; }
-.profile small { color: var(--dsw-alias-label-secondary); }
-.profile:focus-within { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 2px; }
 .legend { display: grid; gap: 10px; margin-top: 10px; padding-top: 0; border-top: 0; }
 .legendGroup { display: grid; gap: 5px; min-width: 0; padding: 9px 10px 0; border: 0.5px solid var(--dsw-alias-border-l2); border-radius: 12px; background: var(--dsw-alias-bg-layer-2); }
 .legendGroup + .legendGroup { padding-top: 9px; border-top: 0.5px solid var(--dsw-alias-border-l2); }
