@@ -34,7 +34,8 @@ export function ShortcutOverlay({ settings, controller, availableGlobalActions, 
   if (!open) return null
   const focusCommand = initialFocusCommand ?? controller.focusCommand?.() as GlobalShortcutCommand | undefined
 
-  return typeof document === 'undefined' ? null : createPortal(
+  if (typeof document === 'undefined' || document.body === null) return null
+  return createPortal(
     <div
       className={styles.backdrop}
       role="dialog"

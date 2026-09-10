@@ -310,7 +310,7 @@ export function ShortcutManagerPanel({ settings, availableGlobalActions, platfor
     <header className={styles.managerHeader}>
       <div className={styles.managerHeaderTop}>
         <div className={styles.managerTitleBlock}>
-          <span className={styles.managerEyebrow}>{t('launch.title')}</span>
+          <span className={styles.managerEyebrow}>{t('overlay.managerLabel')}</span>
           <span className={styles.managerTitle}>{t('overlay.title')} {currentProfile !== undefined ? <span className={styles.managerProfileChip}>{profileChip(currentProfile, t)}</span> : null}</span>
         </div>
         {onClose !== undefined
