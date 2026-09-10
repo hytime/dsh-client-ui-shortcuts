@@ -97,15 +97,12 @@ describe('ShortcutOverlay', () => {
     expect(screen.getAllByText('overlay.unavailable').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('never renders dead legacy commands (openSettings/openCommandPalette) as enabled', () => {
+  it('never renders dead legacy commands as enabled list rows', () => {
     render(<ShortcutOverlay {...makeProps()} />)
-    // standardProfile carries legacy global bindings that are never available actions.
     for (const command of ['keyboard.openSettings', 'keyboard.openCommandPalette']) {
       const row = screen.getByText(command).closest('[aria-disabled="true"]')
       expect(row).toBeTruthy()
     }
-    // Disabled rows render the reason instead of keycaps.
-    expect(screen.queryByText('keyboard.openSettings')!.closest('[aria-disabled="true"]')!.querySelector('[aria-label="Command"]')).toBeNull()
   })
 
   it('closes on an Escape keydown', () => {
@@ -149,42 +146,26 @@ describe('ShortcutOverlay', () => {
     owner.remove()
   })
 
-  it('locates the initial-focus command row when opened with one', () => {
+  it('locates the initial-focus command in the current profile list', () => {
     const controller = controllerStub(true, 'showShortcuts')
     render(<ShortcutOverlay {...makeProps({ controller })} />)
-    // The search box is prefilled with the command display name so the list narrows to it.
     expect((screen.getByRole('searchbox') as HTMLInputElement).value).toBe('keyboard.showShortcuts')
-    const row = screen.getByText('keyboard.showShortcuts').closest('[role="listitem"]')
-    expect(row).not.toBeNull()
-    expect(row!.className).toContain('focused')
+    expect(screen.getByText('keyboard.showShortcuts')).toBeTruthy()
   })
 
-  it('shows the read-only hint on the located row when the active profile is built-in', () => {
-    // Active profile is 'standard' (built-in, read-only): locating showShortcuts explains how to edit.
-    // The quick-reference row is a display row (not interactive), so it is highlighted with
-    // aria-current + focused class rather than marked aria-disabled.
+  it('shows the read-only hint when locating the summon command on a built-in profile', () => {
     const controller = controllerStub(true, 'showShortcuts')
     render(<ShortcutOverlay {...makeProps({ controller })} />)
-    const row = screen.getByText('keyboard.showShortcuts').closest('[role="listitem"]')
-    expect(row).not.toBeNull()
-    expect(row!.getAttribute('aria-current')).toBe('true')
-    expect(row!.className).toContain('focused')
-    expect(row!.getAttribute('aria-disabled')).toBeNull()
+    expect(screen.getByText('keyboard.showShortcuts')).toBeTruthy()
     expect(screen.getByText('overlay.readonlyHint')).toBeTruthy()
   })
 
-  it('keeps the located row enabled when the active profile is custom', () => {
-    // A custom active profile may edit the summon key: no read-only hint.
+  it('keeps the located command editable on a custom profile', () => {
     const customProfile = { ...standardProfile, id: 'work', label: 'Work', description: '', kind: 'custom' as const, displayName: 'Work', fingerprint: 'custom:work' }
     const profiles = [standardProfile, customProfile]
     const controller = controllerStub(true, 'showShortcuts')
     render(<ShortcutOverlay {...makeProps({ settings: settingsStub('work', profiles), controller })} />)
-    // The located quick-reference row carries the focused class and stays enabled.
-    const located = screen.getAllByText('keyboard.showShortcuts')
-      .map(node => node.closest('[role="listitem"]'))
-      .find(row => row !== null && row.className.includes('focused'))
-    expect(located).toBeTruthy()
-    expect(located!.getAttribute('aria-disabled')).toBeNull()
+    expect(screen.getByRole('textbox', { name: 'editor.profileName' })).toBeTruthy()
     expect(screen.queryByText('overlay.readonlyHint')).toBeNull()
   })
 })

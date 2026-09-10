@@ -32,7 +32,7 @@ function IconButton({ name, label, disabled, describedBy, onClick }: {
 }
 
 /** Full profile manager embedded in the shortcuts overlay. Always open while mounted. */
-export function ShortcutManagerPanel({ settings, availableGlobalActions, platform, t, hideLegend = false }: ShortcutManagerPanelProps): React.ReactElement {
+export function ShortcutManagerPanel({ settings, availableGlobalActions, platform, t, initialFocusCommand, showUnavailableGlobalActions = false }: ShortcutManagerPanelProps): React.ReactElement {
   const [runtimeState, setRuntimeState] = useState(0)
   const storage = useState<ReturnType<typeof acquireOnboardingStorage>>(() => acquireOnboardingStorage())[0]
   const [showOnboarding, setShowOnboarding] = useState(() => !hasCompletedOnboarding(storage))
@@ -41,6 +41,7 @@ export function ShortcutManagerPanel({ settings, availableGlobalActions, platfor
   const [message, setMessage] = useState<Message>()
   const [editor, setEditor] = useState<EditorState>(idleEditor)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [query, setQuery] = useState(() => initialFocusCommand === undefined ? '' : t(`keyboard.${initialFocusCommand}`))
   const requestId = useRef(0)
   const mounted = useRef(false)
   const currentSettings = useRef(settings)
@@ -59,6 +60,17 @@ export function ShortcutManagerPanel({ settings, availableGlobalActions, platfor
   const onboardingDisabled = busy || !settings.writable()
   const onboardingAvailable = settings.available() && registryProfiles.length > 0
   const exportReason = editor.externalChange ? t('settings.externalExport') : editor.dirty ? t('settings.unsavedExport') : undefined
+  const normalizedQuery = query.trim().toLowerCase()
+  const matchesBinding = (binding: ShortcutProfile['bindings'][number]): boolean => {
+    if (normalizedQuery === '') return true
+    return [
+      t(`keyboard.${binding.command}`),
+      t(`legend.scope.${binding.scope}`),
+      binding.command,
+    ].some(value => value.toLowerCase().includes(normalizedQuery))
+  }
+  const filteredBindings = currentProfile?.bindings.filter(matchesBinding) ?? []
+  const locatedReadonly = initialFocusCommand !== undefined && currentProfile?.kind !== 'custom'
   void runtimeState
 
   const resetCustomProfile = async (profileId: string, baselineFingerprint: string): Promise<EditableCustomProfile> => {
@@ -98,6 +110,9 @@ export function ShortcutManagerPanel({ settings, availableGlobalActions, platfor
       setRuntimeState(value => value + 1)
     })
   }, [settings])
+  useEffect(() => {
+    if (initialFocusCommand !== undefined) setQuery(t(`keyboard.${initialFocusCommand}`))
+  }, [initialFocusCommand])
   const isCurrentRequest = (request: number, face: ShortcutManagerPanelProps['settings']): boolean => (
     mounted.current && request === requestId.current && face === currentSettings.current
   )
@@ -279,9 +294,14 @@ export function ShortcutManagerPanel({ settings, availableGlobalActions, platfor
         <button type="button" disabled={busy} onClick={() => void deleteProfile()}>{t('settings.deleteConfirmAction')}</button>
       </div> : null}
       {message !== undefined ? <p role={message.kind} className={message.kind === 'alert' ? styles.error : styles.success}>{message.text}</p> : settingsFailure !== undefined ? <p role="alert" className={styles.error}>{t('settings.error').replace('{message}', settingsFailure.message)}</p> : null}
-      {currentProfile === undefined ? <p role="status" className={styles.empty}>{t('settings.conflict')}</p> : currentCustom !== undefined ? <CustomProfileEditor key={currentCustom.id} profile={{ id: currentCustom.id, name: currentCustom.persistedName ?? currentCustom.displayName, bindings: currentCustom.bindings, fingerprint: currentCustom.fingerprint }} availableGlobalActions={availableGlobalActions as readonly GlobalShortcutCommand[] | undefined} platform={platform} t={t} disabled={busy || !settings.writable() || !settings.available()} onSave={saveCustomProfile} onReset={resetCustomProfile} onStateChange={setEditor} /> : <>
+             <label className={styles.managerSearch}>
+         <span className={styles.visuallyHidden}>{t('overlay.searchPlaceholder')}</span>
+         <input type="search" role="searchbox" aria-label={t('overlay.searchPlaceholder')} placeholder={t('overlay.searchPlaceholder')} value={query} onChange={event => setQuery(event.target.value)} />
+       </label>
+       {locatedReadonly ? <p className={styles.managerReadonlyHint}>{t('overlay.readonlyHint')}</p> : null}
+       {currentProfile === undefined ? <p role="status" className={styles.empty}>{t('settings.conflict')}</p> : currentCustom !== undefined ? <CustomProfileEditor key={currentCustom.id} profile={{ id: currentCustom.id, name: currentCustom.persistedName ?? currentCustom.displayName, bindings: currentCustom.bindings, fingerprint: currentCustom.fingerprint }} availableGlobalActions={availableGlobalActions as readonly GlobalShortcutCommand[] | undefined} platform={platform} t={t} disabled={busy || !settings.writable() || !settings.available()} onSave={saveCustomProfile} onReset={resetCustomProfile} onStateChange={setEditor} /> : <>
         <p className={styles.summary}>{currentProfile.description ? t(currentProfile.description) : ''}</p>
-        {hideLegend ? null : <ShortcutLegend bindings={currentProfile.bindings} availableGlobalActions={availableGlobalActions as readonly GlobalShortcutCommand[] | undefined} platform={platform} t={t} />}
+        <ShortcutLegend bindings={filteredBindings} availableGlobalActions={availableGlobalActions as readonly GlobalShortcutCommand[] | undefined} showUnavailableGlobalActions={showUnavailableGlobalActions} platform={platform} t={t} />
       </>}
     </>
 

@@ -220,15 +220,29 @@ describe('shortcut manager panel', () => {
     expect(screen.getByRole('heading', { name: 'Approvals' })).toBeTruthy()
   })
 
-  it('suppresses the built-in legend when hideLegend is set (embedded in overlay)', () => {
+  it('owns one searchable built-in binding list by default', () => {
     window.localStorage.clear()
     const standard = settingsFace('standard')
-    render(<ShortcutManagerPanel settings={standard} availableGlobalActions={[]} platform="linux" t={t} hideLegend />)
-    expect(screen.queryByRole('heading', { name: 'Questions' })).toBeNull()
-    expect(screen.queryByRole('heading', { name: 'Approvals' })).toBeNull()
-    expect(screen.getByRole('combobox', { name: 'Profile' })).toBeTruthy()
+    render(<ShortcutManagerPanel settings={standard} availableGlobalActions={['showShortcuts']} platform="linux" t={t} />)
+    expect(screen.getByRole('searchbox')).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Questions' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Approvals' })).toBeTruthy()
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'Show shortcuts' } })
+    expect(screen.getByText('Show shortcuts')).toBeTruthy()
+    expect(screen.queryByText('Previous')).toBeNull()
   })
 
+  it('filters the selected profile without searching other profiles', () => {
+    window.localStorage.clear()
+    const custom = { ...standardProfile, id: 'custom', label: 'Custom', description: '', kind: 'custom' as const, displayName: 'Custom', fingerprint: 'custom:custom' }
+    const settings = settingsFace('standard', [standardProfile, custom])
+    render(<ShortcutManagerPanel settings={settings} availableGlobalActions={['showShortcuts']} platform="linux" t={t} />)
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'Show shortcuts' } })
+    expect(screen.getByText('Show shortcuts')).toBeTruthy()
+    expect(screen.queryByText('Previous')).toBeNull()
+    fireEvent.change(screen.getByRole('combobox', { name: 'Profile' }), { target: { value: 'custom' } })
+    expect(screen.getByText('Show shortcuts')).toBeTruthy()
+  })
   it('surfaces a structured save failure from the settings face', () => {
     window.localStorage.clear()
     const settings = settingsFace()
