@@ -114,9 +114,9 @@ README 和安装指南维护 DSH 兼容性表：
 | --- | --- | --- | --- |
 | `0.1.16` | `0.1.0-rc.8` 系列 | 已验证 | 使用公开 Client settings 与 slots 接口 |
 | `0.1.20` | `0.1.5-alpha.1` | 已验证 | 移除 `dsh-client-runtime` 依赖；真实 composition 验收（面板、搜索、方案切换、设置页入口、窄屏） |
-| Unreleased | `0.1.5-alpha.2`、`0.1.5-rc.1`、`0.1.5-rc.2` | 静态核对通过，待真实验收 | 逐包比对 `.d.ts`：locale / ui-slots / ui-settings / ui-settings-plugins / ui-renderer / ui-theme 无变化；`conversation.composer` 与 `ComposerChainProps` 无变化；新增 `main.conversation` 插槽为增量；`Menu` 新增可选 `autoFocus`；主题 359 个 token 集合一致 |
+| `0.1.20` | `0.1.5-rc.2` | 已验证 | 真实 composition 验收：插件进入 boot graph（54 项）且控制台 0 报错、面板几何/遮罩/搜索与 alpha.1 一致、设置页入口 Portal 与层级正常、日韩可选可切换。`0.1.5-alpha.2`、`0.1.5-rc.1` 为中间版本，仅静态核对 |
 
-新增 DSH 版本后，先运行自动化测试和真实 composition 验证，再更新表格。核对方式：从 npm 拉取新旧版本的 `@deepseek-ai/dsh-client-*` 包，逐文件比对 `lib/types/**/*.d.ts` 与主题 token 集合，而不是只看版本号。
+新增 DSH 版本后，先运行自动化测试和真实 composition 验证，再更新表格。核对方式：从 npm 拉取新旧版本的 `@deepseek-ai/dsh-client-*` 包，逐文件比对 `lib/types/**/*.d.ts` 与主题 token 集合，而不是只看版本号；随后用真实 composition 做端到端验收。rc.2 的静态核对结论：locale / ui-slots / ui-settings / ui-settings-plugins / ui-renderer / ui-theme 声明无变化，`conversation.composer` 与 `ComposerChainProps` 无变化，新增 `main.conversation` 插槽为增量，`Menu` 新增可选 `autoFocus`，主题 359 个 token 集合一致，bundle loader 包装格式一致。
 
 ### P1：增强方案分享
 

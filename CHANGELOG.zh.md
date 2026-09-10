@@ -15,7 +15,7 @@
 ### 声明
 
 - `dsh.client.inject` 与 `peerDependencies` 补充 `@deepseek-ai/dsh-client-ui-layout`：插件注册到由该包声明的 `shell.overlay` 插槽，与官方插件「注入所消费插槽的拥有者」约定一致（如 `ui-conversation` 注入 `ui-layout`）。
-- 核对 DSH `0.1.5-alpha.2`、`0.1.5-rc.1`、`0.1.5-rc.2`：逐包比对类型声明与主题 token，未发现需要适配的破坏性变更，现有 `>=0.1.2-alpha.1 <1.0.0` 版本范围已覆盖这些版本。
+- 核对 DSH `0.1.5-rc.2`：逐包比对类型声明与主题 token 未发现需要改码的破坏性变更，并完成真实 composition 验收（插件进入 boot graph、控制台 0 报错、面板与设置页入口、日韩语言均正常）。`0.1.5-alpha.2` 与 `0.1.5-rc.1` 为中间版本，仅做静态核对。现有 `>=0.1.2-alpha.1 <1.0.0` 版本范围已覆盖这些版本。
 
 ## 0.1.20 - DSH 0.1.5-alpha.1 兼容与快捷键管理面板
 
