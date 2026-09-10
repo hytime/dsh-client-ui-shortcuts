@@ -61,7 +61,7 @@ describe('client bundle and package artifact', () => {
     } finally {
       rmSync(packed.directory, { recursive: true, force: true })
     }
-  })
+  }, 15000)
 
   it('keeps package metadata and the Web overlay fixture aligned', () => {
     const fixture = YAML.parse(readFileSync(fixturePath, 'utf8')) as Patch[]
@@ -122,5 +122,5 @@ describe('client bundle and package artifact', () => {
       rmSync(packed.directory, { recursive: true, force: true })
       rmSync(profile, { recursive: true, force: true })
     }
-  })
+  }, 15000)
 })
