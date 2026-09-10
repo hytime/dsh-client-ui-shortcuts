@@ -49,6 +49,7 @@ export function ShortcutManagerPanel({ settings, availableGlobalActions, platfor
   const [editor, setEditor] = useState<EditorState>(idleEditor)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [query, setQuery] = useState(() => initialFocusCommand === undefined ? '' : t(`keyboard.${initialFocusCommand}`))
+  const [actionsPortalTarget, setActionsPortalTarget] = useState<HTMLDivElement | null>(null)
   const requestId = useRef(0)
   const mounted = useRef(false)
   const currentSettings = useRef(settings)
@@ -306,7 +307,7 @@ export function ShortcutManagerPanel({ settings, availableGlobalActions, platfor
       </div> : null}
       {message !== undefined ? <p role={message.kind} className={message.kind === 'alert' ? styles.error : styles.success}>{message.text}</p> : settingsFailure !== undefined ? <p role="alert" className={styles.error}>{t('settings.error').replace('{message}', settingsFailure.message)}</p> : null}
        {locatedReadonly ? <p className={styles.managerReadonlyHint}>{t('overlay.readonlyHint')}</p> : null}
-       {currentProfile === undefined ? <p role="status" className={styles.empty}>{t('settings.conflict')}</p> : currentCustom !== undefined ? <CustomProfileEditor key={currentCustom.id} profile={{ id: currentCustom.id, name: currentCustom.persistedName ?? currentCustom.displayName, bindings: currentCustom.bindings, fingerprint: currentCustom.fingerprint }} query={query} availableGlobalActions={availableGlobalActions as readonly GlobalShortcutCommand[] | undefined} platform={platform} t={t} disabled={busy || !settings.writable() || !settings.available()} onSave={saveCustomProfile} onReset={resetCustomProfile} onStateChange={setEditor} /> : <>
+       {currentProfile === undefined ? <p role="status" className={styles.empty}>{t('settings.conflict')}</p> : currentCustom !== undefined ? <CustomProfileEditor key={currentCustom.id} profile={{ id: currentCustom.id, name: currentCustom.persistedName ?? currentCustom.displayName, bindings: currentCustom.bindings, fingerprint: currentCustom.fingerprint }} query={query} actionsPortalTarget={actionsPortalTarget} availableGlobalActions={availableGlobalActions as readonly GlobalShortcutCommand[] | undefined} platform={platform} t={t} disabled={busy || !settings.writable() || !settings.available()} onSave={saveCustomProfile} onReset={resetCustomProfile} onStateChange={setEditor} /> : <>
         <p className={styles.summary}>{currentProfile.description ? t(currentProfile.description) : ''}</p>
         <ShortcutLegend bindings={filteredBindings} availableGlobalActions={availableGlobalActions as readonly GlobalShortcutCommand[] | undefined} showUnavailableGlobalActions={showUnavailableGlobalActions} platform={platform} t={t} />
       </>}
@@ -334,6 +335,7 @@ export function ShortcutManagerPanel({ settings, availableGlobalActions, platfor
     </header>
     {controls}
     <div className={styles.managerContent}>{body}</div>
+    {currentCustom !== undefined ? <div ref={setActionsPortalTarget} className={styles.managerFooter} /> : null}
   </div>
 }
 

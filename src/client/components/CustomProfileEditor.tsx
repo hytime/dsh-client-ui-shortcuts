@@ -1,4 +1,5 @@
 import React, { useEffect, useId, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { GlobalShortcutCommand, ShortcutBinding } from '../contract/profile.js'
 import type { ShortcutPlatform } from '../contract/keyboard-visual.js'
 import type { ShortcutLocaleKey } from '../locales.js'
@@ -22,11 +23,12 @@ export interface CustomProfileEditorProps {
   readonly onReset?: (id: string, baselineFingerprint: string) => Promise<EditableCustomProfile>
   readonly onStateChange: (state: { dirty: boolean; saving: boolean; externalChange: boolean }) => void
   readonly query?: string
+  readonly actionsPortalTarget?: HTMLElement | null
 }
 
 const bindingSnapshot = (bindings: readonly ShortcutBinding[]): string => JSON.stringify(bindings)
 
-export function CustomProfileEditor({ profile, availableGlobalActions, platform, t, disabled = false, onSave, onReset, onStateChange, query }: CustomProfileEditorProps): React.ReactElement {
+export function CustomProfileEditor({ profile, availableGlobalActions, platform, t, disabled = false, onSave, onReset, onStateChange, query, actionsPortalTarget }: CustomProfileEditorProps): React.ReactElement {
   const [name, setName] = useState(profile.name)
   const [bindings, setBindings] = useState(profile.bindings)
   const [baseline, setBaseline] = useState(profile)
@@ -132,16 +134,7 @@ export function CustomProfileEditor({ profile, availableGlobalActions, platform,
     }
   }
 
-  return <div className={styles.customProfileEditor}>
-    <label className={styles.profileNameRow}>
-      <span>{t('editor.profileName')}</span>
-      <input aria-label={t('editor.profileName')} aria-invalid={nameError !== undefined ? true : undefined} aria-describedby={nameError !== undefined ? nameErrorId : undefined} value={name} disabled={disabled || saving} onChange={event => { setName(event.target.value); setMessage(undefined) }} />
-      <span className={styles.profileNameCount}>{t('editor.nameCount').replace('{count}', String(count))}</span>
-    </label>
-    {nameError !== undefined ? <p id={nameErrorId} className={styles.error}>{nameError}</p> : null}
-    {externalChange ? <div role="status" className={styles.externalChange}><span>{t('editor.externalChange')}</span><button type="button" disabled={disabled || saving} onClick={() => reset(externalProfile)}>{t('editor.loadLatest')}</button></div> : null}
-    <ShortcutBindingEditor bindings={bindings} availableGlobalActions={availableGlobalActions} platform={platform} t={t} onChange={next => { setBindings(next); setMessage(undefined) }} onValidityChange={setBindingsValid} disabled={disabled || saving} query={query} />
-    {message !== undefined ? <p role={message.kind} className={message.kind === 'alert' ? styles.error : styles.success}>{message.text}</p> : null}
+  const actions = <>
     {onReset !== undefined ? <div className={styles.resetActions}>
       {!confirmReset ? <button type="button" onClick={() => setConfirmReset(true)} disabled={disabled || saving || externalChange}>{t('editor.reset')}</button> : <div className={styles.resetConfirm}>
         <span>{t('editor.resetConfirm').replace('{name}', baseline.name)}</span>
@@ -153,5 +146,18 @@ export function CustomProfileEditor({ profile, availableGlobalActions, platform,
       <button type="button" onClick={() => reset()} disabled={disabled || saving || !dirty}>{t('editor.cancel')}</button>
       <button type="button" onClick={() => void save()} disabled={disabled || saving || !dirty || externalChange || count === 0 || count > 64 || !bindingsValid}>{saving ? t('settings.saving') : t('editor.save')}</button>
     </div>
+  </>
+
+  return <div className={styles.customProfileEditor}>
+    <label className={styles.profileNameRow}>
+      <span>{t('editor.profileName')}</span>
+      <input aria-label={t('editor.profileName')} aria-invalid={nameError !== undefined ? true : undefined} aria-describedby={nameError !== undefined ? nameErrorId : undefined} value={name} disabled={disabled || saving} onChange={event => { setName(event.target.value); setMessage(undefined) }} />
+      <span className={styles.profileNameCount}>{t('editor.nameCount').replace('{count}', String(count))}</span>
+    </label>
+    {nameError !== undefined ? <p id={nameErrorId} className={styles.error}>{nameError}</p> : null}
+    {externalChange ? <div role="status" className={styles.externalChange}><span>{t('editor.externalChange')}</span><button type="button" disabled={disabled || saving} onClick={() => reset(externalProfile)}>{t('editor.loadLatest')}</button></div> : null}
+    <ShortcutBindingEditor bindings={bindings} availableGlobalActions={availableGlobalActions} platform={platform} t={t} onChange={next => { setBindings(next); setMessage(undefined) }} onValidityChange={setBindingsValid} disabled={disabled || saving} query={query} />
+    {message !== undefined ? <p role={message.kind} className={message.kind === 'alert' ? styles.error : styles.success}>{message.text}</p> : null}
+    {actionsPortalTarget === null || actionsPortalTarget === undefined ? actions : createPortal(actions, actionsPortalTarget)}
   </div>
 }
