@@ -113,9 +113,10 @@ README 和安装指南维护 DSH 兼容性表：
 | 插件版本 | DSH 版本 | 状态 | 备注 |
 | --- | --- | --- | --- |
 | `0.1.16` | `0.1.0-rc.8` 系列 | 已验证 | 使用公开 Client settings 与 slots 接口 |
-| Unreleased | `0.1.5-alpha.1` | 待真实验收 | 移除 `dsh-client-runtime` 依赖；沿用公开 settings 与 slots 接口 |
+| `0.1.20` | `0.1.5-alpha.1` | 已验证 | 移除 `dsh-client-runtime` 依赖；真实 composition 验收（面板、搜索、方案切换、设置页入口、窄屏） |
+| Unreleased | `0.1.5-alpha.2`、`0.1.5-rc.1`、`0.1.5-rc.2` | 静态核对通过，待真实验收 | 逐包比对 `.d.ts`：locale / ui-slots / ui-settings / ui-settings-plugins / ui-renderer / ui-theme 无变化；`conversation.composer` 与 `ComposerChainProps` 无变化；新增 `main.conversation` 插槽为增量；`Menu` 新增可选 `autoFocus`；主题 359 个 token 集合一致 |
 
-新增 DSH 版本后，先运行自动化测试和真实 composition 验证，再更新表格。
+新增 DSH 版本后，先运行自动化测试和真实 composition 验证，再更新表格。核对方式：从 npm 拉取新旧版本的 `@deepseek-ai/dsh-client-*` 包，逐文件比对 `lib/types/**/*.d.ts` 与主题 token 集合，而不是只看版本号。
 
 ### P1：增强方案分享
 

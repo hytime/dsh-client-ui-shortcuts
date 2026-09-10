@@ -12,6 +12,11 @@
 
 - The installation guides now link to each other's language.
 
+### Declarations
+
+- `dsh.client.inject` and `peerDependencies` now also declare `@deepseek-ai/dsh-client-ui-layout`: the plugin registers into the `shell.overlay` slot that package declares, matching the official convention of injecting the owner of each consumed slot (as `ui-conversation` injects `ui-layout`).
+- Checked DSH `0.1.5-alpha.2`, `0.1.5-rc.1`, and `0.1.5-rc.2`: comparing every type declaration and the theme token set package by package found no breaking change to adapt to, and the existing `>=0.1.2-alpha.1 <1.0.0` range already covers those versions.
+
 ## 0.1.20 - DSH 0.1.5-alpha.1 support and shortcut manager panel
 
 ### Compatibility
