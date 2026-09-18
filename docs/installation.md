@@ -22,7 +22,7 @@ Use the DSH plugin command with the Web profile:
 dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.21
 ```
 
-The command forwards the package installation to the profile and reconciles packages that declare `dsh.bundle.patch` into `dsh.profile.bundles`. This package supports DSH `0.1.5-alpha.1` plus the `0.1.0-rc.8` through `0.1.1-rc.2` and `0.1.2-alpha.1` lines; see "DSH multi-version compatibility" below.
+The command forwards the package installation to the profile and reconciles packages that declare `dsh.bundle.patch` into `dsh.profile.bundles`. This package supports DSH `0.1.6-alpha.2` and later; earlier generations are no longer supported — see "DSH version support boundary" below.
 
 ## Install pinned GitHub source
 
@@ -93,9 +93,9 @@ dsh --profile web
 
 After startup, press `Meta+Alt+Shift+S` anywhere to open the full shortcut manager panel. It contains one unified shortcut list: search applies only to the active profile, Custom profiles edit that list directly, and Standard/Vim are read-only. The DSH settings page also hosts an "open-panel shortcut" entry (it shows the current summon key and opens the manager panel on click, locating that row). The persisted settings namespace is `dsh-ui-shortcuts`, with `activeProfile` and `customProfiles` fields. The built-in `standard` and `vim` profiles are read-only; `customProfiles` stores the named editable profiles.
 
-## DSH multi-version compatibility
+## DSH version support boundary
 
-One package supports DSH `0.1.0-rc.8` through `0.1.1-rc.2`, `0.1.2-alpha.1`, and `0.1.5-alpha.1` and later, and no longer depends on `@deepseek-ai/dsh-client-runtime` (which is no longer published in `0.1.5-alpha.1`). The browser adapter probes capabilities at runtime: current `remote.settings.mutate` is preferred over the legacy Connection settings mutation; `uiWorkspace.startSession` is preferred over `workspaces.startSession`; and `uiSession.pendingInteractions` is preferred over the legacy Session summary. Missing optional Workspace or Session UI services do not prevent the plugin from loading, and their actions stay hidden.
+One package supports DSH `0.1.6-alpha.2` and later — `0.1.6-alpha.2` is the first release carrying `plugins.bundle.config` — and no longer depends on `@deepseek-ai/dsh-client-runtime` (which is no longer published in `0.1.5-alpha.1`). `0.1.0-rc.8` through `0.1.1-rc.2`, `0.1.2-alpha.1`, and `0.1.5-*` are no longer supported: the compatibility layer's runtime probes remain, so those versions degrade to the plugin's older behaviour rather than crashing, but they are outside the verified and maintained set. The browser adapter probes capabilities at runtime: current `remote.settings.mutate` is preferred over the legacy Connection settings mutation; `uiWorkspace.startSession` is preferred over `workspaces.startSession`; `uiSession.pendingInteractions` is preferred over the legacy Session summary; and the settings card is injected into whichever Plugins-page seat the running composition declares — `plugins.bundle.config` on DSH `0.1.6` and later, `settings.plugin.item` on every earlier generation. Missing optional Workspace or Session UI services do not prevent the plugin from loading, and their actions stay hidden.
 
 ## Manage named Custom profiles
 

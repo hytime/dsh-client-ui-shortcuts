@@ -22,7 +22,7 @@ DSH CLI 负责 profile 的插件安装、升级和移除。本包声明的 pnpm 
 dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.21
 ```
 
-该命令会把包安装到 profile，并根据包中声明的 `dsh.bundle.patch` 将它加入 `dsh.profile.bundles`。本包支持 DSH `0.1.5-alpha.1` 以及 `0.1.0-rc.8` 至 `0.1.1-rc.2`、`0.1.2-alpha.1` 系列，详见下文「DSH 多版本兼容」。
+该命令会把包安装到 profile，并根据包中声明的 `dsh.bundle.patch` 将它加入 `dsh.profile.bundles`。本包支持 DSH `0.1.6-alpha.2` 及以后版本；更早的世代已不再支持，详见下文「DSH 版本兼容边界」。
 
 ## 安装固定版本的 GitHub 源码
 
@@ -93,9 +93,9 @@ dsh --profile web
 
 启动后，在任意界面按 `Meta+Alt+Shift+S` 打开完整快捷键管理面板；面板只有一个快捷键列表，搜索只作用于当前 profile，Custom profile 直接编辑，Standard 与 Vim 只读；DSH 设置页插件区同时提供「呼出面板快捷键」入口（显示当前呼出键，点击打开面板并定位到该行）。持久化 settings namespace 是 `dsh-ui-shortcuts`，包含 `activeProfile` 和 `customProfiles` 字段。内置的 `standard` 与 `vim` profile 均为只读；`customProfiles` 保存多个可命名、可编辑的 profile。
 
-## DSH 多版本兼容
+## DSH 版本兼容边界
 
-一个包支持 DSH `0.1.0-rc.8` 至 `0.1.1-rc.2`、`0.1.2-alpha.1`，以及 `0.1.5-alpha.1` 和后续版本，且不再依赖 `@deepseek-ai/dsh-client-runtime`（该包在 `0.1.5-alpha.1` 已停止发布）。浏览器 adapter 按运行时能力探测：优先使用当前 `remote.settings.mutate`，否则调用旧版 Connection settings mutation；优先使用 `uiWorkspace.startSession`，否则调用 `workspaces.startSession`；优先从 `uiSession.pendingInteractions` 读取 pending interaction，否则读取旧版 Session summary。缺少可选的 Workspace 或 Session UI 服务不会阻断插件加载，对应动作会保持隐藏。
+一个包支持 DSH `0.1.6-alpha.2` 及以后版本（`0.1.6-alpha.2` 是引入 `plugins.bundle.config` 的第一个版本），且不再依赖 `@deepseek-ai/dsh-client-runtime`（该包在 `0.1.5-alpha.1` 已停止发布）。`0.1.0-rc.8` 至 `0.1.1-rc.2`、`0.1.2-alpha.1`、`0.1.5-*` 已不再支持：兼容层的运行时能力探测仍保留，因此这些版本不会崩溃，而是退化为插件原有行为，但不再验收、不再修复。浏览器 adapter 按运行时能力探测：优先使用当前 `remote.settings.mutate`，否则调用旧版 Connection settings mutation；优先使用 `uiWorkspace.startSession`，否则调用 `workspaces.startSession`；优先从 `uiSession.pendingInteractions` 读取 pending interaction，否则读取旧版 Session summary；设置页入口卡片注入运行中 composition 实际声明的插槽——DSH `0.1.6` 及以后为 `plugins.bundle.config`，此前各代为 `settings.plugin.item`。缺少可选的 Workspace 或 Session UI 服务不会阻断插件加载，对应动作会保持隐藏。
 
 ## 管理命名 Custom profile
 

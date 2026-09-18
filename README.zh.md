@@ -127,7 +127,7 @@ Session 导航遵循当前 Workspace 保存的 Session 顺序，并跳过 archiv
 
 ## DSH 兼容边界
 
-一个发布包支持 DSH `0.1.0-rc.8` 至 `0.1.1-rc.2` 系列、`0.1.2-alpha.1`，以及 `0.1.5-alpha.1` 和后续版本，且不再依赖 `@deepseek-ai/dsh-client-runtime`（该包在 `0.1.5-alpha.1` 已停止发布）。浏览器 adapter 按运行时能力探测，不按 DSH 版本号分支：优先使用当前的 `remote.settings`，否则回退旧版 Connection settings API；新建 Session 优先使用 `uiWorkspace.startSession`，否则回退 `workspaces.startSession`；pending interaction 优先读取 `uiSession`，否则读取旧版 Session summary；只有在 locale 服务提供 `addLanguage` 时才注册日文与韩文语言项。插件只能通过真实的 DSH Web composition 和 DSH 启动与模块加载器加载。安装更新不会替换已经在打开页面中运行的代码；请重新加载 Web 组合，才能加载新的 Client bundle。
+一个发布包支持 DSH `0.1.6-alpha.2` 及以后版本（`0.1.6-alpha.2` 是引入 `plugins.bundle.config` 的第一个版本），且不再依赖 `@deepseek-ai/dsh-client-runtime`（该包在 `0.1.5-alpha.1` 已停止发布）。更早的世代——`0.1.0-rc.8` 至 `0.1.1-rc.2`、`0.1.2-alpha.1`、`0.1.5-*`——不再受支持；兼容层的运行时能力探测仍然保留，因此它们不会崩溃，而是退化为插件原有行为（例如落到旧的设置页坐席），但不再纳入验收与修复范围。浏览器 adapter 按运行时能力探测，不按 DSH 版本号分支：优先使用当前的 `remote.settings`，否则回退旧版 Connection settings API；新建 Session 优先使用 `uiWorkspace.startSession`，否则回退 `workspaces.startSession`；pending interaction 优先读取 `uiSession`，否则读取旧版 Session summary；只有在 locale 服务提供 `addLanguage` 时才注册日文与韩文语言项；设置页入口卡片注入运行中 composition 实际声明的插槽——DSH `0.1.6` 及以后为 `plugins.bundle.config`（按 bundle 包名寻址），此前各代为 `settings.plugin.item`（按 settings namespace 寻址）。插件只能通过真实的 DSH Web composition 和 DSH 启动与模块加载器加载。安装更新不会替换已经在打开页面中运行的代码；请重新加载 Web 组合，才能加载新的 Client bundle。
 
 ## 开发与验证
 

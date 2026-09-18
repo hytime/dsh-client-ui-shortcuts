@@ -22,9 +22,11 @@
 - 旧 `customBindings` 配置迁移；
 - 基于 settings revision 的并发安全写入；
 - `showShortcuts` 全局命令（默认 `Meta+Alt+Shift+S`，Custom 可改绑）打开完整快捷键管理面板：方案切换、New / Import / Export / Delete、Custom 键位编辑，以及一个带搜索、按 Question/Approval/Global 分组、标注不可用动作的统一快捷键列表；
-- 设置页插件区「呼出面板快捷键」轻入口：显示当前呼出键，点击打开面板并定位该行，只读方案下提示切换 Custom 后可改（不自动切换）；
+- 设置页「呼出面板快捷键」轻入口卡片：显示当前呼出键，点击打开面板并定位该行，只读方案下提示切换 Custom 后可改（不自动切换）；DSH `0.1.6` 起渲染在插件详情页，此前渲染在插件设置区；
 - 界面语言除 DSH 自带的简体中文与英文外，另注册日文与韩文为可选语言；两者通过 locale 服务的 `addLanguage` 加入，该 API 在 `0.1.2-alpha.1` 才出现，旧版按能力探测跳过并仅保留中英；
-- 单一源码树兼容 DSH `0.1.0-rc.8` 至 `0.1.1-rc.2`、`0.1.2-alpha.1` 及 `0.1.5-alpha.1`（不再依赖已停发的 `@deepseek-ai/dsh-client-runtime`）。
+- 设置页入口卡片按运行中 composition 实际声明的插槽挂载：DSH `0.1.6` 及以后用 `plugins.bundle.config`（按 bundle 包名寻址），此前各代用 `settings.plugin.item`（按 settings namespace 寻址），两者都由兼容层注入探测，无版本判断；
+- Custom 方案按 Standard 默认补全其未定义的「命令 + scope」，使方案保存之后新增的命令不会静默失去默认键（与已有绑定冲突的默认键跳过；方案存储、导出与 fingerprint 不变）；
+- 支持边界为 DSH `0.1.6-alpha.2` 及以后（该版本是引入 `plugins.bundle.config` 的第一个版本）；`0.1.0-rc.8` 至 `0.1.1-rc.2`、`0.1.2-alpha.1`、`0.1.5-*` 已不再支持，仅保留兼容层的运行时能力探测，使其退化而不崩溃。
 
 安装入口：
 
@@ -112,11 +114,35 @@ README 和安装指南维护 DSH 兼容性表：
 
 | 插件版本 | DSH 版本 | 状态 | 备注 |
 | --- | --- | --- | --- |
-| `0.1.16` | `0.1.0-rc.8` 系列 | 已验证 | 使用公开 Client settings 与 slots 接口 |
-| `0.1.20` | `0.1.5-alpha.1` | 已验证 | 移除 `dsh-client-runtime` 依赖；真实 composition 验收（面板、搜索、方案切换、设置页入口、窄屏） |
-| `0.1.21` | `0.1.5-rc.2` | 已验证 | 真实 composition 验收：插件进入 boot graph（54 项）且控制台 0 报错、面板几何/遮罩/搜索与 alpha.1 一致、设置页入口 Portal 与层级正常、日韩可选可切换。`0.1.5-alpha.2`、`0.1.5-rc.1` 为中间版本，仅静态核对 |
+| `0.1.16` | `0.1.0-rc.8` 系列 | 历史 | 使用公开 Client settings 与 slots 接口；该世代已不在支持范围内 |
+| `0.1.20` | `0.1.5-alpha.1` | 历史 | 移除 `dsh-client-runtime` 依赖；真实 composition 验收（面板、搜索、方案切换、设置页入口、窄屏） |
+| `0.1.21` | `0.1.5-rc.2` | 历史 | 真实 composition 验收：插件进入 boot graph（54 项）且控制台 0 报错、面板几何/遮罩/搜索与 alpha.1 一致、设置页入口 Portal 与层级正常、日韩可选可切换。`0.1.5-alpha.2`、`0.1.5-rc.1` 为中间版本，仅静态核对 |
+| 未发布 | `0.1.6-alpha.2` | **当前最低支持版本**（已在 peer 区间与 `dsh.client.inject` 中声明），已验证 | 真实 composition 验收：`settings.plugin.item` 被 `plugins.bundle.config` 取代，兼容层改按运行中声明的插槽挂载卡片（插件详情页渲染出入口卡片、按钮可打开面板、`Meta+Alt+Shift+S` 可打开面板、插件无控制台报错）；同时补全 Custom 方案缺失命令的默认键 |
 
-新增 DSH 版本后，先运行自动化测试和真实 composition 验证，再更新表格。核对方式：从 npm 拉取新旧版本的 `@deepseek-ai/dsh-client-*` 包，逐文件比对 `lib/types/**/*.d.ts` 与主题 token 集合，而不是只看版本号；随后用真实 composition 做端到端验收。rc.2 的静态核对结论：locale / ui-slots / ui-settings / ui-settings-plugins / ui-renderer / ui-theme 声明无变化，`conversation.composer` 与 `ComposerChainProps` 无变化，新增 `main.conversation` 插槽为增量，`Menu` 新增可选 `autoFocus`，主题 359 个 token 集合一致，bundle loader 包装格式一致。
+新增 DSH 版本后，先运行自动化测试和真实 composition 验证，再更新表格。核对方式：从 npm 拉取新旧版本的 `@deepseek-ai/dsh-client-*` 包，逐文件比对 `lib/types/**/*.d.ts` 与主题 token 集合，而不是只看版本号；随后用真实 composition 做端到端验收。rc.2 的静态核对结论：locale / ui-slots / ui-settings / ui-settings-plugins / ui-renderer / ui-theme 声明无变化，`conversation.composer` 与 `ComposerChainProps` 无变化，新增 `main.conversation` 插槽为增量，`Menu` 新增可选 `autoFocus`，主题 359 个 token 集合一致，bundle loader 包装格式一致。`0.1.6` 的核对结论：`settings.plugin.item` 移除、`plugins.bundle.config` 与 `plugins.row.config` 新增（由 `ui-plugin-manager` 声明），`settings.plugins.tab` 保留；`conversation.composer`、`shell.overlay`、主题 token 与 bundle loader 格式无变化。插槽声明变更无法靠版本号判断，因此由兼容层探测。
+
+两点核对经验（均已在 `0.1.6-alpha.2` 上实证）：
+
+- **`dsh.client.inject` 是信息性依赖边，不是硬依赖**：加载器按 `if (dependency !== undefined)` 解析，指向组合中不存在的包时静默跳过（`packages/client/modules/src/client/system.ts`）。因此把新包加进 `inject` 不会让老组合加载失败。
+- **peerDependencies 的预发布区间必须按「元组」书写**：npm semver 规定，带预发布段的版本只能被「同一 `major.minor.patch` 且同样带预发布段」的比较器匹配。因此旧的 `>=0.1.2-alpha.1 <1.0.0` 实际**不匹配** `0.1.5-rc.2`、`0.1.6-alpha.2`（可用 `semver.satisfies` 复核）。新增 DSH 版本时若沿用旧区间字符串，声明是失真的；下一个 minor 出现预发布版时同样需要再次加宽。
+
+#### 收窄声明：已完成（`0.1.6-alpha.2` 为最低支持版本）
+
+支持边界收窄到 `0.1.6-alpha.2` 时，`package.json` 与类型基线已同步如下（全部落在同一批提交，因为类型基线随 peer 区间一起前进）：
+
+1. `dsh.client.inject` 与 `peerDependencies` 补 `@deepseek-ai/dsh-client-ui-plugin-manager`（`plugins.bundle.config` 的声明者）与 `@deepseek-ai/dsh-client-ui-renderer`（`0.1.6` 起 `Context.slots` 的声明者，`ui-slots` 在该版本已不是 client row）；
+2. `Context.sessions` 在 `0.1.6` 不再声明，已按官方 client 插件写法改为读取 `ctx.get('sessions')`（本地最小类型 `SessionsLike`，服务本身仍在运行）；
+3. `ui-settings-plugins@0.1.6-alpha.2` 不再声明 `settings.plugin.item`，已在插件内像 `plugins.bundle.config` 一样保留本地 SlotMap 合并；
+4. 区间统一改为 `>=0.1.6-alpha.2 <1.0.0`，`tests/package-shape.spec.ts` 期望值同步；
+5. `devDependencies` 的 `dsh-invariants` / `dsh-settings` 一并固定到 `0.1.6-alpha.2`，使编译与类型检查基线与 peer 区间一致；
+6. chain 插槽 inject 的会话 id 在 `0.1.6` 是普通 `string`，已把该参数放宽为同时接受两代类型。
+
+**供应链策略（新增 `pnpm-workspace.yaml`）**：pnpm 11 默认 `minimumReleaseAge` 为 24 小时，而本插件采纳某个 DSH 版本时该版本必然比这个窗口更「新」。实测症状是：lockfile 一旦固定 `0.1.6-alpha.2`，`pnpm install` 与**任何** `pnpm run`（其依赖状态检查会重新校验策略）都会以 `ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION` 失败，共 21 个条目。处理方式与 DSH 仓库自身对其一方包的做法一致——在 `pnpm-workspace.yaml` 的 `minimumReleaseAgeExclude` 中逐条列出被固定的确切版本。每条只针对一个版本、不含范围，因此这些版本过龄后该列表自动失效，可直接删除。
+
+#### 下一次收窄声明时的检查点
+
+- **peerDependencies 的预发布区间必须按「元组」书写**：npm semver 只匹配「区间里同样写出该 `major.minor.patch` 元组」的预发布版。下一次 DSH minor 出现预发布版（例如 `0.1.7-*`）时，必须把该元组加进区间，否则声明会像 `>=0.1.2-alpha.1 <1.0.0` 那样失真。
+- 先确认插槽声明者是否又迁移过（`Slots.listSubTree` 查 `available`），再决定 `Context.*` 服务是否仍需本地类型；`dsh.client.inject` 边可以放心增补，指向不存在的包会被跳过。
 
 ### P1：增强方案分享
 
@@ -178,7 +204,7 @@ README 和安装指南维护 DSH 兼容性表：
 - 对当前 DSH 不可用的全局 action 标注原因；
 - 带搜索过滤；
 - 方案管理（切 / 建 / 导 / 删）与 Custom 编辑全部内嵌；
-- 设置页插件区保留「呼出面板快捷键」轻入口：显示当前呼出键，点击打开面板并定位该行（只读方案提示切换 Custom 后可改，不自动切换）；
+- 设置页保留「呼出面板快捷键」轻入口卡片：显示当前呼出键，点击打开面板并定位该行（只读方案提示切换 Custom 后可改，不自动切换）；DSH `0.1.6` 起该卡片渲染在插件详情页的 `plugins.bundle.config` 坐席，此前渲染在插件设置区的 `settings.plugin.item` 坐席；
 - 不替换 DSH 官方 command palette，不通过私有 DOM 路由调用 DSH UI。
 
 **后续优化：** 根据真实使用反馈调整展示密度、快捷键记忆引导与窄屏布局。
@@ -426,8 +452,12 @@ Star 应该是用户完成价值体验后的自然反馈，不应通过刷量或
 - [ ] 内置 profile 仍然只读；
 - [ ] Custom profile 新建、保存、导入、导出、删除通过；
 - [ ] 旧 `customBindings` 配置可以迁移；
+- [ ] Custom 方案补全缺失命令的默认键后，键盘、面板列表与设置入口一致，且存储、导出与 fingerprint 未被改写；
+- [ ] 设置页入口卡片在目标 DSH 版本的坐席上渲染（`0.1.6` 及以后为 `plugins.bundle.config`，此前为 `settings.plugin.item`）；
 - [ ] 多页面并发修改不会静默覆盖方案；
-- [ ] connection、settings、slots 等 DSH public API 依赖已声明。
+- [ ] connection、settings、slots 等 DSH public API 依赖已声明；新增的插槽/服务拥有者（如 `plugins.bundle.config` 的 `ui-plugin-manager`、`Context.slots` 的 `ui-renderer`）同样已声明。
+- [ ] `peerDependencies` 的 DSH 区间以当前目标版本的预发布元组书写（例如 `>=0.1.6-alpha.2 <1.0.0`），并用 `semver.satisfies` 复核其确实接受该版本。
+- [ ] 若固定了发布不足 24 小时的 DSH 包，`pnpm-workspace.yaml` 的 `minimumReleaseAgeExclude` 已列出这些确切版本（否则 `pnpm install` 与 `pnpm run` 均会失败）。
 
 ### 自动化验证
 

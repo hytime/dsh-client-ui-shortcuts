@@ -1,3 +1,25 @@
+## Unreleased
+
+### 修复
+
+- Custom 方案不再丢失「方案保存之后才新增的命令」的默认键。管理面板只能改绑已有行、不能新增行，因此早于 `0.1.20` 保存的 Custom 方案没有 `showShortcuts` 绑定，`Meta+Alt+Shift+S` 会静默失效、无法唤出面板。现在会按 Standard 默认补全方案未定义的每个「命令 + scope」；与方案已有绑定冲突的默认键会跳过。方案存储、导出与 fingerprint 保持原样——只有键盘、面板列表与设置入口所用的生效绑定补上缺失项，并在下一次保存时落盘。
+- 设置页的快捷键入口卡片在 DSH `0.1.6` 上恢复显示。该版本用 `plugins.bundle.config` 取代了 `settings.plugin.item` 插槽，卡片随之失去挂载点，插件在设置页的入口一并消失。
+
+### 兼容
+
+- 兼容层改为在运行中的 composition 实际声明的那个设置页插槽上挂载快捷键卡片：`plugins.bundle.config`（DSH `0.1.6` 及以后，按 bundle 包名寻址）或旧版 `settings.plugin.item`（此前所有受支持版本，按 settings namespace 寻址）。两个插槽都通过注入探测，因此单一源码树无需版本判断即可服务各代版本；同时声明两者的 composition 也只会挂载一张卡片，owner 重挂载时会重新执行挂载。
+- 已用真实 Web composition 核对 DSH `0.1.6-alpha.2`：`plugins.bundle.config` 插槽在插件详情页渲染出卡片，`Meta+Alt+Shift+S` 可打开管理面板，插件无控制台报错。
+- 支持边界收窄为 DSH `0.1.6-alpha.2` 及以后（该版本是引入 `plugins.bundle.config` 的第一个版本）。`0.1.0-rc.8` 至 `0.1.1-rc.2`、`0.1.2-alpha.1`、`0.1.5-*` 不再支持；兼容层的运行时能力探测保留，这些世代会退化为插件原有行为而不是崩溃。
+- 此前声明的 peer 区间其实从未接受过它声称覆盖的版本。semver 只匹配「区间里同样写出该 `major.minor.patch` 元组」的预发布版，因此 `>=0.1.2-alpha.1 <1.0.0` 既不接受 `0.1.5-rc.2`、也不接受 `0.1.6-alpha.2`。现在所有 DSH 区间统一为 `>=0.1.6-alpha.2 <1.0.0`，可正确接受当前版本；下一个 DSH minor 出现预发布版时需同样补上其元组。
+- 类型基线随区间一起前移。`Context.slots` 自 `0.1.6` 起由 `ui-renderer` 声明（不再是 `ui-slots`，该包已不是 client row）；`Context.sessions` 则完全不再声明——session 服务改按官方 client 插件的写法用 `ctx.get('sessions')` 读取。chain 插槽的 inject 现在收到的是普通 `string` 会话 id 而非带品牌的 `SessionId`，因此该参数放宽为可同时接受两代类型。
+- `settings.plugin.item` 改为在插件内本地声明：`0.1.6` 的 `ui-settings-plugins` 已不再声明它，而兼容层在面对提供该坐席的 composition 时仍会挂载到那里。
+
+### 声明
+
+- `dsh.client.inject` 与 `peerDependencies` 补充声明 `@deepseek-ai/dsh-client-ui-plugin-manager`（`plugins.bundle.config` 的拥有者）与 `@deepseek-ai/dsh-client-ui-renderer`（自 `0.1.6` 起 `Context.slots` 的拥有者），与「注入所消费插槽的拥有者」约定一致。两者都是信息性加载边：指向组合中不存在的包时会被跳过，绝不致命。
+- `devDependencies` 将 `@deepseek-ai/dsh-invariants` 与 `@deepseek-ai/dsh-settings` 固定到 `0.1.6-alpha.2`，使编译与类型检查的基线与收窄后的 peer 区间一致。
+- 新增 `pnpm-workspace.yaml`，把 21 个被固定的 `@deepseek-ai/*@0.1.6-alpha.2` 包排除出 pnpm 默认的 24 小时 `minimumReleaseAge` 窗口。本插件采纳某个 DSH 版本时，该版本必然比这个窗口更「新」，而对应版本早已连同 integrity 哈希固定在 lockfile 中。每条只针对一个确切版本，因此这些版本过龄后该列表即自动失效，可直接删除。
+
 ## 0.1.21 - 日韩界面语言与 DSH 0.1.5-rc.2 适配
 
 ### 新增

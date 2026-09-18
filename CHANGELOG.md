@@ -1,3 +1,25 @@
+## Unreleased
+
+### Fixed
+
+- A Custom profile no longer loses the default key of a command introduced after it was saved. The manager panel can only rebind a row, never add one, so a Custom profile saved before `0.1.20` had no `showShortcuts` binding and `Meta+Alt+Shift+S` silently stopped opening the panel. Profiles are now completed with the Standard default for every command and scope they do not define; a default that would collide with a binding the profile already carries is skipped. What a profile stores, exports, and fingerprints is unchanged — only the effective bindings behind the keyboard, the panel list, and the launch card gain the missing defaults, and the next save persists them.
+- The Plugins-page shortcut card is visible again on DSH `0.1.6`. That release replaced the `settings.plugin.item` slot with `plugins.bundle.config`, which left the card without a seat and removed the plugin's settings entry.
+
+### Compatibility
+
+- The compatibility layer now mounts the shortcut card on whichever Plugins-page seat the running composition declares: `plugins.bundle.config` (DSH `0.1.6` and later, keyed by bundle package name) or the legacy `settings.plugin.item` (every earlier supported generation, keyed by settings namespace). Both seats are injected, so one source tree serves every generation without version detection; a composition declaring both mounts exactly one card, and a remounting owner re-runs the mount.
+- Checked DSH `0.1.6-alpha.2` against the live Web composition: the `plugins.bundle.config` seat renders the card on the plugin's own page, `Meta+Alt+Shift+S` opens the manager panel, and the plugin logs no console error.
+- Supported DSH now starts at `0.1.6-alpha.2`, the first release carrying `plugins.bundle.config`. `0.1.0-rc.8` through `0.1.1-rc.2`, `0.1.2-alpha.1`, and `0.1.5-*` are no longer supported; the compatibility layer's runtime probes stay, so those generations degrade to the plugin's older behaviour instead of crashing.
+- The previously declared peer range never actually admitted the versions it claimed. A semver range only matches a prerelease whose `major.minor.patch` tuple it also names, so `>=0.1.2-alpha.1 <1.0.0` rejected `0.1.5-rc.2` and `0.1.6-alpha.2` alike. Every DSH range is now `>=0.1.6-alpha.2 <1.0.0`, which admits the current releases; the next DSH minor will need its prerelease tuple added in the same way.
+- The type baseline moved with the range. `Context.slots` is declared by `ui-renderer` from `0.1.6` (not `ui-slots`, which is no longer a client row), and `Context.sessions` is no longer declared at all — the session service is read as `ctx.get('sessions')`, the pattern DSH's own client plugins use. A chain slot's inject now receives a plain `string` session id rather than the branded `SessionId`, so the parameter is widened to accept both generations.
+- `settings.plugin.item` stays declared locally: `0.1.6`'s `ui-settings-plugins` stopped declaring it, and the compatibility layer still mounts there on a composition that offers it.
+
+### Declarations
+
+- `dsh.client.inject` and `peerDependencies` now also declare `@deepseek-ai/dsh-client-ui-plugin-manager` (owner of `plugins.bundle.config`) and `@deepseek-ai/dsh-client-ui-renderer` (owner of `Context.slots` from `0.1.6`), following the convention of injecting the owner of each consumed slot. Both are informational loader edges: an edge naming a package a composition does not carry is skipped, never fatal.
+- `devDependencies` pin `@deepseek-ai/dsh-invariants` and `@deepseek-ai/dsh-settings` to `0.1.6-alpha.2` so the compiled and typechecked baseline matches the narrowed peer range.
+- `pnpm-workspace.yaml` excludes the 21 pinned `@deepseek-ai/*@0.1.6-alpha.2` packages from pnpm's default 24-hour `minimumReleaseAge` window. A DSH release is always younger than that window when this plugin adopts it, and the version is already pinned in the lockfile with an integrity hash. Each entry names one exact version, so the list turns inert once those versions age and can then be deleted.
+
 ## 0.1.21 - Japanese and Korean languages, DSH 0.1.5-rc.2 support
 
 ### Added
