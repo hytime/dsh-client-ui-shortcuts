@@ -6,14 +6,43 @@ import type {
 } from './contract/settings.js'
 import { SHORTCUTS_SETTINGS_NAMESPACE } from '../settings-namespace.js'
 
+/**
+ * Where a running composition accepts this plugin's Plugins-page configuration
+ * card. `bundle-config` is DSH 0.1.6 and later: a bundle's own configuration,
+ * keyed by package name and rendered on that bundle's detail page between its
+ * description and its rows. `namespace-item` is every earlier supported
+ * generation: a plugin card keyed by the settings namespace it edits, inside
+ * the Plugins section's configurable tab.
+ */
+export type PluginSettingsCardSeat =
+  | { readonly generation: 'bundle-config'; readonly slot: 'plugins.bundle.config'; readonly key: string }
+  | { readonly generation: 'namespace-item'; readonly slot: 'settings.plugin.item'; readonly key: string }
+
+/** The two cardinal keys a Plugins page can file this plugin's card under. */
+export interface PluginSettingsCardIdentity {
+  /** Package name the bundle-config generation keys a bundle's configuration by. */
+  readonly bundleKey: string
+  /** Settings namespace the namespace-item generation keys a plugin card by. */
+  readonly namespaceKey: string
+}
+
 /** Runtime capabilities exposed to the rest of the browser plugin. */
 export interface DshCompatibility {
   readonly mutateSettings: MutateShortcutSettings
   readonly startSession?: (workspaceId?: WorkspaceId) => void
   readonly isInteractionPending: () => boolean
+  /** Mount the Plugins-page card on whichever seat this composition declares. */
+  readonly mountPluginSettingsCard: (
+    identity: PluginSettingsCardIdentity,
+    mount: (seat: PluginSettingsCardSeat) => () => void,
+  ) => () => void
 }
 
 type ServiceGetter = (name: string) => unknown
+type SlotInjectionEffect = () => void
+type SlotInjectionService = {
+  readonly inject?: (key: string, callback: () => SlotInjectionEffect) => () => void
+}
 type SettingsOperation = readonly [{
   readonly op: 'set'
   readonly path: readonly [string]
@@ -74,6 +103,43 @@ export function createDshCompatibility(get: ServiceGetter): DshCompatibility {
     mutateSettings,
     ...(startSession === undefined ? {} : { startSession }),
     isInteractionPending: () => readPending(currentPending, legacySnapshot),
+    mountPluginSettingsCard: createPluginSettingsCardMounter(get),
+  }
+}
+
+/**
+ * Mount the plugin's configuration card on the first seat this composition
+ * declares. DSH moved the surface in 0.1.6 — `settings.plugin.item`, keyed by
+ * settings namespace, became `plugins.bundle.config`, keyed by bundle package —
+ * and both are injected so one source tree serves every supported generation.
+ * The injection itself is the capability probe: registering into a slot that is
+ * never declared cannot fail here, because `inject` runs its callback only once
+ * the declaring entry is mounted (and re-runs it when that owner remounts).
+ * Ordering decides a composition that declares both, so exactly one card mounts.
+ */
+function createPluginSettingsCardMounter(
+  get: ServiceGetter,
+): DshCompatibility['mountPluginSettingsCard'] {
+  return (identity, mount) => {
+    const slots = get('slots') as SlotInjectionService | undefined
+    const inject = slots?.inject
+    if (typeof inject !== 'function') return () => {}
+    const seats: readonly PluginSettingsCardSeat[] = [
+      { generation: 'bundle-config', slot: 'plugins.bundle.config', key: identity.bundleKey },
+      { generation: 'namespace-item', slot: 'settings.plugin.item', key: identity.namespaceKey },
+    ]
+    let mounted: SlotInjectionEffect | undefined
+    const injections = seats.map(seat => inject.call(slots, seat.slot, () => {
+      if (mounted !== undefined) return () => {}
+      const dispose = mount(seat)
+      mounted = dispose
+      return () => {
+        if (mounted !== dispose) return
+        mounted = undefined
+        dispose()
+      }
+    }))
+    return () => { for (const off of injections) off() }
   }
 }
 

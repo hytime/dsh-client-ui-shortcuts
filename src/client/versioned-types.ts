@@ -65,6 +65,25 @@ export interface PendingWait<K extends string = string> {
 /** Cordis context with the optional client services this package touches. */
 export type ClientContextLike = Context
 
+/** Session-scoped Agent context as this plugin reads it. */
+export interface SessionScopeLike {
+  /** Resolve one scoped service; only `conversation` is read, for task cancellation. */
+  readonly get: (name: string) => { readonly cancel: () => Promise<void> } | undefined
+}
+
+/** Session service as this plugin reads it.
+ *
+ * DSH declares `Context.sessions` in some generations and not others, while the service is
+ * provided on every one — 0.1.6's own client plugins read it as `ctx.get('sessions') as
+ * ISessions`. This local shape keeps the call site typed without depending on the interface's
+ * owner package, which is not a peer of this plugin in every generation. */
+export interface SessionsLike {
+  /** Borrow an already-retained session scope, or undefined without one.
+   * `id` is a plain string: the slot machinery hands one to a chain inject at 0.1.6 and a
+   * branded SessionId earlier, and only the runtime value matters here. */
+  readonly scope: (id: string) => SessionScopeLike | undefined
+}
+
 /** Locale capability this package probes instead of assuming.
  *
  * `addLanguage` — which is what makes an extra language *selectable* rather than merely

@@ -59,7 +59,9 @@ describe('package manifest', () => {
       '@deepseek-ai/dsh-client-locale',
       '@deepseek-ai/dsh-client-ui-conversation',
       '@deepseek-ai/dsh-client-ui-layout',
+      '@deepseek-ai/dsh-client-ui-plugin-manager',
       '@deepseek-ai/dsh-client-ui-primitives',
+      '@deepseek-ai/dsh-client-ui-renderer',
       '@deepseek-ai/dsh-client-ui-settings',
       '@deepseek-ai/dsh-client-ui-settings-plugins',
       '@deepseek-ai/dsh-client-ui-slots',
@@ -83,6 +85,8 @@ describe('package manifest', () => {
     })
     expect(manifest.peerDependencies.react).toBe('>=18.2.0 <19.0.0')
     expect(manifest.devDependencies.react).toBe('18.3.1')
+    expect(manifest.devDependencies['@deepseek-ai/dsh-invariants']).toBe('0.1.6-alpha.2')
+    expect(manifest.devDependencies['@deepseek-ai/dsh-settings']).toBe('0.1.6-alpha.2')
     expect(manifest.scripts).toMatchObject({
       'build:types': 'tsc',
       bundle: 'pnpm run build:types && tsdown',
@@ -91,7 +95,7 @@ describe('package manifest', () => {
       test: 'vitest run',
     })
     for (const packageName of manifest.dsh.client.inject) {
-      expect(manifest.peerDependencies[packageName]).toBe('>=0.1.0-rc.8 <0.1.1 || >=0.1.1-rc.2 <0.1.2 || >=0.1.2-alpha.1 <1.0.0')
+      expect(manifest.peerDependencies[packageName]).toBe('>=0.1.6-alpha.2 <1.0.0')
       expect(manifest.dependencies[packageName]).toBeUndefined()
     }
   })

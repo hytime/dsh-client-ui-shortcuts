@@ -7,6 +7,7 @@ import {
 } from '../../custom-profile-contract.js'
 import { DEFAULT_SHORTCUT_PROFILE_ID } from '../../profile-catalog.js'
 import { standardProfile } from '../profiles/builtins.js'
+import { completePersistedProfile } from '../profiles/backfill.js'
 import type { PersistedCustomShortcutProfile } from '../../custom-profile-contract.js'
 import type { PersistedShortcutBinding, ShortcutSettings } from '../../settings.js'
 import type { ShortcutBinding } from '../contract/profile.js'
@@ -509,7 +510,10 @@ export class ShortcutSettingsController implements ShortcutSettingsFace {
     this.ready = true
     this.canWrite = snapshot.writable === true
     const customProfiles = this.readCustomProfiles(snapshot)
-    this.registry.replaceCustomProfiles(customProfiles)
+    // Persisted profiles stay the fingerprint and export authority; the registry
+    // receives them completed with any command introduced after they were saved,
+    // so an upgraded plugin keeps its documented defaults instead of losing them.
+    this.registry.replaceCustomProfiles(customProfiles.map(completePersistedProfile))
     const requestedId = snapshot.value?.activeProfile
     const activeId = typeof requestedId === 'string' && this.registry.get(requestedId) !== undefined
       ? requestedId

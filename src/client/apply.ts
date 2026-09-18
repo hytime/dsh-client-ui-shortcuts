@@ -1,9 +1,10 @@
-import type { ClientLocaleLike, SettingsScope, SessionId } from './versioned-types.js'
+import type { ClientLocaleLike, SessionsLike, SettingsScope } from './versioned-types.js'
 import type { ClientContextLike as ClientContext } from './versioned-types.js'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
+import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { createBuiltinProfileRegistry } from './profiles/registry.js'
 import { selectShortcut } from './contract/slots.js'
 import { ShortcutComposer } from './components/ShortcutComposer.js'
@@ -15,6 +16,7 @@ import type { ShortcutSettings } from '../settings.js'
 import { SHORTCUTS_SETTINGS_NAMESPACE } from '../settings-namespace.js'
 import type { ShortcutProfile, GlobalShortcutCommand } from './contract/profile.js'
 import { ShortcutLaunchCard } from './components/ShortcutLaunchCard.js'
+import { PACKAGE_NAME } from '../invariant.js'
 import { createGlobalActions, type GlobalActionCapabilities } from './actions/global-actions.js'
 import { detectShortcutPlatform } from './keyboard/visuals.js'
 import { createGlobalKeyboardRouter } from './keyboard/router.js'
@@ -47,6 +49,7 @@ export function apply(ctx: ClientContext): void {
   const t = ctx.locale.bind(NS)
   const scope = ctx.settingsScope.bind<ShortcutSettings>({ namespace: SHORTCUTS_SETTINGS_NAMESPACE }) as SettingsScope<ShortcutSettings>
   const registry = createBuiltinProfileRegistry()
+  const sessions = ctx.get('sessions') as SessionsLike
   const compatibility = createDshCompatibility(name => ctx.get(name))
   const controller = createShortcutSettingsController(scope, registry, compatibility.mutateSettings, {
     createId: () => window.crypto.randomUUID(),
@@ -83,8 +86,8 @@ export function apply(ctx: ClientContext): void {
   }), 'dsh-shortcuts: global keyboard router')
   ctx.effect(() => ctx.slots.inject('conversation.composer', () => ctx.slots.register({
     name: 'conversation.composer', select: selectShortcut, priority: -1, locale: NS,
-    inject: (sessionId: SessionId): { activeProfile: ShortcutProfile; platform: ReturnType<typeof detectShortcutPlatform>; t: (key: string) => string; cancelTask: () => Promise<void> } => {
-      const session = ctx.sessions.scope(sessionId)
+    inject: (sessionId: string): { activeProfile: ShortcutProfile; platform: ReturnType<typeof detectShortcutPlatform>; t: (key: string) => string; cancelTask: () => Promise<void> } => {
+      const session = sessions.scope(sessionId)
       if (session === undefined) throw new Error(`dsh-shortcuts: unknown session "${sessionId}"`)
       const conversation = session.get('conversation')
       if (conversation === undefined) throw new Error(`dsh-shortcuts: conversation unavailable for session "${sessionId}"`)
@@ -93,7 +96,7 @@ export function apply(ctx: ClientContext): void {
         platform,
         t: (key: string) => t(key as never),
          cancelTask: async () => {
-           const currentSession = ctx.sessions.scope(sessionId)
+           const currentSession = sessions.scope(sessionId)
            if (currentSession === undefined) throw new Error(`dsh-shortcuts: unknown session "${sessionId}"`)
            const currentConversation = currentSession.get('conversation')
            if (currentConversation === undefined) throw new Error(`dsh-shortcuts: conversation unavailable for session "${sessionId}"`)
@@ -102,21 +105,29 @@ export function apply(ctx: ClientContext): void {
       }
     },
   }, ShortcutComposer)), 'dsh-shortcuts: composer slot')
-  ctx.effect(() => ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
-    name: 'settings.plugin.item', key: SHORTCUTS_SETTINGS_NAMESPACE, locale: NS,
-    inject: (): { settings: ShortcutSettingsFace; platform: ReturnType<typeof detectShortcutPlatform>; t: (key: string) => string; onOpen: () => void } => ({
-      settings: controller,
-      platform,
-      t: (key: string) => t(key as never),
-      onOpen: () => {
-        if (!overlay.isOpen()) {
-          const active = document.activeElement
-          focusBeforeOverlay = active instanceof HTMLElement ? active : null
-        }
-        overlay.openWithFocus('showShortcuts')
-      },
-    }),
-  }, ShortcutLaunchCard)), 'dsh-shortcuts: settings launch card slot')
+  ctx.effect(() => compatibility.mountPluginSettingsCard(
+    { bundleKey: PACKAGE_NAME, namespaceKey: SHORTCUTS_SETTINGS_NAMESPACE },
+    seat => {
+      const inject = (): { settings: ShortcutSettingsFace; platform: ReturnType<typeof detectShortcutPlatform>; t: (key: string) => string; onOpen: () => void } => ({
+        settings: controller,
+        platform,
+        t: (key: string) => t(key as never),
+        onOpen: () => {
+          if (!overlay.isOpen()) {
+            const active = document.activeElement
+            focusBeforeOverlay = active instanceof HTMLElement ? active : null
+          }
+          overlay.openWithFocus('showShortcuts')
+        },
+      })
+      // One literal slot key per registration: the slot registry resolves the
+      // key and its owner props at compile time, so the seat predicate cannot
+      // be collapsed into a single call with a dynamic name.
+      return seat.generation === 'bundle-config'
+        ? ctx.slots.register({ name: 'plugins.bundle.config', key: seat.key, locale: NS, inject }, ShortcutLaunchCard)
+        : ctx.slots.register({ name: 'settings.plugin.item', key: seat.key, locale: NS, inject }, ShortcutLaunchCard)
+    },
+  ), 'dsh-shortcuts: settings launch card seat')
   ctx.effect(() => ctx.slots.inject('shell.overlay', () => ctx.slots.register({
     name: 'shell.overlay', id: 'hytime-shortcuts-overlay', order: 100, locale: NS,
     inject: (): ShortcutOverlayProps => ({

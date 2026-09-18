@@ -23,6 +23,20 @@ const otherBinding = {
   key: { key: 'p', modifiers: ['Meta'] as const },
 }
 
+/**
+ * Effective bindings of a custom profile: its own bindings in order, then the
+ * Standard default for every command+scope it does not define. Persisted
+ * bindings stay exactly as saved — this is what the keyboard and the manager
+ * panel consume, not what the profile stores.
+ */
+function effectiveBindings(bindings: readonly ShortcutBinding[]): readonly ShortcutBinding[] {
+  const defined = new Set(bindings.map(binding => `${binding.command}:${binding.scope}`))
+  return [
+    ...bindings,
+    ...standardProfile.bindings.filter(binding => !defined.has(`${binding.command}:${binding.scope}`)),
+  ]
+}
+
 function controlledSettings(initial: ShortcutSettings) {
   let hostValue = structuredClone(initial)
   let hostRevision = 1
@@ -166,7 +180,7 @@ describe('custom profile settings controller', () => {
     const custom = { id: 'custom-work', name: 'Work', bindings: [customBinding] }
     const cases = [
       { activeProfile: 'vim', customProfiles: [custom], expected: vimProfile.bindings },
-      { activeProfile: custom.id, customProfiles: [custom], expected: custom.bindings },
+      { activeProfile: custom.id, customProfiles: [custom], expected: effectiveBindings(custom.bindings) },
     ]
 
     for (const testCase of cases) {
@@ -225,9 +239,12 @@ describe('custom profile settings controller', () => {
     expect(controller.profiles().at(-1)).toMatchObject({
       kind: 'custom',
       displayName: 'Custom',
-      bindings: [customBinding],
+      bindings: effectiveBindings([customBinding]),
     })
     expect(controller.profiles().at(-1)?.persistedName).toBeUndefined()
+    // The completion is an effective-bindings concern only: what the profile
+    // stores, exports, and fingerprints keeps the exact persisted bindings.
+    expect(controller.exportActiveCustomProfile()).toEqual({ name: 'Custom', bindings: [customBinding] })
   })
 
   it('exports a legacy active custom profile using its display name', () => {
@@ -323,7 +340,7 @@ describe('custom profile settings controller', () => {
       id: 'custom-uuid-1',
       displayName: 'Work 1',
       persistedName: 'Work 1',
-      bindings: [otherBinding],
+      bindings: effectiveBindings([otherBinding]),
     })
     expect(vi.mocked(scope.mutate).mock.calls.map(call => call[0].field)).toEqual(['customProfiles', 'activeProfile'])
     expect(vi.mocked(scope.mutate).mock.calls.map(call => call[0].expectedRevision)).toEqual([1, 2])
@@ -365,7 +382,7 @@ describe('custom profile settings controller', () => {
     expect(controller.profiles().find(profile => profile.id === work.id)).toMatchObject({
       displayName: 'Renamed',
       persistedName: 'Renamed',
-      bindings: [otherBinding],
+      bindings: effectiveBindings([otherBinding]),
     })
     const calls = vi.mocked(scope.mutate).mock.calls.length
     const failure = await caughtFailure(controller.saveCustomProfile(work.id, baseline, 'Stale', [customBinding]))
@@ -411,7 +428,7 @@ describe('custom profile settings controller', () => {
     const failure = await caughtFailure(controller.saveCustomProfile(work.id, baseline, 'Work', [otherBinding]))
 
     expect(failure).toMatchObject({ code: 'NOT_APPLIED', operation: 'save', phase: 'collection', profileId: work.id })
-    expect(controller.profiles().at(-1)?.bindings).toEqual([customBinding])
+    expect(controller.profiles().at(-1)?.bindings).toEqual(effectiveBindings([customBinding]))
   })
 
   it('rejects a resolved delete when the target remains in the complete read-back', async () => {
@@ -707,7 +724,7 @@ describe('custom profile settings controller', () => {
     expect(saved.id).toBe(work.id)
     expect(saved.bindings).toEqual(standardProfile.bindings)
     expect(saved.fingerprint).not.toBe(baseline)
-    expect(controller.profiles().find(profile => profile.id === other.id)?.bindings).toEqual(other.bindings)
+    expect(controller.profiles().find(profile => profile.id === other.id)?.bindings).toEqual(effectiveBindings(other.bindings))
     expect(scope.mutate).toHaveBeenCalledWith(expect.objectContaining({
       field: 'customProfiles',
       value: [work, other].map((profile, index) => index === 0
@@ -726,7 +743,7 @@ describe('custom profile settings controller', () => {
     expect(exportedBinding).not.toBe(standardBinding)
     expect(savedBinding.key).not.toBe(standardBinding.key)
     expect(exportedBinding.key).not.toBe(standardBinding.key)
-    expect(controller.profiles().find(profile => profile.id === other.id)?.bindings).toEqual(other.bindings)
+    expect(controller.profiles().find(profile => profile.id === other.id)?.bindings).toEqual(effectiveBindings(other.bindings))
   })
 
   it('resets a non-active custom profile by id without changing selection or other profiles', async () => {

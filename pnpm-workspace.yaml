@@ -1,0 +1,35 @@
+# pnpm reads its settings from this file. This package is not a workspace (it
+# declares no `packages:` list); the file exists only to carry configuration.
+#
+# Why the exclusions below exist: this plugin compiles and typechecks against one
+# exact DSH release, and a DSH release lands well inside pnpm's default 24-hour
+# `minimumReleaseAge` window. Waiting that window out would only delay adapting to
+# a DSH release, which is already pinned in the lockfile with an integrity hash —
+# the same reasoning the DSH repository applies to its own first-party packages in
+# its pnpm-workspace.yaml.
+#
+# Each entry names one exact version and grants no range, so it turns inert once
+# that version is older than the window. The list can also be deleted outright at
+# that point: nothing here is needed for a resolution that already exists.
+minimumReleaseAgeExclude:
+  - '@deepseek-ai/dsh-brand@0.1.6-alpha.2'
+  - '@deepseek-ai/dsh-client-connection@0.1.6-alpha.2'
+  - '@deepseek-ai/dsh-client-locale@0.1.6-alpha.2'
+  - '@deepseek-ai/dsh-client-ui-conversation@0.1.6-alpha.2'
+  - '@deepseek-ai/dsh-client-ui-layout@0.1.6-alpha.2'
+  - '@deepseek-ai/dsh-client-ui-plugin-manager@0.1.6-alpha.2'
+  - '@deepseek-ai/dsh-client-ui-primitives@0.1.6-alpha.2'
+  - '@deepseek-ai/dsh-client-ui-renderer@0.1.6-alpha.2'
+  - '@deepseek-ai/dsh-client-ui-settings-plugins@0.1.6-alpha.2'
+  - '@deepseek-ai/dsh-client-ui-settings@0.1.6-alpha.2'
+  - '@deepseek-ai/dsh-client-ui-slots@0.1.6-alpha.2'
+  - '@deepseek-ai/dsh-credentials@0.1.6-alpha.2'
+  - '@deepseek-ai/dsh-invariants@0.1.6-alpha.2'
+  - '@deepseek-ai/dsh-llm@0.1.6-alpha.2'
+  - '@deepseek-ai/dsh-scope@0.1.6-alpha.2'
+  - '@deepseek-ai/dsh-session@0.1.6-alpha.2'
+  - '@deepseek-ai/dsh-settings@0.1.6-alpha.2'
+  - '@deepseek-ai/dsh-timeout@0.1.6-alpha.2'
+  - '@deepseek-ai/dsh-typert-protocol@0.1.6-alpha.2'
+  - '@deepseek-ai/dsh-util-crypto@0.1.6-alpha.2'
+  - '@deepseek-ai/dsh-util-values@0.1.6-alpha.2'

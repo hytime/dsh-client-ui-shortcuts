@@ -6,9 +6,12 @@ import { ShortcutIcon } from './ShortcutIcon.js'
 import styles from '../styles/Shortcuts.module.css'
 
 /** Settings-page entry that shows the open-panel shortcut and opens the manager panel. */
-export function ShortcutLaunchCard({ settings, platform, t, onOpen }: ShortcutLaunchCardProps): React.ReactElement {
+export function ShortcutLaunchCard({ settings, platform, t, onOpen, view }: ShortcutLaunchCardProps): React.ReactElement {
   const [, setTick] = useState(0)
   useEffect(() => settings.subscribe(() => setTick(value => value + 1)), [settings])
+
+  // The bundle-config seat asks for a one-liner before the card is opened.
+  if (view === 'summary') return <React.Fragment>{t('launch.hint')}</React.Fragment>
 
   const activeProfile = settings.profiles().find(candidate => candidate.id === settings.activeProfileId()) ?? settings.profiles()[0]
   const binding = activeProfile?.bindings.find(candidate => candidate.command === 'showShortcuts')

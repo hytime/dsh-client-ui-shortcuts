@@ -218,3 +218,103 @@ describe('settings mutation adapter', () => {
     expect(compatibility.isInteractionPending()).toBe(false)
   })
 })
+
+describe('plugin settings card seat adapter', () => {
+  /** A slots service whose declaration set is the keys the caller names. */
+  function slotsDeclaring(...declared: readonly string[]) {
+    const live = new Set(declared)
+    const mounts = new Map<string, () => void>()
+    return {
+      live,
+      mounts,
+      inject: vi.fn((key: string, callback: () => () => void) => {
+        if (!live.has(key)) return () => {}
+        mounts.set(key, callback())
+        return () => {
+          mounts.get(key)?.()
+          mounts.delete(key)
+        }
+      }),
+    }
+  }
+
+  const identity = { bundleKey: '@hytime/dsh-client-ui-shortcuts', namespaceKey: 'dsh-ui-shortcuts' }
+
+  it('mounts the card on the bundle-config seat when the composition declares it', () => {
+    const slots = slotsDeclaring('plugins.bundle.config')
+    const mount = vi.fn(() => vi.fn())
+    const compatibility = createDshCompatibility(name => name === 'slots' ? slots : undefined)
+
+    compatibility.mountPluginSettingsCard(identity, mount)
+
+    expect(mount).toHaveBeenCalledExactlyOnceWith({
+      generation: 'bundle-config', slot: 'plugins.bundle.config', key: identity.bundleKey,
+    })
+    expect(slots.inject).toHaveBeenCalledWith('plugins.bundle.config', expect.any(Function))
+  })
+
+  it('mounts the card on the legacy namespace-item seat when only that one is declared', () => {
+    const slots = slotsDeclaring('settings.plugin.item')
+    const mount = vi.fn(() => vi.fn())
+    const compatibility = createDshCompatibility(name => name === 'slots' ? slots : undefined)
+
+    compatibility.mountPluginSettingsCard(identity, mount)
+
+    expect(mount).toHaveBeenCalledExactlyOnceWith({
+      generation: 'namespace-item', slot: 'settings.plugin.item', key: identity.namespaceKey,
+    })
+  })
+
+  it('mounts nothing and stays inert when neither seat is declared', () => {
+    const slots = slotsDeclaring()
+    const mount = vi.fn(() => vi.fn())
+    const compatibility = createDshCompatibility(name => name === 'slots' ? slots : undefined)
+
+    expect(() => compatibility.mountPluginSettingsCard(identity, mount)).not.toThrow()
+    expect(mount).not.toHaveBeenCalled()
+  })
+
+  it('mounts exactly one card when a composition declares both seats', () => {
+    const slots = slotsDeclaring('plugins.bundle.config', 'settings.plugin.item')
+    const mount = vi.fn(() => vi.fn())
+    const compatibility = createDshCompatibility(name => name === 'slots' ? slots : undefined)
+
+    compatibility.mountPluginSettingsCard(identity, mount)
+
+    expect(mount).toHaveBeenCalledTimes(1)
+    expect(mount).toHaveBeenCalledWith(expect.objectContaining({ generation: 'bundle-config' }))
+  })
+
+  it('frees the mount when the declaring owner remounts', () => {
+    const slots = slotsDeclaring('plugins.bundle.config')
+    const dispose = vi.fn()
+    const mount = vi.fn(() => dispose)
+    const compatibility = createDshCompatibility(name => name === 'slots' ? slots : undefined)
+
+    compatibility.mountPluginSettingsCard(identity, mount)
+    // Owner collapse: the injection effect runs its disposer.
+    slots.mounts.get('plugins.bundle.config')?.()
+
+    expect(dispose).toHaveBeenCalledTimes(1)
+  })
+
+  it('detaches every injection when the caller disposes the mount', () => {
+    const slots = slotsDeclaring()
+    const off = vi.fn()
+    const inject = vi.fn(() => off)
+    const compatibility = createDshCompatibility(name => name === 'slots' ? { inject } : undefined)
+
+    compatibility.mountPluginSettingsCard(identity, vi.fn(() => vi.fn()))()
+
+    expect(inject).toHaveBeenCalledTimes(2)
+    expect(off).toHaveBeenCalledTimes(2)
+  })
+
+  it('reports no mount without a slots service', () => {
+    const compatibility = createDshCompatibility(() => undefined)
+    const mount = vi.fn(() => vi.fn())
+
+    expect(compatibility.mountPluginSettingsCard(identity, mount)).toBeTypeOf('function')
+    expect(mount).not.toHaveBeenCalled()
+  })
+})

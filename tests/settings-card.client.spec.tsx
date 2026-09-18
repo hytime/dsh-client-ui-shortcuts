@@ -173,6 +173,19 @@ function legacyProfile(settings: ShortcutSettingsFace): ManagedShortcutProfile {
   return settings.profiles().find(profile => profile.id === 'custom')!
 }
 
+/**
+ * Effective bindings of a custom profile: its own bindings in order, then the
+ * Standard default for every command+scope it does not define. What the profile
+ * persists, exports, and fingerprints stays exactly as saved.
+ */
+function effectiveBindings(bindings: readonly ShortcutProfile['bindings'][number][]): readonly ShortcutProfile['bindings'][number][] {
+  const defined = new Set(bindings.map(binding => `${binding.command}:${binding.scope}`))
+  return [
+    ...bindings,
+    ...standardProfile.bindings.filter(binding => !defined.has(`${binding.command}:${binding.scope}`)),
+  ]
+}
+
 function saveLegacyProfile(settings: ShortcutSettingsFace, bindings: readonly ShortcutProfile['bindings'][number][]): Promise<void> {
   const profile = legacyProfile(settings)
   return settings.saveCustomProfile(
@@ -192,8 +205,8 @@ describe('shortcut settings controller custom profile', () => {
     const { createShortcutSettingsController } = await import('../src/client/settings/controller.js')
     const controller = createShortcutSettingsController(scope.scope, registry, scope.mutate, controllerOptions)
 
-    expect(legacyProfile(controller).bindings).toEqual(customBindings)
-    expect(registry.get('custom')?.bindings).toEqual(customBindings)
+    expect(legacyProfile(controller).bindings).toEqual(effectiveBindings(customBindings))
+    expect(registry.get('custom')?.bindings).toEqual(effectiveBindings(customBindings))
     controller.dispose()
   })
 
@@ -221,8 +234,8 @@ describe('shortcut settings controller custom profile', () => {
 
     expect(legacyProfile(controller).bindings).toEqual(standardProfile.bindings)
     await saveLegacyProfile(controller, customBindings)
-    expect(legacyProfile(controller).bindings).toEqual(customBindings)
-    expect(registry.get('custom')?.bindings).toEqual(customBindings)
+    expect(legacyProfile(controller).bindings).toEqual(effectiveBindings(customBindings))
+    expect(registry.get('custom')?.bindings).toEqual(effectiveBindings(customBindings))
     expect(scope.mutate).toHaveBeenCalledWith(expect.objectContaining({ field: 'customProfiles', value: expect.any(Array) }))
     expect((vi.mocked(scope.mutate).mock.calls[0]?.[0].value as unknown[])[0]).not.toBe(customBindings)
     controller.dispose()
@@ -320,8 +333,8 @@ describe('shortcut settings controller custom profile', () => {
     expect(controller.activeProfileId()).toBe('vim')
     await expect(saveLegacyProfile(controller, standardProfile.bindings)).rejects.toThrow('permission denied')
     expect(controller.activeProfileId()).toBe('vim')
-    expect(legacyProfile(controller).bindings).toEqual(customBindings)
-    expect(registry.get('custom')?.bindings).toEqual(customBindings)
+    expect(legacyProfile(controller).bindings).toEqual(effectiveBindings(customBindings))
+    expect(registry.get('custom')?.bindings).toEqual(effectiveBindings(customBindings))
     controller.dispose()
   })
 
@@ -339,11 +352,11 @@ describe('shortcut settings controller custom profile', () => {
     await saveLegacyProfile(controller, submitted)
     ;(submitted[0]!.key as { modifiers: string[] }).modifiers.push('Alt')
 
-    expect(legacyProfile(controller).bindings).toEqual([{
+    expect(legacyProfile(controller).bindings).toEqual(effectiveBindings([{
       command: 'openSettings',
       scope: 'global',
       key: { key: 's', modifiers: ['Meta'] },
-    }])
+    }]))
     controller.dispose()
   })
 
