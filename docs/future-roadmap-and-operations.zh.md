@@ -4,7 +4,7 @@
 
 ## 当前基线
 
-当前基线版本：`0.1.21`（后续版本号由 GitHub Release 触发 publish action 写入）
+当前基线版本：`0.1.22`（后续版本号由 GitHub Release 触发 publish action 写入）
 
 当前核心能力：
 
@@ -31,13 +31,13 @@
 安装入口：
 
 ```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.21
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.22
 ```
 
 GitHub 源码安装必须固定 tag 或 commit：
 
 ```bash
-dsh plugin --profile web add github:hytime/dsh-client-ui-shortcuts#v0.1.21
+dsh plugin --profile web add github:hytime/dsh-client-ui-shortcuts#v0.1.22
 ```
 
 ## 产品目标
@@ -117,7 +117,7 @@ README 和安装指南维护 DSH 兼容性表：
 | `0.1.16` | `0.1.0-rc.8` 系列 | 历史 | 使用公开 Client settings 与 slots 接口；该世代已不在支持范围内 |
 | `0.1.20` | `0.1.5-alpha.1` | 历史 | 移除 `dsh-client-runtime` 依赖；真实 composition 验收（面板、搜索、方案切换、设置页入口、窄屏） |
 | `0.1.21` | `0.1.5-rc.2` | 历史 | 真实 composition 验收：插件进入 boot graph（54 项）且控制台 0 报错、面板几何/遮罩/搜索与 alpha.1 一致、设置页入口 Portal 与层级正常、日韩可选可切换。`0.1.5-alpha.2`、`0.1.5-rc.1` 为中间版本，仅静态核对 |
-| 未发布 | `0.1.6-alpha.2` | **当前最低支持版本**（已在 peer 区间与 `dsh.client.inject` 中声明），已验证 | 真实 composition 验收：`settings.plugin.item` 被 `plugins.bundle.config` 取代，兼容层改按运行中声明的插槽挂载卡片（插件详情页渲染出入口卡片、按钮可打开面板、`Meta+Alt+Shift+S` 可打开面板、插件无控制台报错）；同时补全 Custom 方案缺失命令的默认键 |
+| `0.1.22` | `0.1.6-alpha.2` | **当前最低支持版本**（已在 peer 区间与 `dsh.client.inject` 中声明），已验证 | 真实 composition 验收：`settings.plugin.item` 被 `plugins.bundle.config` 取代，兼容层改按运行中声明的插槽挂载卡片（插件详情页渲染出入口卡片、按钮可打开面板、`Meta+Alt+Shift+S` 可打开面板、插件无控制台报错）；同时补全 Custom 方案缺失命令的默认键 |
 
 新增 DSH 版本后，先运行自动化测试和真实 composition 验证，再更新表格。核对方式：从 npm 拉取新旧版本的 `@deepseek-ai/dsh-client-*` 包，逐文件比对 `lib/types/**/*.d.ts` 与主题 token 集合，而不是只看版本号；随后用真实 composition 做端到端验收。rc.2 的静态核对结论：locale / ui-slots / ui-settings / ui-settings-plugins / ui-renderer / ui-theme 声明无变化，`conversation.composer` 与 `ComposerChainProps` 无变化，新增 `main.conversation` 插槽为增量，`Menu` 新增可选 `autoFocus`，主题 359 个 token 集合一致，bundle loader 包装格式一致。`0.1.6` 的核对结论：`settings.plugin.item` 移除、`plugins.bundle.config` 与 `plugins.row.config` 新增（由 `ui-plugin-manager` 声明），`settings.plugins.tab` 保留；`conversation.composer`、`shell.overlay`、主题 token 与 bundle loader 格式无变化。插槽声明变更无法靠版本号判断，因此由兼容层探测。
 

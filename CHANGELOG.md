@@ -1,4 +1,4 @@
-## Unreleased
+## 0.1.22 - DSH 0.1.6-alpha.2 support boundary and shortcut fixes
 
 ### Fixed
 

@@ -19,7 +19,7 @@ DSH CLI 负责 profile 的插件安装、升级和移除。本包声明的 pnpm 
 使用 DSH plugin command 安装到 Web profile：
 
 ```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.21
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.22
 ```
 
 该命令会把包安装到 profile，并根据包中声明的 `dsh.bundle.patch` 将它加入 `dsh.profile.bundles`。本包支持 DSH `0.1.6-alpha.2` 及以后版本；更早的世代已不再支持，详见下文「DSH 版本兼容边界」。
@@ -60,7 +60,7 @@ pnpm pack --pack-destination /tmp/dsh-client-ui-shortcuts-pack
 export DSH_HOME="$(mktemp -d)"
 
 dsh plugin --profile web add \\
-  /tmp/dsh-client-ui-shortcuts-pack/hytime-dsh-client-ui-shortcuts-0.1.21.tgz
+  /tmp/dsh-client-ui-shortcuts-pack/hytime-dsh-client-ui-shortcuts-0.1.22.tgz
 ```
 
 如果希望 profile 在 shell 退出后继续存在，请将 `mktemp -d` 换成持久目录。发布 tarball 必须包含 `lib/client.js`、`lib/index.js`、`lib/invariant.js`、类型声明和 `cordis.patch.yml`。
