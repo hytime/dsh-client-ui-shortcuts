@@ -1,4 +1,4 @@
-## Unreleased - DSH 0.1.7 settings service compatibility
+## 0.1.23 - DSH 0.1.7 settings service compatibility
 
 ### Fixed
 

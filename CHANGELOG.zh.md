@@ -1,4 +1,4 @@
-## 未发布 - DSH 0.1.7 settings service 兼容
+## 0.1.23 - DSH 0.1.7 settings service 兼容
 
 ### 修复
 
