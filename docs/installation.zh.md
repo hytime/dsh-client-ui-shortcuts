@@ -95,6 +95,8 @@ dsh --profile web
 
 ## DSH 版本兼容边界
 
+DSH `0.1.7-alpha.1` 将 `settingsScope` 改为 `configForms`；本包优先探测新版服务并保留旧版 binder 回退，因此 `settingsScope` 不再是启动硬依赖。
+
 一个包支持 DSH `0.1.6-alpha.2` 及以后版本（`0.1.6-alpha.2` 是引入 `plugins.bundle.config` 的第一个版本），且不再依赖 `@deepseek-ai/dsh-client-runtime`（该包在 `0.1.5-alpha.1` 已停止发布）。`0.1.0-rc.8` 至 `0.1.1-rc.2`、`0.1.2-alpha.1`、`0.1.5-*` 已不再支持：兼容层的运行时能力探测仍保留，因此这些版本不会崩溃，而是退化为插件原有行为，但不再验收、不再修复。浏览器 adapter 按运行时能力探测：优先使用当前 `remote.settings.mutate`，否则调用旧版 Connection settings mutation；优先使用 `uiWorkspace.startSession`，否则调用 `workspaces.startSession`；优先从 `uiSession.pendingInteractions` 读取 pending interaction，否则读取旧版 Session summary；设置页入口卡片注入运行中 composition 实际声明的插槽——DSH `0.1.6` 及以后为 `plugins.bundle.config`，此前各代为 `settings.plugin.item`。缺少可选的 Workspace 或 Session UI 服务不会阻断插件加载，对应动作会保持隐藏。
 
 ## 管理命名 Custom profile

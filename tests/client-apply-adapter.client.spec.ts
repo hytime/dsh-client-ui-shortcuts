@@ -8,6 +8,58 @@ function remoteWith(result: unknown) {
 }
 
 describe('settings mutation adapter', () => {
+  it('adapts the current configForms service to the shared settings scope face', async () => {
+    const snapshot = {
+      status: 'ready' as const,
+      value: { activeProfile: 'vim' },
+      base: undefined,
+      user: { activeProfile: 'vim' },
+      revision: 2,
+      writable: true,
+      mode: 'host' as const,
+    }
+    const subscribe = vi.fn(() => () => {})
+    const set = vi.fn(async () => true)
+    const unset = vi.fn(async () => true)
+    const form = { getSnapshot: () => snapshot, subscribe, set, unset }
+    const compatibility = createDshCompatibility(name => name === 'configForms'
+      ? { get: vi.fn(() => form) }
+      : undefined)
+
+    const scope = compatibility.bindSettingsScope<{ activeProfile: string }>('dsh-ui-shortcuts')
+
+    expect(scope?.getSnapshot()).toBe(snapshot)
+    const listener = vi.fn()
+    expect(scope?.subscribe(listener)).toBeTypeOf('function')
+    await scope?.set('activeProfile', 'standard')
+    await scope?.unset('activeProfile')
+    expect(subscribe).toHaveBeenCalledWith(listener)
+    expect(set).toHaveBeenCalledWith('activeProfile', 'standard')
+    expect(unset).toHaveBeenCalledWith('activeProfile')
+  })
+
+  it('falls back to the legacy settingsScope service', async () => {
+    const scope = {
+      getSnapshot: vi.fn(() => ({
+        status: 'ready' as const,
+        value: { activeProfile: 'standard' },
+        base: undefined,
+        user: undefined,
+        revision: 1,
+        writable: true,
+        mode: 'host' as const,
+      })),
+      subscribe: vi.fn(() => () => {}),
+      set: vi.fn(async () => {}),
+      unset: vi.fn(async () => {}),
+    }
+    const bind = vi.fn(() => scope)
+    const compatibility = createDshCompatibility(name => name === 'settingsScope' ? { bind } : undefined)
+
+    expect(compatibility.bindSettingsScope('dsh-ui-shortcuts')).toBe(scope)
+    expect(bind).toHaveBeenCalledWith({ namespace: 'dsh-ui-shortcuts' })
+  })
+
   it('safely returns the numeric conflict actual revision', async () => {
     const remote = remoteWith({
       ok: false,

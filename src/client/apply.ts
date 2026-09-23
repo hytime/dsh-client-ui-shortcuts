@@ -1,4 +1,4 @@
-import type { ClientLocaleLike, SessionsLike, SettingsScope } from './versioned-types.js'
+import type { ClientLocaleLike, SessionsLike } from './versioned-types.js'
 import type { ClientContextLike as ClientContext } from './versioned-types.js'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
@@ -10,7 +10,7 @@ import { selectShortcut } from './contract/slots.js'
 import { ShortcutComposer } from './components/ShortcutComposer.js'
 import { createShortcutSettingsController } from './settings/controller.js'
 import type { ShortcutSettingsFace } from './contract/settings.js'
-import { createDshCompatibility } from './compatibility.js'
+import { createDshCompatibility, createUnavailableSettingsScope } from './compatibility.js'
 import { NS, en, ja, ko, zh } from './locales.js'
 import type { ShortcutSettings } from '../settings.js'
 import { SHORTCUTS_SETTINGS_NAMESPACE } from '../settings-namespace.js'
@@ -26,7 +26,7 @@ import { ShortcutOverlay } from './components/ShortcutOverlay.js'
 import type { ShortcutOverlayProps } from './contract/overlay.js'
 
 /** Required browser services; Remote namespaces are probed optionally via `ctx.get`. */
-export const inject = ['slots', 'locale', 'settingsScope', 'sessions', 'connection'] as const
+export const inject = ['slots', 'locale', 'sessions', 'connection'] as const
 
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-shortcuts: dictionaries')
@@ -47,10 +47,11 @@ export function apply(ctx: ClientContext): void {
   ctx.effect(() => addLanguage('ja', '日本語'), 'dsh-shortcuts: ja language')
   ctx.effect(() => addLanguage('ko', '한국어'), 'dsh-shortcuts: ko language')
   const t = ctx.locale.bind(NS)
-  const scope = ctx.settingsScope.bind<ShortcutSettings>({ namespace: SHORTCUTS_SETTINGS_NAMESPACE }) as SettingsScope<ShortcutSettings>
   const registry = createBuiltinProfileRegistry()
   const sessions = ctx.get('sessions') as SessionsLike
   const compatibility = createDshCompatibility(name => ctx.get(name))
+  const scope = compatibility.bindSettingsScope<ShortcutSettings>(SHORTCUTS_SETTINGS_NAMESPACE)
+    ?? createUnavailableSettingsScope<ShortcutSettings>()
   const controller = createShortcutSettingsController(scope, registry, compatibility.mutateSettings, {
     createId: () => window.crypto.randomUUID(),
     legacyName: () => t('profile.custom.label'),

@@ -1,4 +1,4 @@
-import type { WorkspaceId } from './versioned-types.js'
+import type { SettingsScope, SettingsScopeSnapshot, WorkspaceId } from './versioned-types.js'
 import type {
   MutateShortcutSettings,
   ShortcutSettingsMutationResult,
@@ -28,6 +28,8 @@ export interface PluginSettingsCardIdentity {
 
 /** Runtime capabilities exposed to the rest of the browser plugin. */
 export interface DshCompatibility {
+  /** Bind the settings namespace through the current or legacy DSH service. */
+  readonly bindSettingsScope: <T>(namespace: string) => SettingsScope<T> | undefined
   readonly mutateSettings: MutateShortcutSettings
   readonly startSession?: (workspaceId?: WorkspaceId) => void
   readonly isInteractionPending: () => boolean
@@ -40,6 +42,18 @@ export interface DshCompatibility {
 
 type ServiceGetter = (name: string) => unknown
 type SlotInjectionEffect = () => void
+type ConfigFormService = {
+  readonly get?: <T>(namespace: string) => ConfigForm<T>
+}
+type ConfigForm<T> = {
+  readonly getSnapshot: () => SettingsScopeSnapshot<T>
+  readonly subscribe: (listener: () => void) => () => void
+  readonly set: (field: string, value: unknown) => Promise<unknown>
+  readonly unset: (field: string) => Promise<unknown>
+}
+type LegacySettingsScopeService = {
+  readonly bind?: <T>(spec: { readonly namespace: string }) => SettingsScope<T>
+}
 type SlotInjectionService = {
   readonly inject?: (key: string, callback: () => SlotInjectionEffect) => () => void
 }
@@ -100,10 +114,52 @@ export function createDshCompatibility(get: ServiceGetter): DshCompatibility {
   const currentPending = uiSession?.pendingInteractions?.getSnapshot
   const legacySnapshot = sessions?.list?.getSnapshot
   return {
+    bindSettingsScope: createSettingsScopeBinder(get),
     mutateSettings,
     ...(startSession === undefined ? {} : { startSession }),
     isInteractionPending: () => readPending(currentPending, legacySnapshot),
     mountPluginSettingsCard: createPluginSettingsCardMounter(get),
+  }
+}
+
+/** Prefer DSH 0.1.7's shared ConfigForms service and retain the prior binder as fallback. */
+function createSettingsScopeBinder(get: ServiceGetter): DshCompatibility['bindSettingsScope'] {
+  return <T>(namespace: string): SettingsScope<T> | undefined => {
+    const configForms = get('configForms') as ConfigFormService | undefined
+    if (typeof configForms?.get === 'function') {
+      return adaptConfigForm(configForms.get<T>(namespace))
+    }
+    const legacy = get('settingsScope') as LegacySettingsScopeService | undefined
+    if (typeof legacy?.bind === 'function') return legacy.bind<T>({ namespace })
+    return undefined
+  }
+}
+
+function adaptConfigForm<T>(form: ConfigForm<T>): SettingsScope<T> {
+  return {
+    getSnapshot: () => form.getSnapshot(),
+    subscribe: listener => form.subscribe(listener),
+    set: async (field, value) => { await form.set(field, value) },
+    unset: async field => { await form.unset(field) },
+  }
+}
+
+/** Safe settings face for compositions that omit the optional settings provider. */
+export function createUnavailableSettingsScope<T>(): SettingsScope<T> {
+  const snapshot: SettingsScopeSnapshot<T> = {
+    status: 'unavailable',
+    value: undefined,
+    base: undefined,
+    user: undefined,
+    revision: undefined,
+    writable: false,
+    mode: 'memory',
+  }
+  return {
+    getSnapshot: () => snapshot,
+    subscribe: () => () => {},
+    set: async () => {},
+    unset: async () => {},
   }
 }
 

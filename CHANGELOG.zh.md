@@ -1,3 +1,13 @@
+## 未发布 - DSH 0.1.7 settings service 兼容
+
+### 修复
+
+- 修复 DSH `0.1.7-alpha.1` 上 Client 插件永久 pending 的问题：该版本用 `configForms` 取代了 `settingsScope`，兼容层现在优先适配 `configForms`，并保留旧 `settingsScope` 回退，同时不再把已移除的服务列为启动硬依赖。
+
+### 兼容
+
+- 支持边界仍为 DSH `0.1.6-alpha.2` 及以后版本；同一 bundle 可同时覆盖 `0.1.6` 的 scope service 与 `0.1.7` 的 config-form service，不按 DSH 版本号分支。
+
 ## 0.1.22 - DSH 0.1.6-alpha.2 支持边界与快捷键修复
 
 ### 修复

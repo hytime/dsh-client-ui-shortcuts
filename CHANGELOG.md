@@ -1,3 +1,13 @@
+## Unreleased - DSH 0.1.7 settings service compatibility
+
+### Fixed
+
+- The Client plugin no longer stays pending on DSH `0.1.7-alpha.1`, where `settingsScope` was replaced by `configForms`. The compatibility layer now adapts `configForms` first and retains the legacy `settingsScope` fallback, while removing the deleted service from the plugin's startup requirements.
+
+### Compatibility
+
+- The supported boundary remains DSH `0.1.6-alpha.2` and later. The same bundle now covers the `0.1.6` scope service and the `0.1.7` config-form service without branching on the DSH version.
+
 ## 0.1.22 - DSH 0.1.6-alpha.2 support boundary and shortcut fixes
 
 ### Fixed

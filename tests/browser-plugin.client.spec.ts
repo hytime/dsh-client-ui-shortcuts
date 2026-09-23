@@ -125,7 +125,18 @@ function makeScope(value: ShortcutSettings = {
   return { scope }
 }
 
-async function bench(options: { withWorkspaces?: boolean; withRemote?: boolean; preRegisteredLanguages?: readonly string[]; withoutAddLanguage?: boolean } = {}) {
+function makeConfigForms(scope: SettingsScope<ShortcutSettings>) {
+  return {
+    get: vi.fn(() => ({
+      getSnapshot: scope.getSnapshot,
+      subscribe: scope.subscribe,
+      set: vi.fn(async () => true),
+      unset: vi.fn(async () => true),
+    })),
+  }
+}
+
+async function bench(options: { withWorkspaces?: boolean; withRemote?: boolean; withConfigForms?: boolean; preRegisteredLanguages?: readonly string[]; withoutAddLanguage?: boolean } = {}) {
   const ctx = new Context()
   const slots = new FakeSlotRegistry()
   slots.register({
@@ -143,7 +154,8 @@ async function bench(options: { withWorkspaces?: boolean; withRemote?: boolean; 
   ctx.provide('slots', slots)
   ctx.provide('locale', locale)
   const settings = makeScope()
-  ctx.provide('settingsScope', { bind: vi.fn(() => settings.scope) })
+  if (options.withConfigForms !== false) ctx.provide('configForms', makeConfigForms(settings.scope))
+  else ctx.provide('settingsScope', { bind: vi.fn(() => settings.scope) })
   let hostValue = structuredClone(settings.scope.getSnapshot().value!)
   let hostRevision = settings.scope.getSnapshot().revision
   const mutate = vi.fn(async (_namespace: string, ops: readonly [{ op: 'set'; path: readonly [keyof ShortcutSettings]; value: unknown }], _expectedRevision: number) => {
@@ -181,7 +193,13 @@ async function bench(options: { withWorkspaces?: boolean; withRemote?: boolean; 
 
 describe('shortcut client slot wiring', () => {
   it('declares its client services', () => {
-    expect(inject).toEqual(['slots', 'locale', 'settingsScope', 'sessions', 'connection'])
+    expect(inject).toEqual(['slots', 'locale', 'sessions', 'connection'])
+  })
+
+  it('loads through the legacy settingsScope service when configForms is absent', async () => {
+    const b = await bench({ withConfigForms: false })
+    expect(b.slots.entries('settings.plugin.item')).toHaveLength(1)
+    await b.feature.dispose()
   })
 
   it('contributes Japanese and Korean as selectable languages with their dictionaries', async () => {

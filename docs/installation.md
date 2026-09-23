@@ -95,6 +95,8 @@ After startup, press `Meta+Alt+Shift+S` anywhere to open the full shortcut manag
 
 ## DSH version support boundary
 
+DSH `0.1.7-alpha.1` replaced `settingsScope` with `configForms`; this package probes the new service first and keeps the legacy binder as a fallback, so `settingsScope` is no longer a startup requirement.
+
 One package supports DSH `0.1.6-alpha.2` and later — `0.1.6-alpha.2` is the first release carrying `plugins.bundle.config` — and no longer depends on `@deepseek-ai/dsh-client-runtime` (which is no longer published in `0.1.5-alpha.1`). `0.1.0-rc.8` through `0.1.1-rc.2`, `0.1.2-alpha.1`, and `0.1.5-*` are no longer supported: the compatibility layer's runtime probes remain, so those versions degrade to the plugin's older behaviour rather than crashing, but they are outside the verified and maintained set. The browser adapter probes capabilities at runtime: current `remote.settings.mutate` is preferred over the legacy Connection settings mutation; `uiWorkspace.startSession` is preferred over `workspaces.startSession`; `uiSession.pendingInteractions` is preferred over the legacy Session summary; and the settings card is injected into whichever Plugins-page seat the running composition declares — `plugins.bundle.config` on DSH `0.1.6` and later, `settings.plugin.item` on every earlier generation. Missing optional Workspace or Session UI services do not prevent the plugin from loading, and their actions stay hidden.
 
 ## Manage named Custom profiles

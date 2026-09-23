@@ -66,6 +66,7 @@ describe('package manifest', () => {
       '@deepseek-ai/dsh-client-ui-settings-plugins',
       '@deepseek-ai/dsh-client-ui-slots',
     ])
+    expect(manifest.dsh.client.inject).not.toContain('settingsScope')
     expect(manifest.peerDependencies['@deepseek-ai/dsh-client-runtime']).toBeUndefined()
     expect(manifest.dsh.bundle.patch).toBe('./cordis.patch.yml')
     expect(manifest.files).toEqual([
