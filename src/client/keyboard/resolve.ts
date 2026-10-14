@@ -1,89 +1,23 @@
 import type { KeyInput, ShortcutDecision } from '../contract/keyboard.js'
-import type { KeyStroke, ShortcutBinding, ShortcutProfile, ShortcutScope, ShortcutModifier, ShortcutStroke } from '../contract/profile.js'
-import type { ShortcutPlatform } from '../contract/keyboard-visual.js'
+import type { KeyStroke, ShortcutBinding, ShortcutProfile, ShortcutScope, ShortcutStroke } from '../contract/profile.js'
 
-type ResolverState = { profile: ShortcutProfile; scope: ShortcutScope; strokes: KeyInput[] } | undefined
-
-export interface KeyResolver {
-  resolve(profile: ShortcutProfile, scope: ShortcutScope, input: KeyInput, platform: ShortcutPlatform): ShortcutDecision
-  reset(): void
+/** Resolve one key press against the enabled interaction profile. Single strokes only:
+ * sequential chords and multi-candidate bindings now belong to DSH's own shortcut service. */
+export function resolveKey(profile: ShortcutProfile, scope: ShortcutScope, input: KeyInput): ShortcutDecision {
+  if (input.disabled || input.composing || input.keyCode === 229 || input.repeat) return { kind: 'pass' }
+  const match = profile.bindings.find(binding => binding.scope === scope && sameStroke(binding.key, input))
+  return match === undefined ? { kind: 'pass' } : { kind: 'command', command: match.command }
 }
 
-export function createKeyResolver(): KeyResolver {
-  let pending: ResolverState
-  return {
-    resolve(profile, scope, input, platform) {
-      const result = resolveWithState(profile, scope, input, pending, platform)
-      pending = result.state
-      return result.decision
-    },
-    reset() {
-      pending = undefined
-    },
-  }
-}
-
-export function normalizeKeyStroke(stroke: KeyStroke): KeyStroke {
-  return { ...stroke, key: normalizeKey(stroke.key) }
-}
-
-export function resolveKey(profile: ShortcutProfile, scope: ShortcutScope, input: KeyInput, platform: ShortcutPlatform): ShortcutDecision {
-  return resolveWithState(profile, scope, input, undefined, platform).decision
-}
-
-function resolveWithState(
-  profile: ShortcutProfile,
-  scope: ShortcutScope,
-  input: KeyInput,
-  pending: ResolverState,
-  platform: ShortcutPlatform,
-): { decision: ShortcutDecision; state: ResolverState } {
-  if (input.disabled || input.composing || input.keyCode === 229 || input.repeat) {
-    return { decision: { kind: 'pass' }, state: pending }
-  }
-
-  const prior = pending?.profile === profile && pending.scope === scope ? pending.strokes : []
-  const next = [...prior, normalizeInput(input)]
-  const candidates = profile.bindings
-    .filter(entry => entry.scope === scope)
-    .flatMap(entry => sequencesFor(entry).map(sequence => ({
-      entry,
-       sequence: sequence.map(stroke => ({ ...stroke, modifier: ('modifier' in stroke ? stroke.modifier : undefined) })),
-    })))
-  const exact = candidates.find(candidate => sameSequence(candidate.sequence, next))
-  if (exact) return { decision: { kind: 'command', command: exact.entry.command }, state: undefined }
-
-  const prefix = candidates.some(candidate => candidate.sequence.length > next.length
-    && sameSequence(candidate.sequence.slice(0, next.length), next))
-  return prefix
-    ? { decision: { kind: 'pass' }, state: { profile, scope, strokes: next } }
-    : { decision: { kind: 'pass' }, state: undefined }
-}
-
-function sequencesFor(binding: ShortcutBinding): readonly (readonly KeyStroke[])[] {
-  const legacyModifier = (binding as ShortcutBinding & { readonly modifier?: string }).modifier
-  const normalizedLegacyModifier = legacyModifier as ShortcutModifier | undefined
-  const convert = (stroke: KeyStroke | ShortcutStroke): KeyStroke & { readonly modifier?: ShortcutModifier } => {
-    if ('modifiers' in stroke) {
-      const modifiers = stroke.modifiers
-      return {
-        key: normalizeKey(stroke.key),
-        alt: modifiers.includes('Alt'),
-        ctrl: modifiers.includes('Ctrl'),
-        meta: modifiers.includes('Meta'),
-        shift: modifiers.includes('Shift'),
-        modifier: modifiers.includes('Ctrl') ? 'Ctrl' : modifiers.includes('Meta') ? 'Meta' : undefined,
-      }
-    }
-    return { ...stroke, modifier: normalizedLegacyModifier }
-  }
-  if (binding.sequences) return binding.sequences.map(sequence => sequence.map(convert))
-  if (binding.sequence) return [binding.sequence.map(convert)]
-  return binding.key === undefined ? [] : [[convert(binding.key)]]
-}
-
-function normalizeInput(input: KeyInput): KeyInput {
-  return { ...input, key: normalizeKey(input.key) }
+function sameStroke(stroke: KeyStroke | ShortcutStroke, input: KeyInput): boolean {
+  const modifiers = 'modifiers' in stroke
+    ? stroke.modifiers
+    : [stroke.ctrl && 'Ctrl', stroke.meta && 'Meta', stroke.alt && 'Alt', stroke.shift && 'Shift'].filter(Boolean) as string[]
+  return normalizeKey(stroke.key) === normalizeKey(input.key)
+    && modifiers.includes('Ctrl') === input.ctrl
+    && modifiers.includes('Meta') === input.meta
+    && modifiers.includes('Alt') === input.alt
+    && modifiers.includes('Shift') === input.shift
 }
 
 function normalizeKey(key: string): string {
@@ -91,26 +25,5 @@ function normalizeKey(key: string): string {
   return key.length === 1 ? key.toLowerCase() : key
 }
 
-function sameSequence(
-  left: readonly KeyStroke[] | readonly KeyInput[],
-  right: readonly KeyStroke[] | readonly KeyInput[],
-): boolean {
-  return left.length === right.length && left.every((stroke, index) => sameStroke(stroke, right[index]!))
-}
-
-function sameStroke(left: KeyStroke | KeyInput, right: KeyStroke | KeyInput): boolean {
-  const leftCtrl = 'modifier' in left && left.modifier === 'Ctrl' ? true : left.ctrl
-  const leftMeta = 'modifier' in left && left.modifier === 'Meta' ? true : left.meta
-  const rightCtrl = right.ctrl
-  const rightMeta = right.meta
-  const modifierMatches = leftCtrl === rightCtrl && leftMeta === rightMeta
-  return normalizeKey(left.key) === normalizeKey(right.key)
-    && left.alt === right.alt
-    && modifierMatches
-    && left.shift === right.shift
-}
-
-export function modifierForStroke(binding: ShortcutBinding): ShortcutModifier | undefined {
-  const stroke = binding.key
-  return stroke !== undefined && 'modifiers' in stroke ? stroke.modifiers.find(modifier => modifier === 'Meta' || modifier === 'Ctrl') : undefined
-}
+/** Storage shape kept only for reading a legacy profile; never written back. */
+export type PersistedProfileShape = ShortcutBinding

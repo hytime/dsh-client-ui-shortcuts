@@ -1,27 +1,10 @@
-/** Pure shortcut profile and binding data shared by keyboard and settings code. */
+/** Pure shortcut profile and binding data for the optional local interaction cards. */
 
-/** Commands a profile may bind to a focused interaction surface. */
-export type ShortcutCommand =
-  | 'focusPrevious'
-  | 'focusNext'
-  | 'activate'
-  | 'cancelTask'
-  | 'openCommandPalette'
-  | 'openSettings'
-  | 'startSession'
-  | 'previousSession'
-  | 'nextSession'
-  | 'previousWorkspace'
-  | 'nextWorkspace'
-  | 'forkSession'
-  | 'toggleTheme'
-  | 'showShortcuts'
+/** Commands an enabled interaction card may bind locally. */
+export type ShortcutCommand = 'focusPrevious' | 'focusNext' | 'activate' | 'cancelTask'
+export type ShortcutScope = 'question' | 'approval'
 
-export type GlobalShortcutCommand = 'startSession' | 'previousSession' | 'nextSession' | 'previousWorkspace' | 'nextWorkspace' | 'forkSession' | 'toggleTheme' | 'showShortcuts'
-
-export type ShortcutScope = 'global' | 'question' | 'approval'
-
-/** Modifier-aware browser key identity. */
+/** Modifier-aware key identity produced from one local key event. */
 export interface KeyStroke {
   readonly key: string
   readonly alt: boolean
@@ -39,17 +22,14 @@ export interface ShortcutStroke {
   readonly modifiers: readonly ShortcutModifier[]
 }
 
-
+/** One local binding: a single stroke inside one interaction scope. */
 export interface ShortcutBinding {
   readonly command: ShortcutCommand
   readonly scope: ShortcutScope
-  readonly key?: KeyStroke | ShortcutStroke
-  readonly sequence?: readonly (KeyStroke | ShortcutStroke)[]
-  readonly sequences?: readonly (readonly (KeyStroke | ShortcutStroke)[])[]
+  readonly key: KeyStroke | ShortcutStroke
 }
 
-
-/** User-visible profile metadata and its keyboard bindings. */
+/** Local profile consumed by the optional interaction cards. */
 export interface ShortcutProfile {
   readonly id: string
   readonly label: string

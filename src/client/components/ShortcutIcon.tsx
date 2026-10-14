@@ -1,27 +1,8 @@
 import React from 'react'
 import { Icon } from '@iconify/react/offline'
-import keyboard from '@iconify-icons/lucide/keyboard.js'
-import arrowUp from '@iconify-icons/lucide/arrow-up.js'
-import arrowDown from '@iconify-icons/lucide/arrow-down.js'
 import check from '@iconify-icons/lucide/check.js'
-import x from '@iconify-icons/lucide/x.js'
-import settings2 from '@iconify-icons/lucide/settings-2.js'
-import chevronDown from '@iconify-icons/lucide/chevron-down.js'
-import plus from '@iconify-icons/lucide/plus.js'
-import upload from '@iconify-icons/lucide/upload.js'
-import download from '@iconify-icons/lucide/download.js'
-import trash2 from '@iconify-icons/lucide/trash-2.js'
 
-export type ShortcutIconName = 'keyboard' | 'arrow-up' | 'arrow-down' | 'check' | 'x' | 'settings-2' | 'chevron-down' | 'plus' | 'upload' | 'download' | 'trash-2'
-
-const icons = { keyboard, 'arrow-up': arrowUp, 'arrow-down': arrowDown, check, x, 'settings-2': settings2, 'chevron-down': chevronDown, plus, upload, download, 'trash-2': trash2 } as const
-
-export interface ShortcutIconProps {
-  readonly name: ShortcutIconName
-  readonly size?: 14 | 16 | 20
-  readonly className?: string
-}
-
-export function ShortcutIcon({ name, size = 16, className }: ShortcutIconProps): React.ReactElement {
-  return <Icon icon={icons[name]} width={size} height={size} className={className} aria-hidden="true" />
+/** Local inline check icon used by the optional question card; no runtime network provider. */
+export function ShortcutIcon({ size = 16, className }: { readonly size?: 14 | 16 | 20; readonly className?: string }): React.ReactElement {
+  return <Icon icon={check} width={size} height={size} className={className} aria-hidden="true" />
 }

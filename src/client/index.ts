@@ -1,18 +1,3 @@
-/** Browser context is structurally supplied by the DSH Client runner. */
-import { apply, inject } from './apply.js'
-
-export { apply, inject }
-export type { ShortcutProfile } from './contract/profile.js'
-export type {
-  ApprovalWait, QuestionWait, ShortcutWait, ShortcutComposerProps,
-} from './contract/slots.js'
-export type { ShortcutLaunchCardProps } from './contract/overlay.js'
-export type {
-  ManagedShortcutProfile,
-  PortableCustomProfile,
-  ShortcutSettingsErrorCode,
-  ShortcutSettingsFace,
-  ShortcutSettingsFailure,
-  ShortcutSettingsOperation,
-  ShortcutSettingsPartialResult,
-} from './contract/settings.js'
+export { apply, inject } from './apply.js'
+export type { QuickPanelModel, QuickPanelProps, QuickPanelSnapshot } from './contract/quick-panel.js'
+export type { ApprovalWait, QuestionWait, ShortcutWait, ShortcutComposerProps } from './contract/slots.js'

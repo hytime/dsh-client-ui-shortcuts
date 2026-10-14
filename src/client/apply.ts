@@ -1,143 +1,81 @@
-import type { ClientLocaleLike, SessionsLike } from './versioned-types.js'
-import type { ClientContextLike as ClientContext } from './versioned-types.js'
+import type { Context } from '@deepseek-ai/cordis'
+import type { ISessions } from '@deepseek-ai/dsh-api-session-controller/client'
+import type {} from '@deepseek-ai/dsh-client-shortcuts/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
-import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
-import type {} from '@deepseek-ai/dsh-client-ui-slots'
+import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
+import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
+import type {} from '@deepseek-ai/dsh-client-ui-plugin-manager/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
-import { createBuiltinProfileRegistry } from './profiles/registry.js'
 import { selectShortcut } from './contract/slots.js'
+import type { SessionId } from './contract/slots.js'
 import { ShortcutComposer } from './components/ShortcutComposer.js'
-import { createShortcutSettingsController } from './settings/controller.js'
-import type { ShortcutSettingsFace } from './contract/settings.js'
-import { createDshCompatibility, createUnavailableSettingsScope } from './compatibility.js'
+import { QuickPanel, QuickPanelSettings } from './components/QuickPanel.js'
+import { createQuickPanelModel } from './settings/quick-panel.js'
+import { createOpenPanelCommand } from './keyboard/open-panel.js'
+import { standardProfile } from './profiles/builtins.js'
 import { NS, en, ja, ko, zh } from './locales.js'
 import type { ShortcutSettings } from '../settings.js'
 import { SHORTCUTS_SETTINGS_NAMESPACE } from '../settings-namespace.js'
-import type { ShortcutProfile, GlobalShortcutCommand } from './contract/profile.js'
-import { ShortcutLaunchCard } from './components/ShortcutLaunchCard.js'
 import { PACKAGE_NAME } from '../invariant.js'
-import { createGlobalActions, type GlobalActionCapabilities } from './actions/global-actions.js'
-import { detectShortcutPlatform } from './keyboard/visuals.js'
-import { createGlobalKeyboardRouter } from './keyboard/router.js'
-import { expandCollapsedWorkspace } from './actions/workspace-expansion.js'
-import { OverlayController } from './overlay/controller.js'
-import { ShortcutOverlay } from './components/ShortcutOverlay.js'
-import type { ShortcutOverlayProps } from './contract/overlay.js'
 
-/** Required browser services; Remote namespaces are probed optionally via `ctx.get`. */
-export const inject = ['slots', 'locale', 'sessions', 'connection'] as const
+/** Current DSH services are required; this version has no legacy routing fallback. */
+export const inject = ['slots', 'locale', 'shortcuts', 'configForms', 'sessions', 'conversation'] as const
 
-export function apply(ctx: ClientContext): void {
-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-shortcuts: dictionaries')
-  ctx.effect(() => ctx.locale.register(NS, 'ja', ja), 'dsh-shortcuts: ja dictionary')
-  ctx.effect(() => ctx.locale.register(NS, 'ko', ko), 'dsh-shortcuts: ko dictionary')
-  // Japanese and Korean are not built into DSH, so making them selectable needs
-  // `addLanguage`, which 0.1.0-rc.8 and 0.1.1-rc.2 do not expose; there the dictionaries
-  // above stay registered but unselectable. Both languages fall back to English, which
-  // every lookup chain must reach, and an id another language pack already claimed is
-  // left as that pack defined it.
-  const locale = ctx.locale as unknown as ClientLocaleLike
-  const addLanguage = (id: string, label: string): (() => void) => {
-    const add = locale.addLanguage
-    if (add === undefined) return () => {}
-    if (locale.getSnapshot().locales.some(entry => entry.id === id)) return () => {}
-    return add.call(locale, { id, label, fallback: 'en' })
-  }
-  ctx.effect(() => addLanguage('ja', '日本語'), 'dsh-shortcuts: ja language')
-  ctx.effect(() => addLanguage('ko', '한국어'), 'dsh-shortcuts: ko language')
-  const t = ctx.locale.bind(NS)
-  const registry = createBuiltinProfileRegistry()
-  const sessions = ctx.get('sessions') as SessionsLike
-  const compatibility = createDshCompatibility(name => ctx.get(name))
-  const scope = compatibility.bindSettingsScope<ShortcutSettings>(SHORTCUTS_SETTINGS_NAMESPACE)
-    ?? createUnavailableSettingsScope<ShortcutSettings>()
-  const controller = createShortcutSettingsController(scope, registry, compatibility.mutateSettings, {
-    createId: () => window.crypto.randomUUID(),
-    legacyName: () => t('profile.custom.label'),
-  })
-  ctx.effect(() => () => controller.dispose(), 'dsh-shortcuts: settings controller')
-  const overlay = new OverlayController()
-  /** Element focused before the overlay opened; captured before autoFocus moves it. */
-  let focusBeforeOverlay: HTMLElement | null = null
-  const toggleShortcutsOverlay = (): void => {
-    if (!overlay.isOpen()) {
-      const active = document.activeElement
-      focusBeforeOverlay = active instanceof HTMLElement ? active : null
+export function apply(ctx: Context): void {
+  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'shortcuts: dictionaries')
+  ctx.effect(() => ctx.locale.register(NS, 'ja', ja), 'shortcuts: Japanese')
+  ctx.effect(() => ctx.locale.register(NS, 'ko', ko), 'shortcuts: Korean')
+  for (const [id, label] of [['ja', '日本語'], ['ko', '한국어']] as const) {
+    if (!ctx.locale.getSnapshot().locales.some(language => language.id === id)) {
+      ctx.effect(() => ctx.locale.addLanguage({ id, label, fallback: 'en' }), `shortcuts: ${id} language`)
     }
-    overlay.toggle()
   }
-  const getGlobalActions = () => createGlobalActions({
-    sessions: ctx.get('sessions') as GlobalActionCapabilities['sessions'],
-    workspaces: ctx.get('workspaces') as GlobalActionCapabilities['workspaces'],
-    startSession: compatibility.startSession,
-    toggleShortcutsOverlay,
-    workspaceView: {
-      expandCollapsedWorkspace: title => { expandCollapsedWorkspace(document, title) },
-    },
-    theme: ctx.get('theme') as GlobalActionCapabilities['theme'],
-  })
-  const platform = detectShortcutPlatform(window.navigator)
-  ctx.effect(() => createGlobalKeyboardRouter(window, {
-    getProfile: () => registry.active(),
-    getActions: () => getGlobalActions(),
-    platform,
-    isInteractionPending: compatibility.isInteractionPending,
-    overlay: { isOpen: () => overlay.isOpen(), close: () => overlay.close() },
-  }), 'dsh-shortcuts: global keyboard router')
-  ctx.effect(() => ctx.slots.inject('conversation.composer', () => ctx.slots.register({
-    name: 'conversation.composer', select: selectShortcut, priority: -1, locale: NS,
-    inject: (sessionId: string): { activeProfile: ShortcutProfile; platform: ReturnType<typeof detectShortcutPlatform>; t: (key: string) => string; cancelTask: () => Promise<void> } => {
-      const session = sessions.scope(sessionId)
-      if (session === undefined) throw new Error(`dsh-shortcuts: unknown session "${sessionId}"`)
-      const conversation = session.get('conversation')
-      if (conversation === undefined) throw new Error(`dsh-shortcuts: conversation unavailable for session "${sessionId}"`)
-      return {
-        activeProfile: registry.active(),
-        platform,
-        t: (key: string) => t(key as never),
-         cancelTask: async () => {
-           const currentSession = sessions.scope(sessionId)
-           if (currentSession === undefined) throw new Error(`dsh-shortcuts: unknown session "${sessionId}"`)
-           const currentConversation = currentSession.get('conversation')
-           if (currentConversation === undefined) throw new Error(`dsh-shortcuts: conversation unavailable for session "${sessionId}"`)
-           await currentConversation.cancel()
-         },
+  const t = ctx.locale.bind(NS)
+  const form = ctx.configForms.get<ShortcutSettings>(SHORTCUTS_SETTINGS_NAMESPACE)
+  const model = createQuickPanelModel(form, ctx.shortcuts)
+  ctx.effect(() => () => model.dispose(), 'shortcuts: panel model')
+  const props = () => ({ model, t: (key: string) => t(key as never) })
+  const sessions = ctx.get('sessions') as ISessions
+
+  // The command exists only while its rendering surface exists.
+  ctx.effect(() => ctx.slots.inject('shell.overlay', () => {
+    const offSlot = ctx.slots.register({ name: 'shell.overlay', id: 'hytime-shortcuts', locale: NS, inject: props }, QuickPanel)
+    try {
+      const offCommand = ctx.shortcuts.register(createOpenPanelCommand(() => t('quick.open'), model.toggle))
+      return () => { offCommand(); offSlot(); model.close() }
+    } catch (error) { offSlot(); throw error }
+  }), 'shortcuts: official summon command')
+  ctx.effect(() => ctx.slots.inject('plugins.bundle.config', () => ctx.slots.register({
+    name: 'plugins.bundle.config', key: PACKAGE_NAME, locale: NS, inject: props,
+  }, QuickPanelSettings)), 'shortcuts: settings entry')
+
+  // Off means no contribution at all. Re-register only the changed kind so the
+  // other interaction keeps its draft when a preference or catalog row changes.
+  ctx.effect(() => {
+    const mounts = new Map<'question' | 'approval', () => void>()
+    const sync = (): void => {
+      const state = model.getSnapshot()
+      for (const kind of ['question', 'approval'] as const) {
+        const enabled = kind === 'question' ? state.questionEnabled : state.approvalEnabled
+        if (!enabled) { mounts.get(kind)?.(); mounts.delete(kind); continue }
+        if (mounts.has(kind)) continue
+        mounts.set(kind, ctx.slots.inject('conversation.composer', () => ctx.slots.register({
+          name: 'conversation.composer', priority: -20, locale: NS,
+          select: owner => selectShortcut(owner, kind),
+          inject: (id: string) => ({
+            interactionProfile: standardProfile, t: (key: string) => t(key as never),
+            cancelTask: async () => {
+              const session = sessions.scope(id as SessionId)
+              if (session === undefined) throw new Error(`Unknown session: ${id}`)
+              await session.conversation.cancel()
+            },
+          }),
+        }, ShortcutComposer)))
       }
-    },
-  }, ShortcutComposer)), 'dsh-shortcuts: composer slot')
-  ctx.effect(() => compatibility.mountPluginSettingsCard(
-    { bundleKey: PACKAGE_NAME, namespaceKey: SHORTCUTS_SETTINGS_NAMESPACE },
-    seat => {
-      const inject = (): { settings: ShortcutSettingsFace; platform: ReturnType<typeof detectShortcutPlatform>; t: (key: string) => string; onOpen: () => void } => ({
-        settings: controller,
-        platform,
-        t: (key: string) => t(key as never),
-        onOpen: () => {
-          if (!overlay.isOpen()) {
-            const active = document.activeElement
-            focusBeforeOverlay = active instanceof HTMLElement ? active : null
-          }
-          overlay.openWithFocus('showShortcuts')
-        },
-      })
-      // One literal slot key per registration: the slot registry resolves the
-      // key and its owner props at compile time, so the seat predicate cannot
-      // be collapsed into a single call with a dynamic name.
-      return seat.generation === 'bundle-config'
-        ? ctx.slots.register({ name: 'plugins.bundle.config', key: seat.key, locale: NS, inject }, ShortcutLaunchCard)
-        : ctx.slots.register({ name: 'settings.plugin.item', key: seat.key, locale: NS, inject }, ShortcutLaunchCard)
-    },
-  ), 'dsh-shortcuts: settings launch card seat')
-  ctx.effect(() => ctx.slots.inject('shell.overlay', () => ctx.slots.register({
-    name: 'shell.overlay', id: 'hytime-shortcuts-overlay', order: 100, locale: NS,
-    inject: (): ShortcutOverlayProps => ({
-      settings: controller,
-      controller: overlay,
-      availableGlobalActions: Object.keys(getGlobalActions()) as GlobalShortcutCommand[],
-      platform,
-      t: (key: string) => t(key as never),
-      restoreFocus: () => focusBeforeOverlay,
-    }),
-  }, ShortcutOverlay)), 'dsh-shortcuts: shortcuts overlay slot')
+    }
+    sync()
+    const off = model.subscribe(sync)
+    return () => { off(); for (const dispose of mounts.values()) dispose(); mounts.clear() }
+  }, 'shortcuts: opt-in interactions')
 }

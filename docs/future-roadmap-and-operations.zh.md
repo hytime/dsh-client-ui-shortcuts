@@ -4,40 +4,29 @@
 
 ## 当前基线
 
-当前基线版本：`0.1.23`（GitHub Release 触发 publish action 发布 npm）
+当前开发版本：`0.2.0`（官方快捷键接入，行为变更）；已发布基线：`0.1.23`（GitHub Release 触发 publish action 发布 npm）
 
 当前核心能力：
 
-- Question 和 Approval 流程的键盘操作；
-- 只读的 Standard、Vim profile；
-- 多个可命名的 Custom profile；
-- Custom profile 的 New、Import、Export、Delete；
-- 单方案 JSON v1 导入导出；
-- 导入时生成新 ID，同名方案使用连续数字后缀；
-- `Meta`、`Ctrl`、`Alt`、`Shift` 物理修饰键；
-- 最多两段 chord、候选 binding 和冲突检测；
-- 浏览器保留快捷键过滤；
-- Session、Workspace、分支 Session 和主题操作；
-- DSH capability 缺失时自动隐藏不可用动作；
-- 旧 `customBindings` 配置迁移；
-- 基于 settings revision 的并发安全写入；
-- `showShortcuts` 全局命令（默认 `Meta+Alt+Shift+S`，Custom 可改绑）打开完整快捷键管理面板：方案切换、New / Import / Export / Delete、Custom 键位编辑，以及一个带搜索、按 Question/Approval/Global 分组、标注不可用动作的统一快捷键列表；
-- 设置页「呼出面板快捷键」轻入口卡片：显示当前呼出键，点击打开面板并定位该行，只读方案下提示切换 Custom 后可改（不自动切换）；DSH `0.1.6` 起渲染在插件详情页，此前渲染在插件设置区；
-- 界面语言除 DSH 自带的简体中文与英文外，另注册日文与韩文为可选语言；两者通过 locale 服务的 `addLanguage` 加入，该 API 在 `0.1.2-alpha.1` 才出现，旧版按能力探测跳过并仅保留中英；
-- 设置页入口卡片按运行中 composition 实际声明的插槽挂载：DSH `0.1.6` 及以后用 `plugins.bundle.config`（按 bundle 包名寻址），此前各代用 `settings.plugin.item`（按 settings namespace 寻址），两者都由兼容层注入探测，无版本判断；
-- Custom 方案按 Standard 默认补全其未定义的「命令 + scope」，使方案保存之后新增的命令不会静默失去默认键（与已有绑定冲突的默认键跳过；方案存储、导出与 fingerprint 不变）；
-- 支持边界为 DSH `0.1.6-alpha.2` 及以后（该版本是引入 `plugins.bundle.config` 的第一个版本）；`0.1.0-rc.8` 至 `0.1.1-rc.2`、`0.1.2-alpha.1`、`0.1.5-*` 已不再支持，仅保留兼容层的运行时能力探测，使其退化而不崩溃。
+- 一个官方可编辑命令 `hytime.shortcuts.open`（默认 `⌘⌥⇧S` / `Ctrl+Alt+Shift+S`）呼出快速面板；
+- 快速面板列出**官方全部快捷键**，可搜索，并逐条录入 / 恢复默认 / 清除，与 DSH 官方快捷键设置双向同步；
+- 完整快捷键快照的导入导出（含未修改默认项；按目标快照先释放后写入，中途失败会报告未恢复项）；
+- 两个**默认关闭**的 Question / Approval 增强开关，关闭时不注册任何 composer 替换；
+- 适配 DSH `0.2.1-alpha.2` 的只读问答回顾卡与限时问题计时生命周期，旧基线缺少相应方法时自动跳过；
+- 面板界面支持简体中文、英文、日文与韩文。
+
+`0.2.0` 已移除插件自建的方案（Standard/Vim/Custom profile）、键位存储、候选键与冲突检查——快捷键全部归 DSH 官方管理，这些能力不再属于本插件的路线图。
 
 安装入口：
 
 ```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.23
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.2.0
 ```
 
 GitHub 源码安装必须固定 tag 或 commit：
 
 ```bash
-dsh plugin --profile web add github:hytime/dsh-client-ui-shortcuts#v0.1.23
+dsh plugin --profile web add github:hytime/dsh-client-ui-shortcuts#v0.2.0
 ```
 
 ## 产品目标
@@ -54,7 +43,28 @@ dsh plugin --profile web add github:hytime/dsh-client-ui-shortcuts#v0.1.23
 
 ## 功能路线图
 
+### P0：官方快捷键接入（0.2.0，已完成，待发布）
+
+官方已提供 `@deepseek-ai/dsh-client-shortcuts`（命令注册、输入分发、冲突检查、设备级持久化）与 `@deepseek-ai/dsh-client-ui-shortcuts`（速查与录键界面）。插件的最终方向定为：
+
+1. **快捷键归官方**：插件只注册一个可编辑命令 `hytime.shortcuts.open` 用于呼出快速面板，不自建按键存储、方案或冲突检查；
+2. **插件界面可改键**：面板通过官方 `describeBinding()`、`edit()`、`recording()` 完成录入、校验与保存，与 DSH 设置读写同一份配置；
+3. **Question / Approval 增强默认关闭**：关闭时不注册 composer 替换，使用官方界面；开启也不自动授权；
+4. **新版不兼容旧版**：移除 `settingsScope`、旧 Connection settings API、双坐席探测、旧 sessions 摘要与 question/approval payload 适配，以及插件自建 profile / 键位编辑。
+
+已验证基线为 DSH `0.2.0-rc.1`；`peerDependencies` 为 `>=0.2.0-rc.1 <1.0.0`（接受基线及更高版本，拒绝旧版与 `1.0.0`+），`devDependencies` 仍精确固定 `0.2.0-rc.1` 作为编译与类型基线。DSH 会按 `evaluatePluginCompatibility` 校验预发布范围。设计与边界见[官方快捷键接入说明](official-shortcuts-integration.zh.md)。
+
+发布前验收：真实 `0.2.0-rc.1` Web composition 中确认插件行进入 boot graph、官方快捷键列表出现「打开快速面板」、面板改键与官方设置同步、两个开关默认关闭且可独立启停、控制台无报错。源码接口与自动化测试通过不等同于浏览器验收。
+
+修复记录：增强 Approval 卡片此前用方向键把焦点移到「拒绝」后按 `Enter` 仍会提交先前的「允许一次」，已改为 `Enter` 始终激活当前聚焦操作（该缺陷有自动化回归）。
+
+面板已具备：官方全部快捷键的搜索与逐条改键（与 DSH 官方设置双向同步）、完整配置快照的导入导出（含未修改默认项，导入后再导出逐字节一致）、两个默认关闭的增强开关。
+
+后续优先级：在面板中显示官方键位冲突的具体原因细节；评估把增强交互的局部按键并入官方固定操作展示；按真实反馈调整列表密度与窄屏布局。不再恢复插件自建方案、候选键或顺序 chord。
+
 ### P0：体验打磨
+
+> **本节及其后「增强方案分享」「提升日常使用频率」「团队分发与生态」各节均为 `0.2.0` 之前的历史规划**，描述的是插件自建方案体系（Standard / Vim / Custom profile、方案 JSON、方案分享与贡献）。`0.2.0` 已把这些能力全部交给 DSH 官方快捷键服务，因此这些条目**不再执行**；保留它们仅用于记录当时的判断依据。当前范围以上文「P0：官方快捷键接入」和「当前基线」为准。
 
 目标：降低首次使用成本和配置失败后的恢复成本。
 

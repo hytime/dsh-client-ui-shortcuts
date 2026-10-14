@@ -9,25 +9,32 @@ function placeholders(template: string): string[] {
 }
 
 describe('shortcut locale dictionaries', () => {
-  it('localizes task cancellation and approval scope in Chinese and English', () => {
-    expect(zh['keyboard.cancelTask']).toBe('取消任务')
-    expect(en['keyboard.cancelTask']).toBe('Cancel task')
-    expect(zh['legend.scope.approval']).toBe('审批操作')
-    expect(en['legend.scope.approval']).toBe('Approval actions')
+  it('documents that DSH owns configurable keybindings', () => {
+    expect(zh['quick.binding']).toBe('呼出面板快捷键')
+    expect(en['quick.binding']).toBe('Open-panel shortcut')
+    expect(zh['quick.officialHint']).toContain('DSH')
+    expect(en['quick.officialHint']).toContain('DSH Settings')
   })
-
-  it('localizes Vim profile descriptions in Chinese and English', () => {
-    expect(zh['profile.vim.description']).toBe('使用 j 和 k、Enter 操作问题与审批。')
-    expect(en['profile.vim.description']).toBe('Use J and K with Enter for questions and approvals.')
+  it('localizes the two opt-in enhancements and their default-off intent', () => {
+    expect(zh['quick.question']).toBe('增强 Question 交互')
+    expect(en['quick.question']).toBe('Enhanced question interaction')
+    expect(zh['quick.approvalHint']).toContain('默认关闭')
+    expect(en['quick.approvalHint']).toContain('Off by default')
   })
-
+  it('localizes official rejection and recovery copy', () => {
+    expect(zh['quick.conflict']).toContain('{commands}')
+    expect(en['quick.conflict']).toContain('{commands}')
+    for (const key of ['quick.stale', 'quick.write-failed', 'quick.read-failed', 'quick.native-failed'] as const) {
+      expect(zh[key].length).toBeGreaterThan(0)
+      expect(en[key].length).toBeGreaterThan(0)
+    }
+  })
   it('carries the same key set in every locale', () => {
     const reference = Object.keys(zh).sort()
     for (const [locale, dictionary] of Object.entries(LOCALES)) {
       expect(Object.keys(dictionary).sort(), `${locale} key set`).toEqual(reference)
     }
   })
-
   it('keeps every placeholder of the Chinese source in the other locales', () => {
     for (const key of Object.keys(zh) as (keyof typeof zh)[]) {
       for (const [locale, dictionary] of Object.entries(LOCALES)) {
@@ -35,21 +42,12 @@ describe('shortcut locale dictionaries', () => {
       }
     }
   })
-
   it('translates the Japanese and Korean entries rather than copying English', () => {
-    const keys = Object.keys(zh) as (keyof typeof zh)[]
-    // Modifier glyphs, the Vim product name, and the numeric counter are the same
-    // in every language, so they are excluded from the "must differ" rule.
-    const neutral = new Set(['editor.nameCount', 'profile.vim.label'])
-    const translated = keys.filter(key => !key.startsWith('modifier.') && !neutral.has(key))
-    for (const key of translated) {
+    for (const key of Object.keys(zh) as (keyof typeof zh)[]) {
       expect(ja[key], `ja ${key}`).not.toBe(en[key])
       expect(ko[key], `ko ${key}`).not.toBe(en[key])
     }
-    expect(ja['legend.scope.question']).toBe('質問の操作')
-    expect(ko['legend.scope.question']).toBe('질문 작업')
   })
-
   it('keeps Chinese characters out of the Korean dictionary', () => {
     const cjk = /[\u4e00-\u9fff]/
     for (const [key, value] of Object.entries(ko)) {

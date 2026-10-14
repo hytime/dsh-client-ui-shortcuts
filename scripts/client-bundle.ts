@@ -131,8 +131,12 @@ function cssModulePlugin(packageId: string) {
         cssModules: { pattern: '[hash]_[local]' },
         minify: true,
       })
+      // lightningcss does not guarantee `exports` iteration order, so sort by local name.
+      // Without this the emitted `classMap` literal reorders between builds and the bundle
+      // hash changes for identical sources, which breaks artifact reproducibility checks.
       const classMap: Record<string, string> = {}
-      for (const [local, exported] of Object.entries(result.exports ?? {})) {
+      for (const [local, exported] of Object.entries(result.exports ?? {}).sort(([left], [right]) =>
+        left < right ? -1 : left > right ? 1 : 0)) {
         classMap[local] = exported.name
       }
       const tagId = `${packageId}/${basename(file)}`

@@ -1,20 +1,19 @@
 import React, { useEffect, useRef, useState } from 'react'
 import type { QuestionItem, QuestionWait } from '../contract/slots.js'
-import { answerQuestion, questionItems } from '../contract/slots.js'
+import { answerQuestion, engageQuestion, holdQuestionFocus, questionItems, releaseQuestionFocus } from '../contract/slots.js'
 import type { ShortcutProfile } from '../contract/profile.js'
 import { resolveKey } from '../keyboard/resolve.js'
 import type { KeyInput } from '../contract/keyboard.js'
 import surfaceStyles from '../styles/InteractionSurface.module.css'
 import clsx from 'clsx'
-import { InteractionSurface } from './InteractionSurface.js'
+import { InteractionSurface, focusInteraction } from './InteractionSurface.js'
 import { ShortcutIcon } from './ShortcutIcon.js'
 
 export interface QuestionFlowProps {
   readonly matched: QuestionWait
-  readonly activeProfile: ShortcutProfile
+  readonly interactionProfile: ShortcutProfile
   readonly t: (key: string) => string
   readonly cancelTask: () => Promise<void>
-  readonly platform: 'mac' | 'windows' | 'linux'
 }
 type Question = QuestionItem
 type Answer = { id: string; selected: string[]; custom?: string }
@@ -29,7 +28,7 @@ type FocusItem =
 const composing = (event: React.KeyboardEvent<HTMLElement>): boolean => event.nativeEvent.isComposing || (event.nativeEvent as KeyboardEvent).isComposing
 function initialDraft(): Draft { return { selected: [], custom: '', skipped: false } }
 
-export function QuestionFlow({ matched, activeProfile, t, cancelTask, platform }: QuestionFlowProps): React.ReactElement {
+export function QuestionFlow({ matched, interactionProfile, t, cancelTask }: QuestionFlowProps): React.ReactElement {
   const questions = questionItems(matched)
   const [drafts, setDrafts] = useState<Draft[]>(() => questions.map(() => initialDraft()))
   const [index, setIndex] = useState(0)
@@ -52,14 +51,41 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask, platform }
     { kind: 'advance' as const },
   ]
   const moveFocus = (delta: number) => setFocusIndex(current => focusList.length === 0 ? 0 : (current + delta + focusList.length) % focusList.length)
+  const focusCount = focusList.length
+  const activeFocusIndex = focusIndex >= focusCount ? 0 : focusIndex
 
-  useEffect(() => { focusItems.current[focusIndex]?.focus() }, [focusIndex, index, matched.key])
+  // A limited-time question owns its countdown in the carrier. Holding focus must freeze that
+  // timer, or a user reading and typing an answer would be timed out mid-edit.
   useEffect(() => {
-    if (document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement) return
-    const first = focusItems.current.find(element => element !== null && !(element as HTMLButtonElement | HTMLInputElement | HTMLTextAreaElement).disabled)
-    first?.focus()
-  }, [matched.key])
-  const updateDraft = (patch: Partial<Draft>) => setDrafts(current => current.map((item, i) => i === index ? { ...item, ...patch } : item))
+    const release = (): void => { releaseQuestionFocus(matched) }
+    const refocus = (): void => {
+      if (document.activeElement instanceof HTMLInputElement
+        || document.activeElement instanceof HTMLTextAreaElement) { engageQuestion(matched); return }
+      const surface = document.querySelector(`[data-question-key="${CSS.escape(matched.key)}"]`)
+      if (surface?.contains(document.activeElement) === true) holdQuestionFocus(matched)
+    }
+    const visibilityChanged = (): void => { if (document.hidden) release(); else refocus() }
+    window.addEventListener('blur', release)
+    window.addEventListener('focus', refocus)
+    document.addEventListener('visibilitychange', visibilityChanged)
+    return () => {
+      release()
+      window.removeEventListener('blur', release)
+      window.removeEventListener('focus', refocus)
+      document.removeEventListener('visibilitychange', visibilityChanged)
+    }
+  }, [matched])
+
+  // Each question renders its own control list, so a stale index from a longer question would
+  // leave every row `tabIndex=-1` and drop the user out of the card entirely.
+  useEffect(() => {
+    if (focusIndex >= focusCount) { setFocusIndex(0); return }
+    focusInteraction(focusItems.current[focusIndex])
+  }, [focusIndex, focusCount, index, matched.key])
+  const updateDraft = (patch: Partial<Draft>) => {
+    engageQuestion(matched)
+    setDrafts(current => current.map((item, i) => i === index ? { ...item, ...patch } : item))
+  }
   const updateCustom = (value: string) => updateDraft({
     custom: value,
     skipped: false,
@@ -83,6 +109,7 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask, platform }
   }
   const skipQuestion = () => {
     if (submitting) return
+    engageQuestion(matched)
     const nextDrafts = drafts.map((item, i) => i === index ? { ...item, selected: [], custom: '', skipped: true } : item)
     setDrafts(nextDrafts)
     if (index < questions.length - 1) setIndex(index + 1)
@@ -90,6 +117,8 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask, platform }
   }
   const choose = (label: string) => {
     if (submitting) return
+    // Selecting an answer is the first edit; the carrier must stop counting it down.
+    engageQuestion(matched)
     if (multi) updateDraft({ selected: draft.selected.includes(label) ? draft.selected.filter(x => x !== label) : [...draft.selected, label], skipped: false })
     else {
       const next = drafts.map((item, i) => i === index ? { ...item, selected: [label], custom: '', skipped: false } : item)
@@ -99,7 +128,7 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask, platform }
   }
   const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
     const input: KeyInput = { key: event.key, alt: event.altKey, ctrl: event.ctrlKey, meta: event.metaKey, shift: event.shiftKey, composing: composing(event), keyCode: event.keyCode, repeat: event.repeat, disabled: submitting }
-    const decision = resolveKey(activeProfile, 'question', input, platform)
+    const decision = resolveKey(interactionProfile, 'question', input)
     if (event.target !== event.currentTarget && event.key === 'Enter') {
       const target = event.target as HTMLElement
       if (target.getAttribute('role') === 'radio' && !multi && draft.selected.length > 0) {
@@ -116,7 +145,7 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask, platform }
     if (decision.command === 'cancelTask') { void cancelTask().catch(cause => { setError(cause instanceof Error ? cause.message : String(cause)); setSubmitting(false) }); return }
     if (decision.command === 'focusPrevious' || decision.command === 'focusNext') moveFocus(decision.command === 'focusPrevious' ? -1 : 1)
     if (decision.command === 'activate') {
-      const item = focusList[focusIndex]
+      const item = focusList[activeFocusIndex]
       if (item?.kind === 'option') choose(item.label)
       else if (item?.kind === 'custom' || item?.kind === 'advance') advance()
       else if (item?.kind === 'previous') { setIndex(current => current - 1); setError(undefined); setFocusIndex(0) }
@@ -124,7 +153,9 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask, platform }
     }
   }
   if (!question || !draft) return React.createElement('div')
-  return <InteractionSurface kind="question" data-question-key={matched.key} onKeyDown={onKeyDown} aria-busy={submitting} tabIndex={-1}>
+  return <InteractionSurface kind="question" data-question-key={matched.key} onKeyDown={onKeyDown} aria-busy={submitting}
+    tabIndex={-1} onFocus={() => { holdQuestionFocus(matched) }}
+    onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) releaseQuestionFocus(matched) }}>
     <div className={surfaceStyles.card}>
       <div className={surfaceStyles.header}>
         <h2>{question.question}</h2>
@@ -136,17 +167,17 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask, platform }
             key={option.label}
             ref={node => { focusItems.current[optionIndex] = node }}
             className={clsx(surfaceStyles.option, draft.selected.includes(option.label) && surfaceStyles.optionSelected)}
-            tabIndex={focusIndex === optionIndex ? 0 : -1}
+            tabIndex={activeFocusIndex === optionIndex ? 0 : -1}
             type="button"
             role={multi ? 'checkbox' : 'radio'}
             aria-checked={draft.selected.includes(option.label)}
             disabled={submitting}
             onClick={() => { setFocusIndex(optionIndex); choose(option.label) }}
-          >{multi ? <span className={clsx(surfaceStyles.optionMark, draft.selected.includes(option.label) && surfaceStyles.optionMarkSelected)}>{draft.selected.includes(option.label) ? <ShortcutIcon name="check" size={14} /> : null}</span> : null}<span className={surfaceStyles.optionContent}><span className={surfaceStyles.optionLabel}>{option.label}</span>{option.description ? <span className={surfaceStyles.optionDescription}>{option.description}</span> : null}</span></button>)}
+          >{multi ? <span className={clsx(surfaceStyles.optionMark, draft.selected.includes(option.label) && surfaceStyles.optionMarkSelected)}>{draft.selected.includes(option.label) ? <ShortcutIcon size={14} /> : null}</span> : null}<span className={surfaceStyles.optionContent}><span className={surfaceStyles.optionLabel}>{option.label}</span>{option.description ? <span className={surfaceStyles.optionDescription}>{option.description}</span> : null}</span></button>)}
           {options.length > 0 ? <input
             ref={node => { focusItems.current[options.length] = node }}
             className={surfaceStyles.customInput}
-            tabIndex={focusIndex === options.length ? 0 : -1}
+            tabIndex={activeFocusIndex === options.length ? 0 : -1}
             type="text"
             aria-label={t('question.custom')}
             placeholder={t('question.custom')}
@@ -157,7 +188,7 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask, platform }
           /> : <textarea
             ref={node => { focusItems.current[options.length] = node }}
             className={surfaceStyles.customInput}
-            tabIndex={focusIndex === options.length ? 0 : -1}
+            tabIndex={activeFocusIndex === options.length ? 0 : -1}
             aria-label={t('question.custom')}
             placeholder={t('question.custom')}
             rows={2}
@@ -172,7 +203,7 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask, platform }
         {index > 0 ? <button
           ref={node => { focusItems.current[options.length + 1] = node }}
           className={surfaceStyles.action}
-          tabIndex={focusIndex === options.length + 1 ? 0 : -1}
+          tabIndex={activeFocusIndex === options.length + 1 ? 0 : -1}
           type="button"
           disabled={submitting}
           onClick={() => { setIndex(current => current - 1); setError(undefined); setFocusIndex(0) }}
@@ -180,7 +211,7 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask, platform }
         <button
           ref={node => { focusItems.current[skipIndex] = node }}
           className={clsx(surfaceStyles.action, draft.skipped && surfaceStyles.actionSelected)}
-          tabIndex={focusIndex === skipIndex ? 0 : -1}
+          tabIndex={activeFocusIndex === skipIndex ? 0 : -1}
           type="button"
           disabled={submitting}
           onClick={() => { setFocusIndex(skipIndex); skipQuestion() }}
@@ -188,7 +219,7 @@ export function QuestionFlow({ matched, activeProfile, t, cancelTask, platform }
         <button
           ref={node => { focusItems.current[advanceIndex] = node }}
           className={clsx(surfaceStyles.action, surfaceStyles.actionPrimary)}
-          tabIndex={focusIndex === advanceIndex ? 0 : -1}
+          tabIndex={activeFocusIndex === advanceIndex ? 0 : -1}
           type="button"
           disabled={submitting}
           onClick={advance}

@@ -1,366 +1,160 @@
 // @vitest-environment jsdom
 import { Context } from '@deepseek-ai/cordis'
 import { describe, expect, it, vi } from 'vitest'
-import { apply, inject } from '../src/client/index.ts'
-import type { SettingsScope } from '../src/client/versioned-types.js'
-import { defaultShortcutBindings, type ShortcutSettings } from '../src/settings.ts'
-import type { ShortcutSettingsFace } from '../src/client/contract/settings.ts'
+import { apply, inject } from '../src/client/apply.js'
+import type { ShortcutSettings } from '../src/settings.js'
+import type { QuickPanelModel } from '../src/client/contract/quick-panel.js'
+import type { ShortcutCommand } from '@deepseek-ai/dsh-client-shortcuts/client'
 
-type SlotEntry = {
-  readonly options: Record<string, unknown>
-  readonly component: unknown
-}
-type SlotCallback = () => () => void
+// DSH supplies primitive implementations to the loader; slot wiring tests never render them.
+vi.mock('@deepseek-ai/dsh-client-ui-primitives', () => ({ Button: () => null, Modal: () => null, Switch: () => null, ShortcutKeys: () => null }))
 
-type SlotChildren = Record<string, unknown>
-
-class FakeSlotRegistry {
-  private readonly declarations = new Set<string>()
-  private readonly pending = new Map<string, Set<SlotCallback>>()
-  private readonly registered = new Map<string, SlotEntry[]>()
-
-  entries(name: string): readonly SlotEntry[] {
-    return this.registered.get(name) ?? []
-  }
-
-  register(options: Record<string, unknown>, component: unknown): () => void {
-    const name = String(options.name)
-    const children = options.children as SlotChildren | undefined
-    if (children !== undefined) {
-      for (const child of Object.keys(children)) this.declare(child)
-    }
-    const entry: SlotEntry = { options, component }
-    const entries = this.registered.get(name) ?? []
-    entries.push(entry)
-    this.registered.set(name, entries)
-    return () => {
-      const current = this.registered.get(name)
-      if (current === undefined) return
-      const index = current.indexOf(entry)
-      if (index >= 0) current.splice(index, 1)
-      if (current.length === 0) this.registered.delete(name)
-    }
-  }
-
-  inject(name: string, callback: SlotCallback): () => void {
-    if (this.declarations.has(name)) return callback()
-    const callbacks = this.pending.get(name) ?? new Set<SlotCallback>()
-    callbacks.add(callback)
-    this.pending.set(name, callbacks)
-    return () => {
-      callbacks.delete(callback)
-      if (callbacks.size === 0) this.pending.delete(name)
-    }
-  }
-
-  private declare(name: string): void {
-    this.declarations.add(name)
-    const callbacks = this.pending.get(name)
-    if (callbacks === undefined) return
-    this.pending.delete(name)
-    for (const callback of callbacks) callback()
-  }
+function observable<T>(initial: T) {
+  let value = initial
+  const listeners = new Set<() => void>()
+  return { getSnapshot: () => value,
+    subscribe: (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener) } },
+    publish: (next: T) => { value = next; for (const listener of [...listeners]) listener() }, listeners }
 }
 
-class FakeLocale {
-  private readonly dictionaries = new Map<string, Record<string, string>>()
-  private readonly languages: { id: string; label: string; fallback?: string }[] = [
-    { id: 'en', label: 'English' },
-    { id: 'zh', label: '中文', fallback: 'en' },
-  ]
-  /** Locale ids this package contributed, in registration order. */
-  readonly added: string[] = []
-
-  getSnapshot(): { active: string; locales: readonly { id: string; label: string; fallback?: string }[] } {
-    return { active: 'en', locales: [...this.languages] }
-  }
-
-  addLanguage(input: { id: string; label: string; fallback: string }): () => void {
-    this.languages.push(input)
-    this.added.push(input.id)
-    return () => {
-      this.added.splice(this.added.indexOf(input.id), 1)
-      const index = this.languages.findIndex(language => language.id === input.id)
-      if (index >= 0) this.languages.splice(index, 1)
-    }
-  }
-
-  register(namespace: string, dictionaries: { zh: Record<string, string>; en: Record<string, string> }): () => void
-  register(namespace: string, locale: string, dictionary: Record<string, string>): () => void
-  register(namespace: string, localeOrDictionaries: string | { zh: Record<string, string>; en: Record<string, string> }, dictionary?: Record<string, string>): () => void {
-    const key = typeof localeOrDictionaries === 'string' ? `${namespace}:${localeOrDictionaries}` : namespace
-    this.dictionaries.set(key, typeof localeOrDictionaries === 'string' ? dictionary ?? {} : localeOrDictionaries.zh)
-    return () => { this.dictionaries.delete(key) }
-  }
-
-  dictionary(namespace: string, locale: string): Record<string, string> | undefined {
-    return this.dictionaries.get(`${namespace}:${locale}`)
-  }
-
-  bind(namespace: string): (key: string) => string {
-    return (key: string) => this.dictionaries.get(namespace)?.[key] ?? key
-  }
-}
-
-function makeScope(value: ShortcutSettings = {
-  activeProfile: 'standard',
-  customProfiles: [],
-  customBindings: [...defaultShortcutBindings()],
-}) {
-  const snapshot = {
-    status: 'ready' as const,
-    value,
-    base: undefined,
-    user: undefined,
-    revision: 1,
-    writable: true,
-    mode: 'host' as const,
-  }
-  const scope: SettingsScope<ShortcutSettings> = {
-    getSnapshot: () => snapshot,
-    subscribe: () => () => {},
-    set: vi.fn(async () => { throw new Error('controller must use connection mutation') }),
-    unset: vi.fn(async () => {}),
-  }
-  return { scope }
-}
-
-function makeConfigForms(scope: SettingsScope<ShortcutSettings>) {
-  return {
-    get: vi.fn(() => ({
-      getSnapshot: scope.getSnapshot,
-      subscribe: scope.subscribe,
-      set: vi.fn(async () => true),
-      unset: vi.fn(async () => true),
-    })),
-  }
-}
-
-async function bench(options: { withWorkspaces?: boolean; withRemote?: boolean; withConfigForms?: boolean; preRegisteredLanguages?: readonly string[]; withoutAddLanguage?: boolean } = {}) {
+async function bench(initial: Partial<ShortcutSettings> = {}, withoutShortcuts = false) {
   const ctx = new Context()
-  const slots = new FakeSlotRegistry()
-  slots.register({
-    name: 'root',
-    children: {
-      'conversation.composer': { kind: 'chain', scope: 'session' },
-      'settings.plugin.item': { kind: 'keyed', scope: 'root' },
-      'shell.overlay': { kind: 'list', scope: 'root' },
+  const entries: { options: any; component: unknown }[] = []
+  const commands = new Map<string, ShortcutCommand>()
+  const catalog = observable<any[]>([])
+  const form = { ...observable({ status: 'ready', writable: true, value: initial }), set: vi.fn(async (field: string, value: boolean) => {
+    form.publish({ ...form.getSnapshot(), value: { ...form.getSnapshot().value, [field]: value } })
+    return true
+  }) }
+  const slots = {
+    inject: (_name: string, callback: () => () => void) => callback(),
+    register: (options: any, component: unknown) => {
+      const entry = { options, component }; entries.push(entry)
+      return () => { const index = entries.indexOf(entry); if (index >= 0) entries.splice(index, 1) }
     },
-  }, () => null)
-  const locale = new FakeLocale()
-  for (const id of options.preRegisteredLanguages ?? []) locale.addLanguage({ id, label: id, fallback: 'en' })
-  // 0.1.0-rc.8 and 0.1.1-rc.2 expose no addLanguage at all.
-  if (options.withoutAddLanguage) (locale as unknown as { addLanguage?: unknown }).addLanguage = undefined
-  ctx.provide('slots', slots)
-  ctx.provide('locale', locale)
-  const settings = makeScope()
-  if (options.withConfigForms !== false) ctx.provide('configForms', makeConfigForms(settings.scope))
-  else ctx.provide('settingsScope', { bind: vi.fn(() => settings.scope) })
-  let hostValue = structuredClone(settings.scope.getSnapshot().value!)
-  let hostRevision = settings.scope.getSnapshot().revision
-  const mutate = vi.fn(async (_namespace: string, ops: readonly [{ op: 'set'; path: readonly [keyof ShortcutSettings]; value: unknown }], _expectedRevision: number) => {
-    const operation = ops[0]
-    hostValue = { ...hostValue, [operation.path[0]]: structuredClone(operation.value) }
-    hostRevision += 1
-    return {
-      ok: true as const,
-      value: {
-        value: structuredClone(hostValue),
-        base: undefined,
-        user: structuredClone(hostValue),
-        revision: hostRevision,
-      },
-    }
-  })
-  const remote = { settings: { mutate } }
-  ctx.provide('connection', { api: {} })
-  if (options.withRemote !== false) {
-    ctx.provide('remote', remote)
-    ctx.provide('remote.settings', remote.settings)
   }
-  ctx.provide('sessions', {
-    scope: vi.fn(() => undefined),
-    list: { getSnapshot: () => ({ items: [{ sessionId: 's1' }], current: 's1' }) },
-    open: vi.fn(),
-    fork: vi.fn().mockResolvedValue('child'),
-  })
-  if (options.withWorkspaces !== false) ctx.provide('workspaces', { startSession: vi.fn() })
-  ctx.provide('theme', { getTheme: () => ({ preference: 'light' }), setTheme: vi.fn() })
+  ctx.provide('slots', slots)
+  ctx.provide('locale', { register: () => () => {}, bind: () => (key: string) => key,
+    getSnapshot: () => ({ locales: [{ id: 'ja' }, { id: 'ko' }] }), addLanguage: vi.fn() })
+  ctx.provide('configForms', { get: () => form })
+  const cancel = vi.fn(async () => {})
+  ctx.provide('sessions', { scope: () => ({ conversation: { cancel } }) })
+  ctx.provide('conversation', { cancel })
+  // Binding edits are gated on the official snapshot reporting `ready`.
+  const config = observable({ revision: 'r1', status: 'ready', error: null })
+  const shortcuts = {
+    catalog, config, register: (command: ShortcutCommand) => {
+      commands.set(command.id, command)
+      catalog.publish([...commands.values()].map(command => ({ id: command.id, label: 'Open quick panel', keys: ['⌘', '⌥', '⇧', 'S'], issue: null, conflicts: [] })))
+      return () => { commands.delete(command.id); catalog.publish([]) }
+    },
+    describeBinding: () => ({ binding: { code: 'KeyG', modifiers: ['meta'] }, keys: ['⌘', 'G'], issue: null, conflicts: [] }),
+    edit: vi.fn(async () => ({ status: 'saved' })),
+    recording: vi.fn(async () => {}),
+  }
+  if (!withoutShortcuts) ctx.provide('shortcuts', shortcuts)
   const feature = ctx.plugin({ inject: [...inject], apply })
-  await feature.await()
-  return { ctx, feature, slots, locale, settings, mutate }
+  if (!withoutShortcuts) await feature.await()
+  const model = () => entries.find(entry => entry.options.name === 'shell.overlay')!.options.inject().model as QuickPanelModel
+  return { ctx, entries, commands, catalog, config, form, feature, model, cancel, shortcuts }
 }
 
-describe('shortcut client slot wiring', () => {
-  it('declares its client services', () => {
-    expect(inject).toEqual(['slots', 'locale', 'sessions', 'connection'])
+describe('current DSH integration', () => {
+  it('requires official services and never declares a legacy provider', () => {
+    expect(inject).toEqual(['slots', 'locale', 'shortcuts', 'configForms', 'sessions', 'conversation'])
   })
-
-  it('loads through the legacy settingsScope service when configForms is absent', async () => {
-    const b = await bench({ withConfigForms: false })
-    expect(b.slots.entries('settings.plugin.item')).toHaveLength(1)
-    await b.feature.dispose()
-  })
-
-  it('contributes Japanese and Korean as selectable languages with their dictionaries', async () => {
+  it('keeps DSH as the only keybinding owner: no plugin edit surface is created', async () => {
     const b = await bench()
-    expect(b.locale.added).toEqual(['ja', 'ko'])
-    expect(b.locale.getSnapshot().locales.map(locale => locale.label)).toEqual(expect.arrayContaining(['日本語', '한국어']))
-    expect(b.locale.dictionary('dsh-shortcuts', 'ja')?.['keyboard.showShortcuts']).toBe('ショートカットを表示')
-    expect(b.locale.dictionary('dsh-shortcuts', 'ko')?.['keyboard.showShortcuts']).toBe('단축키 보기')
-    await b.feature.dispose()
-    expect(b.locale.added).toEqual([])
-    expect(b.locale.dictionary('dsh-shortcuts', 'ja')).toBeUndefined()
-  })
-
-  it('leaves a language another pack already registered untouched', async () => {
-    const b = await bench({ preRegisteredLanguages: ['ja'] })
-    const ids = b.locale.getSnapshot().locales.map(locale => locale.id)
-    expect(ids.filter(id => id === 'ja')).toHaveLength(1)
-    expect(ids).toContain('ko')
+    // The plugin contributes a panel and a settings row, never its own keybinding store.
+    for (const entry of b.entries) expect(entry.options.name).not.toContain('keybinding')
+    expect(JSON.stringify(b.entries.map(entry => entry.options.name))).not.toContain('profile')
     await b.feature.dispose()
   })
-
-  it('keeps loading where the locale service exposes no addLanguage', async () => {
-    const b = await bench({ withoutAddLanguage: true })
-    expect(b.locale.added).toEqual([])
-    expect(b.locale.dictionary('dsh-shortcuts', 'ja')?.['keyboard.showShortcuts']).toBe('ショートカットを表示')
-    expect(b.locale.dictionary('dsh-shortcuts', 'ko')?.['keyboard.showShortcuts']).toBe('단축키 보기')
-    expect(b.slots.entries('settings.plugin.item')).toHaveLength(1)
-    await b.feature.dispose()
-  })
-
-  it('registers locale, composer selector and keyed settings card', async () => {
+  it('records, describes, and saves only through the official service', async () => {
     const b = await bench()
-    expect(b.locale.bind('dsh-shortcuts')('profile.standard.label')).toBe('标准')
-    expect(b.slots.entries('conversation.composer')).toHaveLength(1)
-    expect(b.slots.entries('conversation.composer')[0]!.options).toMatchObject({ locale: 'dsh-shortcuts', priority: -1 })
-    expect(b.slots.entries('settings.plugin.item')[0]!.options).toMatchObject({ key: 'dsh-ui-shortcuts', locale: 'dsh-shortcuts' })
+    const model = b.model()
+    expect(model.describe({ code: 'KeyG', modifiers: ['meta'] })).toMatchObject({ keys: ['⌘', 'G'] })
+    await model.startRecording('hytime.shortcuts.open')
+    expect(b.shortcuts.recording).toHaveBeenCalledWith(true)
+    expect(model.getSnapshot().recordingCommand).toBe('hytime.shortcuts.open')
+    await model.saveBinding('hytime.shortcuts.open', { code: 'KeyG', modifiers: ['meta'] })
+    expect(b.shortcuts.edit).toHaveBeenCalledWith({ type: 'set', id: 'hytime.shortcuts.open', binding: { code: 'KeyG', modifiers: ['meta'] } }, 'r1')
+    model.stopRecording()
+    expect(b.shortcuts.recording).toHaveBeenLastCalledWith(false)
+    await model.resetCommand('hytime.shortcuts.open')
+    expect(b.shortcuts.edit).toHaveBeenLastCalledWith({ type: 'reset', id: 'hytime.shortcuts.open' }, 'r1')
     await b.feature.dispose()
   })
-
-  it('selector prefers question, accepts approval, and declines other or empty interactions', async () => {
+  it('registers one official command and no interaction takeovers by default', async () => {
     const b = await bench()
-    const select = b.slots.entries('conversation.composer')[0]!.options.select as (owner: { pendingInteraction?: unknown; interactions?: readonly unknown[] }) => unknown
-    const question = { kind: 'question' }
-    const planReview = { kind: 'plan-review' }
-    const approval = { kind: 'approval' }
-    expect(select({ pendingInteraction: planReview })).toBe(planReview)
-    expect(select({ pendingInteraction: approval })).toBe(approval)
-    expect(select({ pendingInteraction: question })).toBe(question)
-    expect(select({ pendingInteraction: undefined })).toBeNull()
-    expect(select({ interactions: [approval] })).toBe(approval)
-    expect(select({ interactions: [approval, question] })).toBe(question)
-    expect(select({ interactions: [{ kind: 'other' }] })).toBeNull()
-    expect(select({ interactions: [null, { kind: 'other' }] })).toBeNull()
-    expect(select({ interactions: [] })).toBeNull()
-    expect(select({ pendingInteraction: null })).toBeNull()
-    expect(select({ pendingInteraction: undefined, interactions: [approval] })).toBeNull()
-    expect(select({ pendingInteraction: question, interactions: [approval] })).toBe(question)
+    expect([...b.commands.keys()]).toEqual(['hytime.shortcuts.open'])
+    expect(b.entries.map(entry => entry.options.name)).toEqual(['shell.overlay', 'plugins.bundle.config'])
+    expect(b.model().getSnapshot()).toMatchObject({ questionEnabled: false, approvalEnabled: false })
+    await b.feature.dispose()
+    expect(b.commands.size).toBe(0)
+    expect(b.entries).toEqual([])
+    expect(b.form.listeners.size + b.catalog.listeners.size).toBe(0)
+  })
+  it('does not install a DOM keyboard listener or run a fallback when official shortcuts is missing', async () => {
+    const add = vi.spyOn(window, 'addEventListener')
+    const b = await bench({}, true)
+    expect(b.entries).toEqual([])
+    expect(b.commands.size).toBe(0)
+    expect(add.mock.calls.some(([type]) => type === 'keydown')).toBe(false)
+    add.mockRestore()
     await b.feature.dispose()
   })
-
-  it('isolates injected cancelTask by session and does not respond', async () => {
+  it('opens through the official command or settings click and toggles within its own modal', async () => {
     const b = await bench()
-    const cancelOne = vi.fn(async () => {})
-    const cancelTwo = vi.fn(async () => {})
-    const sessions = b.ctx.get('sessions') as { scope: (id: string) => unknown }
-    vi.mocked(sessions.scope).mockImplementation((id: string) => ({
-      get: (name: string) => name === 'conversation' ? { cancel: id === 's1' ? cancelOne : cancelTwo } : undefined,
-    }) as never)
-    const entry = b.slots.entries('conversation.composer')[0]!
-    const inject = entry.options.inject as (sessionId: string) => { cancelTask: () => Promise<void> }
-    await inject('s1').cancelTask()
-    expect(cancelOne).toHaveBeenCalledOnce()
-    expect(cancelTwo).not.toHaveBeenCalled()
+    const command = b.commands.get('hytime.shortcuts.open')!
+    const resolution = command.resolve({ modal: null, region: 'page', target: null })
+    if (resolution.status === 'handled') resolution.run()
+    expect(b.model().getSnapshot().open).toBe(true)
+    const close = command.resolve({ modal: 'hytime-shortcuts', region: 'editable', target: null })
+    if (close.status === 'handled') close.run()
+    expect(b.model().getSnapshot().open).toBe(false)
+    b.entries.find(entry => entry.options.name === 'plugins.bundle.config')!.options.inject().model.open()
+    expect(b.model().getSnapshot().open).toBe(true)
     await b.feature.dispose()
   })
-  it('persists settings, reports errors, and cleans subscriptions', async () => {
+  it('enables and disables each takeover independently after accepted settings', async () => {
     const b = await bench()
-    const listener = vi.fn()
-    const card = b.slots.entries('settings.plugin.item')[0]!
-    const injected = (card.options.inject as () => {
-      settings: ShortcutSettingsFace
-      onOpen: () => void
-    })()
-    const face = injected.settings
-    expect('profiles' in injected).toBe(false)
-    expect(typeof injected.onOpen).toBe('function')
-    expect(face.profiles().map(profile => profile.id)).toEqual(['standard', 'vim'])
-    const off = face.subscribe(listener)
-    await face.setActiveProfile('vim')
-    expect(face.activeProfileId()).toBe('vim')
-    expect(b.mutate).toHaveBeenCalledWith(
-      'dsh-ui-shortcuts',
-      [{ op: 'set', path: ['activeProfile'], value: 'vim' }],
-      1,
-    )
-    expect(listener).toHaveBeenCalled()
-    await expect(face.setActiveProfile('missing')).rejects.toThrow('unknown shortcut profile: missing')
-    expect(face.error()).toMatchObject({
-      code: 'PROFILE_MISSING',
-      operation: 'select',
-      phase: 'selection',
-      message: 'unknown shortcut profile: missing',
-    })
-    await b.feature.dispose()
-    off()
-    expect(b.slots.entries('conversation.composer')).toHaveLength(0)
-    expect(b.slots.entries('settings.plugin.item')).toHaveLength(0)
-    expect(b.locale.bind('dsh-shortcuts')('profile.standard.label')).toBe('profile.standard.label')
-    expect(b.mutate).toHaveBeenCalledTimes(1)
-    expect(b.settings.scope.set).not.toHaveBeenCalled()
-  })
-
-  it('loads without optional remote service', async () => {
-    const b = await bench({ withRemote: false })
-
-    expect(b.slots.entries('settings.plugin.item')).toHaveLength(1)
+    const takeovers = () => b.entries.filter(entry => entry.options.name === 'conversation.composer')
+    await b.model().setEnabled('questionEnabled', true)
+    expect(takeovers()).toHaveLength(1)
+    const questionEntry = takeovers()[0]!
+    const question = { kind: 'question', key: 'q', questions: [], answer: vi.fn() }
+    const approval = { kind: 'approval', key: 'a', toolName: 'bash', answer: vi.fn() }
+    expect(questionEntry.options.select({ pendingInteraction: question })).toBe(question)
+    expect(questionEntry.options.select({ pendingInteraction: approval })).toBeNull()
+    await b.model().setEnabled('approvalEnabled', true)
+    expect(takeovers()).toHaveLength(2)
+    expect(takeovers()[0]).toBe(questionEntry)
+    const approvalEntry = takeovers()[1]!
+    expect(approvalEntry.options.select({ pendingInteraction: approval })).toBe(approval)
+    await b.model().setEnabled('questionEnabled', false)
+    expect(takeovers()).toEqual([approvalEntry])
+    expect(question.answer).not.toHaveBeenCalled()
+    expect(approval.answer).not.toHaveBeenCalled()
+    await b.model().setEnabled('approvalEnabled', false)
+    expect(takeovers()).toHaveLength(0)
     await b.feature.dispose()
   })
-
-  it('loads without optional workspace capability and hides startSession', async () => {
-    const b = await bench({ withWorkspaces: false })
-    const entry = b.slots.entries('shell.overlay')[0]!
-    const injected = (entry.options.inject as () => { availableGlobalActions: readonly string[] })()
-
-    expect(injected.availableGlobalActions).not.toContain('startSession')
+  it('does not enable old stored profiles and rejects legacy carriers', async () => {
+    const b = await bench({ activeProfile: 'vim', customProfiles: [{}] } as never)
+    expect(b.entries.filter(entry => entry.options.name === 'conversation.composer')).toHaveLength(0)
+    await b.model().setEnabled('questionEnabled', true)
+    const entry = b.entries.find(entry => entry.options.name === 'conversation.composer')!
+    expect(entry.options.select({ pendingInteraction: { kind: 'question', payload: { questions: [] }, respond: vi.fn() } })).toBeNull()
     await b.feature.dispose()
   })
-
-  it('settings launch card opens the overlay focused on showShortcuts', async () => {
-    const b = await bench()
-    const card = b.slots.entries('settings.plugin.item')[0]!
-    const injected = (card.options.inject as () => { onOpen: () => void })()
-    const overlay = b.slots.entries('shell.overlay')[0]!
-    const overlayInjected = (overlay.options.inject as () => {
-      controller: { isOpen(): boolean; focusCommand(): string | undefined; close(): void }
-    })()
-
-    expect(overlayInjected.controller.isOpen()).toBe(false)
-    injected.onOpen()
-    expect(overlayInjected.controller.isOpen()).toBe(true)
-    expect(overlayInjected.controller.focusCommand()).toBe('showShortcuts')
-    overlayInjected.controller.close()
+  it('uses current scoped cancellation and removes takeovers when settings become unavailable', async () => {
+    const b = await bench({ approvalEnabled: true })
+    const entry = b.entries.find(entry => entry.options.name === 'conversation.composer')!
+    await entry.options.inject('s1').cancelTask()
+    expect(b.cancel).toHaveBeenCalledOnce()
+    b.form.publish({ ...b.form.getSnapshot(), status: 'unavailable' })
+    expect(b.entries.some(entry => entry.options.name === 'conversation.composer')).toBe(false)
     await b.feature.dispose()
-  })
-
-  it('registers the shortcuts overlay into shell.overlay with a toggle controller', async () => {
-    const b = await bench()
-    const entries = b.slots.entries('shell.overlay')
-    expect(entries).toHaveLength(1)
-    expect(entries[0]!.options).toMatchObject({ id: 'hytime-shortcuts-overlay', locale: 'dsh-shortcuts' })
-    const injected = (entries[0]!.options.inject as () => {
-      controller: { isOpen(): boolean; toggle(): void; close(): void }
-      availableGlobalActions: readonly string[]
-    })()
-    expect(injected.availableGlobalActions).toContain('showShortcuts')
-    expect(injected.controller.isOpen()).toBe(false)
-    injected.controller.toggle()
-    expect(injected.controller.isOpen()).toBe(true)
-    injected.controller.close()
-    expect(injected.controller.isOpen()).toBe(false)
-    await b.feature.dispose()
-    expect(b.slots.entries('shell.overlay')).toHaveLength(0)
   })
 })

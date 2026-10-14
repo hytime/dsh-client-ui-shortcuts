@@ -19,17 +19,17 @@ DSH CLI 负责 profile 的插件安装、升级和移除。本包声明的 pnpm 
 使用 DSH plugin command 安装到 Web profile：
 
 ```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.23
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.2.0
 ```
 
-该命令会把包安装到 profile，并根据包中声明的 `dsh.bundle.patch` 将它加入 `dsh.profile.bundles`。本包支持 DSH `0.1.6-alpha.2` 及以后版本；更早的世代已不再支持，详见下文「DSH 版本兼容边界」。
+该命令会把包安装到 profile，并根据包中声明的 `dsh.bundle.patch` 将它加入 `dsh.profile.bundles`。本包 `0.2.0` 支持 DSH `0.2.0-rc.1` 及更高版本（低于 `1.0.0`），详见下文「DSH 版本兼容边界」。
 
 ## 安装固定版本的 GitHub 源码
 
 安装源码时必须使用 release tag 或完整 commit SHA，不要安装会持续变化的默认分支：
 
 ```bash
-dsh plugin --profile web add github:hytime/dsh-client-ui-shortcuts#v0.1.14
+dsh plugin --profile web add github:hytime/dsh-client-ui-shortcuts#v0.2.0
 ```
 
 Git dependency 包含源码，不包含仓库提交的 `lib/` 产物。pnpm 会在用户机器的 package installation 阶段执行 `prepare`，由它调用 `pnpm run bundle` 并生成发布入口。这是在 Agent 沙箱之外执行的安装期代码。
@@ -60,7 +60,7 @@ pnpm pack --pack-destination /tmp/dsh-client-ui-shortcuts-pack
 export DSH_HOME="$(mktemp -d)"
 
 dsh plugin --profile web add \\
-  /tmp/dsh-client-ui-shortcuts-pack/hytime-dsh-client-ui-shortcuts-0.1.23.tgz
+  /tmp/dsh-client-ui-shortcuts-pack/hytime-dsh-client-ui-shortcuts-0.2.0.tgz
 ```
 
 如果希望 profile 在 shell 退出后继续存在，请将 `mktemp -d` 换成持久目录。发布 tarball 必须包含 `lib/client.js`、`lib/index.js`、`lib/invariant.js`、类型声明和 `cordis.patch.yml`。
@@ -91,43 +91,34 @@ profile manifest 也应在 `dependencies` 和 `dsh.profile.bundles` 中列出该
 dsh --profile web
 ```
 
-启动后，在任意界面按 `Meta+Alt+Shift+S` 打开完整快捷键管理面板；面板只有一个快捷键列表，搜索只作用于当前 profile，Custom profile 直接编辑，Standard 与 Vim 只读；DSH 设置页插件区同时提供「呼出面板快捷键」入口（显示当前呼出键，点击打开面板并定位到该行）。持久化 settings namespace 是 `dsh-ui-shortcuts`，包含 `activeProfile` 和 `customProfiles` 字段。内置的 `standard` 与 `vim` profile 均为只读；`customProfiles` 保存多个可命名、可编辑的 profile。
+启动后，在任意界面按默认键（macOS `⌘⌥⇧S`、Windows `Ctrl+Alt+Shift+S`；Linux Web 默认不绑定）呼出插件的快速面板，或点击设置页插件区的「打开快速面板」入口。面板包含：呼出键显示、配置导入导出、快捷键搜索框、**官方全部快捷键**列表（每条可录入/恢复默认/清除），以及两个默认关闭的增强开关。键位由 DSH 官方保存（`dsh.keybindings.v1`）；插件自己的配置只保存 `questionEnabled` 与 `approvalEnabled`。「导出」会写出全部快捷键的完整快照（含未修改的默认项），可在另一台设备或另一个 profile 上「导入」还原。
 
 ## DSH 版本兼容边界
 
-DSH `0.1.7-alpha.1` 将 `settingsScope` 改为 `configForms`；本包优先探测新版服务并保留旧版 binder 回退，因此 `settingsScope` 不再是启动硬依赖。
+插件 `0.2.0` 以 DSH **`0.2.0-rc.1`** 为已验证基线。`peerDependencies` 中每个 `@deepseek-ai/dsh-*` 依赖都声明为 `>=0.2.0-rc.1 <1.0.0`：接受基线及更高版本（低于 `1.0.0`），拒绝旧版与 `1.0.0`+。`devDependencies` 仍精确固定 `0.2.0-rc.1` 作为编译与类型基线。
 
-一个包支持 DSH `0.1.6-alpha.2` 及以后版本（`0.1.6-alpha.2` 是引入 `plugins.bundle.config` 的第一个版本），且不再依赖 `@deepseek-ai/dsh-client-runtime`（该包在 `0.1.5-alpha.1` 已停止发布）。`0.1.0-rc.8` 至 `0.1.1-rc.2`、`0.1.2-alpha.1`、`0.1.5-*` 已不再支持：兼容层的运行时能力探测仍保留，因此这些版本不会崩溃，而是退化为插件原有行为，但不再验收、不再修复。浏览器 adapter 按运行时能力探测：优先使用当前 `remote.settings.mutate`，否则调用旧版 Connection settings mutation；优先使用 `uiWorkspace.startSession`，否则调用 `workspaces.startSession`；优先从 `uiSession.pendingInteractions` 读取 pending interaction，否则读取旧版 Session summary；设置页入口卡片注入运行中 composition 实际声明的插槽——DSH `0.1.6` 及以后为 `plugins.bundle.config`，此前各代为 `settings.plugin.item`。缺少可选的 Workspace 或 Session UI 服务不会阻断插件加载，对应动作会保持隐藏。
+DSH 启动时会按 `evaluatePluginCompatibility` 校验这些对等依赖，并把预发布版本纳入范围判断。版本不匹配时，安装或启动会给出明确提示，并说明精确豁免方式（`dsh plugin allow-version` 或插件管理器）。**只有在你确认了解崩溃与数据丢失风险时，才应为确切的「插件版本 + DSH 版本」组合授予豁免。**
 
-## 管理命名 Custom profile
+新版不再兼容旧版 DSH，也不读取 `0.1.x` 的方案配置：
 
-可在快捷键管理面板（`Meta+Alt+Shift+S` 打开）中创建、导入、导出和删除多个命名 Custom profile。New 会使用当前 profile 的 binding 创建方案。Import 每次只读取一个方案，并且始终分配新的内部 ID；重复导入同名方案会依次使用 `Name 1`、`Name 2`、`Name 3` 等连续数字后缀。Delete 需要确认；删除 active Custom profile 前会先切回 Standard。
+- 不再使用 `settingsScope` 或旧版 Connection settings API；
+- 不再探测 `settings.plugin.item` 坐席；
+- 不再适配旧版 sessions 摘要与 question/approval payload；
+- 不再保留插件自建的方案、键位存储与冲突检查。
 
-Custom profile 文件使用以下严格的单方案 JSON v1 envelope：
+旧版用户请继续使用 `0.1.23`。升级到 `0.2.0` 属于行为变更：请阅读[官方快捷键接入说明](official-shortcuts-integration.zh.md)。
 
-```json
-{
-  "format": "dsh-client-ui-shortcuts/custom-profile",
-  "version": 1,
-  "profile": {
-    "name": "Review",
-    "bindings": [
-      {
-        "command": "focusNext",
-        "scope": "question",
-        "key": {
-          "key": "j",
-          "modifiers": []
-        }
-      }
-    ]
-  }
-}
-```
+## 快捷键与面板
 
-每个导入文件最大为 1 MiB。Envelope 只能包含 `format`、`version` 和 `profile`，其中 profile 只能包含 `name` 与 `bindings`。文件特意不保存内部 profile ID，因此导入不会替换或更新已有方案。
+插件只向官方注册一个可编辑命令「打开快速面板」：
 
-只有当前 active Custom profile 的名称与 binding 均已保存时，才能执行 Export。导出内容来自当前 authoritative saved snapshot，不包含编辑器中的未保存更改，并且每个 JSON v1 文件只保存一个方案。Standard 与 Vim 不能编辑或导出。
+| 平台 | 默认键 |
+| --- | --- |
+| Web / macOS | `⌘⌥⇧S` |
+| Web / Windows | `Ctrl+Alt+Shift+S` |
+| Web / Linux | 不设默认键（官方在该平台的允许集合更窄） |
+
+可以在 **DSH 设置 → 通用 → 快捷键** 中修改，也可以在插件快速面板中修改——两处读写同一份官方配置，不会互相覆盖。面板还提供「恢复默认」「清除」，以及两个**默认关闭**的增强开关（增强 Question、增强 Approval）；开启增强批准**不会**自动授权。
 
 不要直接打开 `apps/web`。该 Web entry 需要 DSH boot 注入和真实 composition 提供的 Client module table。
 
@@ -164,7 +155,15 @@ pnpm pack --pack-destination /tmp/dsh-client-ui-shortcuts-pack
 
 要进行 Host 侧 profile composition 检查，请使用临时 `DSH_HOME` 执行 `dsh plugin --profile web add <tarball>`，再执行 `dsh --profile web --dump-config`。这两条命令验证安装、依赖协调和 Host patch 组合；`--dump-config` 不会激活浏览器 Client。
 
-要验证浏览器激活，请启动 `dsh --profile web`，在真实 DSH Web 页面中确认设置页插件区出现「呼出面板快捷键」入口、`Meta+Alt+Shift+S` 能打开管理面板，并实际操作 question/approval 快捷键。包内自动化 smoke 在目标 checkout 提供 `tsx` runner 时，会使用 DSH 的 `loadProfile` 和 `composeEntries` source path；该 smoke 验证 package/profile resolution，不等同于浏览器激活验证。
+要验证浏览器激活，请启动 `dsh --profile web`，在真实 DSH Web 页面中确认：
+
+- 设置页插件区出现「打开快速面板」入口，点击可打开面板；
+- 官方 **设置 → 通用 → 快捷键** 中出现「打开快速面板」，默认键在 macOS 为 `⌘⌥⇧S`、Windows 为 `Ctrl+Alt+Shift+S`，Linux Web 默认不绑定；
+- 在插件面板录入新键位后，官方设置同步显示同一绑定（两处是同一份官方配置）；
+- 两个增强开关默认关闭；关闭时使用官方 Question/Approval 界面，开启后增强卡片生效；
+- 浏览器控制台没有插件报错。
+
+包内自动化 smoke 在目标 checkout 提供 `tsx` runner 时，会使用 DSH 的 `loadProfile` 和 `composeEntries` source path；该 smoke 验证 package/profile resolution，不等同于浏览器激活验证。
 
 ## 排错
 
@@ -173,4 +172,6 @@ pnpm pack --pack-destination /tmp/dsh-client-ui-shortcuts-pack
 - **看不到 bundle row：** 确认 tarball 包含 `cordis.patch.yml`，并且 profile manifest 列出了 `@hytime/dsh-client-ui-shortcuts`。
 - **浏览器入口没有激活：** 使用 DSH Web profile，不要单独打开 Vite entry，并确认 peer packages 与 DSH 安装匹配。
 - **pnpm 版本错误：** 使用目标 DSH checkout 声明的 package-manager 版本执行 DSH command。
-- **没有「呼出面板快捷键」入口：** 确认 Host profile 暴露了 `dsh-ui-shortcuts`，且 Web composition 包含 settings plugins surface。
+- **没有「打开快速面板」入口：** 确认 Host profile 暴露了 `dsh-ui-shortcuts`，且 Web composition 包含 plugin manager 与 settings surface。
+- **快捷键无效：** 先确认官方快捷键服务已随组合加载（`@deepseek-ai/dsh-client-shortcuts`）；Linux Web 默认不绑定，需自行录入；若命令显示冲突，请在官方快捷键设置或插件面板中更换组合。
+- **安装或启动提示插件不兼容：** 说明当前 DSH 版本与 `0.2.0-rc.1` 不符。请改用受支持版本，或在确认风险后为该确切版本组合授予精确豁免。

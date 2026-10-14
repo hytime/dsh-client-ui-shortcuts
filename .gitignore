@@ -9,3 +9,5 @@ dist/
 .pnpm_*/
 AGENTS.md
 docs/superpowers/
+.browser-acceptance/
+.manual-verify/

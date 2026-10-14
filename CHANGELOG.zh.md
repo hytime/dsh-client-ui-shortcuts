@@ -1,267 +1,39 @@
+## Unreleased - 0.2.0 官方快捷键接入（不兼容旧版）
+
+### 新增
+
+- **官方快捷键管理界面**：面板直接列出 DSH 官方目录中的**全部命令**，每条可录入 / 恢复默认 / 清除，全部经官方 `describeBinding()` 与 `edit()` 读写。插件面板与 DSH 官方快捷键设置是同一份配置，任一侧修改另一侧即时同步。
+- **快捷键搜索**：列表上方按命令名称、命令 ID 或键帽过滤；只影响显示，不改变保存内容。
+- **完整配置导入导出**：面板**顶部**提供「导出」「导入」。导出的是一份**完整快捷键快照**（`version: 2`），官方目录中每条命令都会写入，包含未修改的默认项，而不是只导出改过的条目；每条带 `modified` 标记，导入时据此决定写入覆盖、恢复默认还是保持不动，因此不会把默认项固化成覆盖。导出时逻辑修饰键 `primary` 经官方服务归一化为设备明确的 `meta`/`control`，导入后再导出逐字节一致。`label`/`keys` 仅供人阅读，导入时忽略。
+- 导入仍先严格校验（`format`/`version`/字段集合/命令 ID/物理键/修饰键；未知字段、错误类型与更高版本整体拒绝，上限 1 MiB、1024 条命令），再逐条经官方服务写入；**官方拒绝或冲突时不会写入插件开关**。版本 1 的旧文件仍可导入。
+- 导入导出失败分别提示：文件无效、版本过新、文件过大、无法读取、官方不支持、与官方命令冲突、写入失败。
+
+### 修复
+
+- **审批不再误批准**：聚焦「拒绝」后按 `Enter`（包括 Tab 移动焦点）现在按实际聚焦的操作执行，此前会沿用先前的「允许一次」。
+- **增强交互不再抢前台焦点**：官方设置或快速面板打开时，后台到达的 Question/Approval 卡片不再把焦点移出前台弹窗；换题后也不会因旧索引越界而失去 Tab 入口。
+- **完整快照导入可正确恢复**：导入改为按目标快照整体规划，先释放本文件将移动或清除的键再写回目标值，修复「两条命令互换绑定无法恢复」「恢复默认项却被固化成覆盖」「同一文件把键转给别的命令时提前冲突」三个缺陷；两个开关改为一次原子写入；官方 `edit()` 无批量事务，中途失败会尽力回滚并列出未恢复项（「部分快捷键未能恢复」），不再谎报成功。
+- **录键生命周期完整释放**：离开设置卡片时释放官方 `recording(false)`，避免桌面端继续抑制用户自己的快捷键；延迟到达的原生确认不再重新武装已关闭的面板；忽略 AltGraph、Dead 键与 IME 组合，避免存下用户无法复现的绑定。
+- **适配新版问题载体**：历史问答的只读回顾卡交还官方界面；限时问题在聚焦、编辑、失焦时调用载体的 `holdFocus/engage/releaseFocus`，用户输入期间不再被超时；旧基线缺少这些方法时自动跳过。
+- **构建可复现**：`lightningcss` 不保证 CSS Module 导出项的顺序，导致相同源码每次构建产出的类名映射顺序不同、bundle 哈希随之变化，无法用哈希证明「运行的就是当前代码」。现按局部类名排序，连续三次构建哈希一致。
+- 导出遇到官方无法描述的存储绑定时，此前会整体失败；现在跳过该条并继续导出。
+- 增强开关的开关控件与标题同行显示，描述独占下一行（此前描述与开关挤在一行）。
+
+### 变更
+
+- **快捷键改由 DSH 官方管理**：插件只注册一个官方可编辑命令 `hytime.shortcuts.open` 用于呼出快速面板，不再自建按键存储、方案或冲突检查。
+- **插件界面仍可改键**：面板调用官方 `describeBinding()`、`edit()`、`recording()` 完成录入、校验与保存，键位与 DSH 设置中的是同一份官方配置。
+- **Question / Approval 增强默认关闭**：两个开关默认 `false`，关闭时不注册 composer 替换，使用官方界面；开启路径不再自动授权。
+- **移除旧版兼容**：删除 `settingsScope` 与旧 Connection settings API、`settings.plugin.item` / `plugins.bundle.config` 双坐席探测、旧 sessions 摘要与 question/approval payload 适配、插件自建 profile 与键位编辑（约 30 个源码文件及其测试）。
+- 插件配置改为当前 `Config` 投影（两个布尔开关）。
+
+### 修复
+
+- 增强 Approval 卡片用方向键把焦点移到「拒绝」后按 `Enter`，此前仍会提交先前的「允许一次」；现在 `Enter` 始终激活当前聚焦的操作。
+
+### 兼容
+
+- 插件版本 `0.2.0`；已验证基线为 DSH `0.2.0-rc.1`。`peerDependencies` 放宽为 `>=0.2.0-rc.1 <1.0.0`，接受基线及更高版本（含 `0.2.0-rc.2`、`0.2.0`、`0.3.0-*` 等预发布），拒绝旧版与 `1.0.0`+；`devDependencies` 仍精确固定 `0.2.0-rc.1` 作为编译与类型基线。
+- 新版不兼容旧版 DSH，也不再读取 `0.1.x` 的方案配置；旧版用户继续使用 `0.1.23`。
+
 ## 0.1.23 - DSH 0.1.7 settings service 兼容
-
-### 修复
-
-- 修复 DSH `0.1.7-alpha.1` 上 Client 插件永久 pending 的问题：该版本用 `configForms` 取代了 `settingsScope`，兼容层现在优先适配 `configForms`，并保留旧 `settingsScope` 回退，同时不再把已移除的服务列为启动硬依赖。
-
-### 兼容
-
-- 支持边界仍为 DSH `0.1.6-alpha.2` 及以后版本；同一 bundle 可同时覆盖 `0.1.6` 的 scope service 与 `0.1.7` 的 config-form service，不按 DSH 版本号分支。
-
-## 0.1.22 - DSH 0.1.6-alpha.2 支持边界与快捷键修复
-
-### 修复
-
-- Custom 方案不再丢失「方案保存之后才新增的命令」的默认键。管理面板只能改绑已有行、不能新增行，因此早于 `0.1.20` 保存的 Custom 方案没有 `showShortcuts` 绑定，`Meta+Alt+Shift+S` 会静默失效、无法唤出面板。现在会按 Standard 默认补全方案未定义的每个「命令 + scope」；与方案已有绑定冲突的默认键会跳过。方案存储、导出与 fingerprint 保持原样——只有键盘、面板列表与设置入口所用的生效绑定补上缺失项，并在下一次保存时落盘。
-- 设置页的快捷键入口卡片在 DSH `0.1.6` 上恢复显示。该版本用 `plugins.bundle.config` 取代了 `settings.plugin.item` 插槽，卡片随之失去挂载点，插件在设置页的入口一并消失。
-
-### 兼容
-
-- 兼容层改为在运行中的 composition 实际声明的那个设置页插槽上挂载快捷键卡片：`plugins.bundle.config`（DSH `0.1.6` 及以后，按 bundle 包名寻址）或旧版 `settings.plugin.item`（此前所有受支持版本，按 settings namespace 寻址）。两个插槽都通过注入探测，因此单一源码树无需版本判断即可服务各代版本；同时声明两者的 composition 也只会挂载一张卡片，owner 重挂载时会重新执行挂载。
-- 已用真实 Web composition 核对 DSH `0.1.6-alpha.2`：`plugins.bundle.config` 插槽在插件详情页渲染出卡片，`Meta+Alt+Shift+S` 可打开管理面板，插件无控制台报错。
-- 支持边界收窄为 DSH `0.1.6-alpha.2` 及以后（该版本是引入 `plugins.bundle.config` 的第一个版本）。`0.1.0-rc.8` 至 `0.1.1-rc.2`、`0.1.2-alpha.1`、`0.1.5-*` 不再支持；兼容层的运行时能力探测保留，这些世代会退化为插件原有行为而不是崩溃。
-- 此前声明的 peer 区间其实从未接受过它声称覆盖的版本。semver 只匹配「区间里同样写出该 `major.minor.patch` 元组」的预发布版，因此 `>=0.1.2-alpha.1 <1.0.0` 既不接受 `0.1.5-rc.2`、也不接受 `0.1.6-alpha.2`。现在所有 DSH 区间统一为 `>=0.1.6-alpha.2 <1.0.0`，可正确接受当前版本；下一个 DSH minor 出现预发布版时需同样补上其元组。
-- 类型基线随区间一起前移。`Context.slots` 自 `0.1.6` 起由 `ui-renderer` 声明（不再是 `ui-slots`，该包已不是 client row）；`Context.sessions` 则完全不再声明——session 服务改按官方 client 插件的写法用 `ctx.get('sessions')` 读取。chain 插槽的 inject 现在收到的是普通 `string` 会话 id 而非带品牌的 `SessionId`，因此该参数放宽为可同时接受两代类型。
-- `settings.plugin.item` 改为在插件内本地声明：`0.1.6` 的 `ui-settings-plugins` 已不再声明它，而兼容层在面对提供该坐席的 composition 时仍会挂载到那里。
-
-### 声明
-
-- `dsh.client.inject` 与 `peerDependencies` 补充声明 `@deepseek-ai/dsh-client-ui-plugin-manager`（`plugins.bundle.config` 的拥有者）与 `@deepseek-ai/dsh-client-ui-renderer`（自 `0.1.6` 起 `Context.slots` 的拥有者），与「注入所消费插槽的拥有者」约定一致。两者都是信息性加载边：指向组合中不存在的包时会被跳过，绝不致命。
-- `devDependencies` 将 `@deepseek-ai/dsh-invariants` 与 `@deepseek-ai/dsh-settings` 固定到 `0.1.6-alpha.2`，使编译与类型检查的基线与收窄后的 peer 区间一致。
-- 新增 `pnpm-workspace.yaml`，把 21 个被固定的 `@deepseek-ai/*@0.1.6-alpha.2` 包排除出 pnpm 默认的 24 小时 `minimumReleaseAge` 窗口。本插件采纳某个 DSH 版本时，该版本必然比这个窗口更「新」，而对应版本早已连同 integrity 哈希固定在 lockfile 中。每条只针对一个确切版本，因此这些版本过龄后该列表即自动失效，可直接删除。
-
-## 0.1.21 - 日韩界面语言与 DSH 0.1.5-rc.2 适配
-
-### 新增
-
-- 界面语言新增日文与韩文，并在 DSH 设置的「语言」中可选。插件渲染的所有界面都会跟随当前语言，新增语言在缺少某个键时回退到英文。
-
-### 兼容
-
-- 注册日文与韩文可选语言项依赖 locale 服务的 `addLanguage`，该 API 在 `0.1.2-alpha.1` 才出现。在 `0.1.0-rc.8` 与 `0.1.1-rc.2` 上插件按能力探测跳过该注册，仍正常加载并保留中文与英文；词典本身在所有版本都已注册。
-- 核对 DSH `0.1.5-rc.2`：逐包比对类型声明与主题 token 未发现需要改码的破坏性变更，并完成真实 composition 验收（插件进入 boot graph、控制台 0 报错、面板与设置页入口、日韩语言均正常）。`0.1.5-alpha.2` 与 `0.1.5-rc.1` 为中间版本，仅做静态核对。现有 `>=0.1.2-alpha.1 <1.0.0` 版本范围已覆盖这些版本。
-
-### 声明
-
-- `dsh.client.inject` 与 `peerDependencies` 补充 `@deepseek-ai/dsh-client-ui-layout`：插件注册到由该包声明的 `shell.overlay` 插槽，与官方插件「注入所消费插槽的拥有者」约定一致（如 `ui-conversation` 注入 `ui-layout`）。
-
-### 文档
-
-- 安装指南补齐中英语言互链。
-
-## 0.1.20 - DSH 0.1.5-alpha.1 兼容与快捷键管理面板
-
-### 兼容
-
-- 适配 DSH `0.1.5-alpha.1`：移除对已停发的 `@deepseek-ai/dsh-client-runtime` 的依赖，client 类型收敛到本地 `versioned-types.ts`，单一源码树同时兼容 `0.1.0-rc.8` 至 `0.1.1-rc.2`、`0.1.2-alpha.1` 系列。
-
-### 新增
-
-- 新增全局命令 `showShortcuts`（默认 `Meta+Alt+Shift+S`，可在 Custom profile 中编辑），打开完整快捷键管理面板：方案切换、新建 / 导入 / 导出 / 删除、Custom 键位编辑，以及一个带搜索、按 Question/Approval/Global 分组、对当前 DSH 不可用全局动作标注原因的统一快捷键列表。
-- 设置页插件区保留「呼出面板快捷键」轻量入口：显示当前呼出键，点击打开管理面板并自动定位到该行；只读方案下提示切换 Custom 后可改，不自动切换。
-
-### 变更
-
-- 管理功能从折叠的设置卡片迁入 `Meta+Alt+Shift+S` 打开的管理面板；旧的折叠设置卡片 UI 移除。
-- 面板几何与层级对齐 DSH 官方组件规范：胶囊按钮（圆角 18、高 36）、输入框（0.5px 边框、圆角 8、layer-1 填充）、Modal 遮罩与模糊、对话框圆角与阴影、分组标签与命令行字号。
-- 编辑操作栏（保存 / 取消 / 恢复默认）移出滚动内容并固定到面板底部；面板打开时锁定背景滚动。
-
-### 修复
-
-- 修正 15 个在受支持 DSH 版本（`0.1.0-rc.8`、`0.1.1-rc.2`、`0.1.2-alpha.1`、`0.1.5-alpha.1`）中均不存在的主题 token。这些变量此前解析为空，导致边框消失、主按钮背景透明（看起来像文字）、错误 / 成功 / 警告状态色失效。新增样式 token 守卫测试，只允许四代 DSH 主题共有的 token。
-- 提升面板层级并改用 Portal 挂载到 `document.body`，修复从设置页入口打开面板时被设置弹窗遮挡的问题。
-- 清理设置卡片迁移后遗留的死样式类。
-
-## 0.1.19 - DSH Web 兼容层修复
-
-### 修复
-
-- 通过受保护的 service getter 读取可选 `remote.settings` namespace，避免直接遍历 proxied `remote` service。
-- Remote provider 不可用时仍允许 Client 插件加载，并保留旧版 `connection.api.settings` 回退。
-
-## 0.1.18 - GitHub Release 发布自动化
-
-### 变更
-
-- 新增结构化 GitHub 错误报告模板。
-- 新增 `publish.yml`，在匹配的 GitHub Release 发布后通过 npm Trusted Publishing 执行测试、构建和发布。
-
-## 0.1.17 - DSH Web 兼容性修复
-
-### 修复
-
-- 适配当前 DSH Web 的 question、plan-review 和 approval 交互载体及响应方式，同时保留旧版兼容性。
-- 将 settings 持久化切换到当前 remote settings mutation API。
-- 新增按能力探测的兼容适配层，支持 DSH `0.1.0-rc.8` 至 `0.1.1-rc.2` 以及 `0.1.2-alpha.1` 和后续版本，覆盖 settings mutation、新建 Session 和 pending interaction 防护。
-
-## 0.1.16 - 恢复 Custom 方案默认配置
-
-### 新增
-
-- 为当前 Custom profile 新增「恢复默认」操作。
-- 恢复默认会保留方案名称和 ID，只替换 bindings。
-- 写入失败时保留原方案和编辑草稿；只读的 Standard 与 Vim profile 不显示该操作。
-
-## 0.1.15 - 首次使用引导
-
-### 新增
-
-- 在快捷键设置卡片内新增可关闭的首次使用引导。
-- 新增创建 Custom profile 的 New 入口和导入 JSON profile 的 Import 入口。
-- 仅保存带版本的 browser-local 完成 marker；快捷键设置和 profile JSON 保持不变。
-
-## 0.1.14 - 命名自定义方案与 JSON 迁移
-
-### 新增
-
-- 新增多个命名 Custom profile，支持 New、Import、Export 和带确认的 Delete；Standard 与 Vim 保持只读。
-- 新增严格的单方案 JSON v1 格式，导入文件上限为 1 MiB。文件不包含内部 ID，每次导入都会分配新 ID，重名方案使用连续数字后缀。
-
-### 变更
-
-- Export 只写出当前 active Custom profile 的 authoritative saved snapshot，不包含未保存的编辑器更改或其他方案。
-
-## 0.1.13 - Git 源码安装与包元数据
-
-### 修复
-
-- 新增 `prepare` 生命周期脚本并复用独立的 `bundle` 构建，使固定 GitHub source 的安装能够生成全部发布用 `lib/` 入口。
-- 补齐规范的仓库、主页和 issue tracker 元数据，使 npm 消费者及插件目录能够将包映射到对应 GitHub 源码仓库。
-
-### 变更
-
-- 文档明确推荐安装预构建的 npm 包，并说明固定 GitHub source 安装及 pnpm `allowBuilds` 要求。
-
-## 0.1.12 - 物理修饰键与可靠的全局导航
-
-### 新增
-
-- 新增平台感知的 SVG 键帽，覆盖 Command、Windows/Meta、Control、Option/Alt、Shift、导航键和普通字符。
-- 新增浏览器安全的全局快捷键，可在可编辑控件获得焦点时工作，并在不创建空白替代项的情况下导航现有 Session 和 Workspace。
-- 切换到折叠的目标 Workspace 时，先自动展开该分组，再打开选中的 Session。
-
-### 修复
-
-- 保存自定义 binding 后继续保持 `Custom` profile，并在持久化过程中保留 settings controller 上下文。
-- 在交互卡片中展示问题选项描述，并正确处理长文本换行。
-- 根据物理事件 code 规范化受键盘布局影响的输入，包括 macOS Option/Shift 组合。
-- 从导航目标中过滤空白、已归档及 subagent Session，并拒绝已知的浏览器保留组合键和冲突 binding。
-
-### 变更
-
-- 移除公开的 `Mod` 修饰键。设置和规范化 binding 只使用物理 `Meta`、`Ctrl`、`Alt`、`Shift`；旧持久化数据中的 `Mod` 会迁移为 `Meta`，且不会再次写回。
-- 快捷键冲突标识不再依赖平台，平台差异只用于键帽展示。
-
-## 0.1.11 - 全局快捷键与 Custom profile
-
-### 新增
-
-- 新增可编辑的 `Custom` profile，支持持久化 binding，以及 `Meta`、`Ctrl`、`Alt`、`Shift` 这几种显式修饰键、候选绑定和有界两段 chord。旧的持久化 `Mod` 仅作为兼容输入迁移为 `Meta`，不会写回。
-- 新增 capability-aware 全局动作，支持 session/Workspace 导航、新建及分支会话，以及主题切换。
-- 新增由 Client fiber 管理的全局 keyboard router，并保护可编辑控件、IME composition、重复事件、pending question/approval takeover 和宿主 popup。
-- 新增按 global scope 分组的快捷键行；当前 DSH composition 不具备能力时会隐藏对应动作。
-
-### 修复
-
-- 进入带有 pending interaction 的 session 时，自动聚焦 question/approval 的首个可操作控件；当前版本优先保证键盘可立即操作，不保留外部编辑器或 popup 焦点。
-- 修复 question 自定义输入框和无选项 textarea 在受控文本更新时丢失焦点的问题。
-
-### 变更
-
-- 由于 DSH 没有公开的设置 opener，设置绑定保持隐藏且不激活；插件不会使用私有 DOM 路由。
-- 文档明确 DSH CLI 安装和真实 composition 验证是受支持的集成路径。
-
-## 之前的版本
-
-### 修复
-
-- 单选选项已选中时按 Enter，现在会提交当前答案。
-
-
-### 修复
-
-- 增加上一题操作，并在多题流程中保留之前的答案。
-- 使用 DSH foreground token 修复键盘 focus 时主提交按钮文字对比度问题。
-
-
-### 修复
-
-- 恢复 DSH button reset，避免问题选项渲染成过大的原生灰色按钮。
-- 增加键盘 focus/hover 状态，并为多选项增加明确的 check icon。
-- 分离审批状态标题和审批详情，并收紧操作区间距。
-
-
-### 变更
-
-- 缩小问题选项和输入控件高度，统一选项间距，并让单选问题始终显示主要提交操作。
-- 明确设置界面的 profile 层级，区分分组标题和当前方案标签。
-
-
-### 修复
-
-- 通过 Client dictionaries 本地化 approval 操作按钮和无障碍标签。
-- 为 question 跳过/下一题/提交按钮补齐 DSH 操作间距和 focus 样式。
-
-### 变更
-
-- 为 question/approval 快捷键列表增加对应操作图标。
-- 将 profile radio 控件改为紧凑的原生下拉框。
-- 清理 legacy profile card 中剩余的硬编码文案。
-
-
-### 变更
-
-- 明确 DSH CLI 是 profile 安装和升级的唯一入口。
-- 增加用于 DSH plugin 检索的 npm keywords，其中包含 `dsh-plugin`。
-
-
-### 修复
-
-- 修复 question/approval 交互卡片脱离 DSH 对话 composer 的问题，增加限高滚动和始终可见的操作区。
-- 修复 question 跳过文案，以及点击和键盘激活后的跳过提交行为。
-- 新增 approval semantic warning 样式和响应式卡片布局。
-
-### 变更
-
-- 将 question/approval 快捷键摘要改为 DSH 风格的分组列表。
-
-
-### 修复
-
-- 修复 shortcuts composer 的 priority 顺序，使其先于 DSH 官方 question/approval composer 尝试。
-- 新增针对 DSH chain 低 priority 优先选举规则的 slot wiring 回归。
-
-## 0.1.2 - Composer priority metadata
-
-### 修复
-
-- 新增 composer priority metadata 和 slot wiring 回归，开始对齐 DSH chain routing。
-
-## 0.1.1 - 交互修复
-
-### 修复
-
-- 修复 question 选项控件无 DSH 样式的问题，改为使用 DSH token 风格的选项卡和操作按钮。
-- 修复 question 初始 focus 和 roving `tabIndex`，支持方向键/Enter 键盘选择。
-- 新增与 DSH plugin card disclosure 模式一致的可折叠 settings card。
-- 保留 session-scoped cancel，并在取消时重新获取当前 conversation。
-
-## 0.1.0 - 首次发布
-
-### 新增
-
-- 新增独立的 DSH Client UI shortcuts plugin，为 Web question 和 approval 交互提供快捷操作。
-- 新增 `standard` 和 `vim` profile，并保证同一时间只有一个 active profile。
-- 新增 question/approval 的方向键、`j`/`k`、Enter 和 Escape 操作。
-- 新增单选、多选、自定义答案、跳过、提交、允许一次、拒绝和按 session 取消流程。
-- 新增 `dsh-ui-shortcuts` Host settings namespace，持久化字段为 `activeProfile`。
-- 新增 `dsh-shortcuts` locale namespace 和 profile 设置卡片。
-- 新增 CSS Modules、DSH semantic design tokens、本地 offline Iconify 图标、响应式布局和 reduced-motion 样式。
-
-### 包与集成
-
-- 新增 bundle patch，row id 为 `dsh-ui-shortcuts`。
-- 新增 `lib/client.js` lazy-CJS 浏览器产物以及 Node/invariant 产物。
-- 新增 browser bundle purity 检查，拒绝非平台 DSH runtime import。
-- 新增 profile、composer、slot 生命周期、settings、bundle、tarball 和 DSH composition 验证。
-- 新增双语包说明和安装文档。

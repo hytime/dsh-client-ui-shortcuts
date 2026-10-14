@@ -1,194 +1,37 @@
 import { describe, expect, it } from 'vitest'
-import { standardProfile, vimProfile } from '../src/client/profiles/builtins.js'
-import { findShortcutConflicts } from '../src/client/keyboard/conflicts.js'
-import { normalizeKeyboardEvent } from '../src/client/keyboard/normalize.js'
-import { createKeyResolver, resolveKey } from '../src/client/keyboard/resolve.js'
-import { createBuiltinProfileRegistry, canonicalBindingKey, canonicalSequenceKey } from '../src/client/profiles/registry.js'
+import { standardProfile } from '../src/client/profiles/builtins.js'
+import { resolveKey } from '../src/client/keyboard/resolve.js'
 import type { KeyInput } from '../src/client/contract/keyboard.js'
-import type { ShortcutProfile, ShortcutStroke } from '../src/client/contract/profile.js'
+import type { ShortcutProfile } from '../src/client/contract/profile.js'
 
 const input = (key: string, options: Partial<KeyInput> = {}): KeyInput => ({
   key, alt: false, ctrl: false, meta: false, shift: false, ...options,
 })
 
-describe('profile-aware keyboard resolver', () => {
-  it('resolves standard and vim navigation and actions', () => {
-    expect(resolveKey(standardProfile, 'question', input('ArrowDown'), 'linux')).toEqual({ kind: 'command', command: 'focusNext' })
-    expect(resolveKey(standardProfile, 'approval', input('Enter'), 'linux')).toEqual({ kind: 'command', command: 'activate' })
-    expect(resolveKey(vimProfile, 'question', input('j'), 'linux')).toEqual({ kind: 'command', command: 'focusNext' })
-    expect(resolveKey(vimProfile, 'question', input('k'), 'linux')).toEqual({ kind: 'command', command: 'focusPrevious' })
+describe('local interaction resolution', () => {
+  it('resolves arrow navigation, activation, and cancellation in both scopes', () => {
+    expect(resolveKey(standardProfile, 'question', input('ArrowUp'))).toEqual({ kind: 'command', command: 'focusPrevious' })
+    expect(resolveKey(standardProfile, 'question', input('ArrowDown'))).toEqual({ kind: 'command', command: 'focusNext' })
+    expect(resolveKey(standardProfile, 'question', input('Enter'))).toEqual({ kind: 'command', command: 'activate' })
+    expect(resolveKey(standardProfile, 'question', input('Escape'))).toEqual({ kind: 'command', command: 'cancelTask' })
+    expect(resolveKey(standardProfile, 'approval', input('Enter'))).toEqual({ kind: 'command', command: 'activate' })
+    expect(resolveKey(standardProfile, 'approval', input('Escape'))).toEqual({ kind: 'command', command: 'cancelTask' })
   })
-
-  it('resolves Escape cancellation on both surfaces', () => {
-    expect(resolveKey(standardProfile, 'question', input('Escape'), 'linux')).toEqual({ kind: 'command', command: 'cancelTask' })
-    expect(resolveKey(standardProfile, 'approval', input('Escape'), 'linux')).toEqual({ kind: 'command', command: 'cancelTask' })
+  it('normalizes Esc and keeps scope isolation', () => {
+    expect(resolveKey(standardProfile, 'question', input('Esc'))).toEqual({ kind: 'command', command: 'cancelTask' })
+    const questionOnly: ShortcutProfile = { id: 'q', label: 'q', description: 'q', bindings: [
+      { command: 'activate', scope: 'question', key: { key: 'Enter', modifiers: [] } },
+    ] }
+    expect(resolveKey(questionOnly, 'question', input('Enter'))).toEqual({ kind: 'command', command: 'activate' })
+    expect(resolveKey(questionOnly, 'approval', input('Enter'))).toEqual({ kind: 'pass' })
   })
-
-  it.each([
-    ['composing', { composing: true }],
-    ['ime key code', { keyCode: 229 }],
-    ['repeat', { repeat: true }],
-    ['disabled', { disabled: true }],
-  ])('passes Enter when %s', (_name, options) => {
-    expect(resolveKey(standardProfile, 'approval', input('Enter', options), 'linux')).toEqual({ kind: 'pass' })
-  })
-
-  it('normalizes Esc without reading DOM', () => {
-    const event = { key: 'Esc', altKey: false, ctrlKey: false, metaKey: false, shiftKey: false, isComposing: false, repeat: false, keyCode: 27 }
-    expect(normalizeKeyboardEvent(event).key).toBe('Escape')
-    expect(normalizeKeyboardEvent(event)).toEqual(expect.objectContaining({ alt: false, ctrl: false, meta: false, shift: false }))
-  })
-
-  it('normalizes physical letter codes over layout-dependent raw keys', () => {
-    const event = { key: '˜', code: 'KeyN', altKey: true, ctrlKey: false, metaKey: true, shiftKey: true, isComposing: false, repeat: false, keyCode: 78 }
-    expect(normalizeKeyboardEvent(event)).toEqual(expect.objectContaining({ key: 'n', code: 'KeyN' }))
-  })
-
-  it('normalizes physical digit codes', () => {
-    const event = { key: ')', code: 'Digit0', altKey: false, ctrlKey: false, metaKey: false, shiftKey: true, isComposing: false, repeat: false, keyCode: 48 }
-    expect(normalizeKeyboardEvent(event)).toEqual(expect.objectContaining({ key: '0', code: 'Digit0' }))
-  })
-
-  it('falls back to raw key when physical code is absent', () => {
-    const event = { key: '˜', altKey: false, ctrlKey: false, metaKey: false, shiftKey: false, isComposing: false, repeat: false, keyCode: 0 }
-    expect(normalizeKeyboardEvent(event)).toEqual(expect.objectContaining({ key: '˜' }))
-  })
-
-  it('keeps ordinary key normalization unchanged', () => {
-    const event = { key: 'B', code: 'KeyB', altKey: false, ctrlKey: false, metaKey: false, shiftKey: false, isComposing: false, repeat: false, keyCode: 66 }
-    expect(normalizeKeyboardEvent(event).key).toBe('b')
-  })
-
-  it('uses stable modifier ordering without scope in canonical keys', () => {
-    expect(canonicalBindingKey({ command: 'activate', scope: 'approval', key: input('Enter', { alt: true, ctrl: true, meta: true, shift: true }) })).toBe('alt|ctrl|meta|shift|Enter')
-  })
-
-  it('reports same-scope conflicts while allowing cross-scope reuse', () => {
-    const first = { command: 'activate' as const, scope: 'question' as const, key: input('Enter') }
-    const second = { command: 'cancelTask' as const, scope: 'question' as const, key: input('Enter') }
-    const third = { command: 'activate' as const, scope: 'approval' as const, key: input('Enter') }
-    const profile: ShortcutProfile = { ...standardProfile, id: 'conflicts', bindings: [first, second, third] }
-    const conflicts = findShortcutConflicts(profile)
-    expect(conflicts).toHaveLength(1)
-    expect(conflicts[0]).toEqual({ scope: 'question', key: '||||Enter', first, second })
-  })
-
-  it('resolves Meta and Ctrl as independent physical modifiers on every platform', () => {
-    const profile: ShortcutProfile = {
-      ...standardProfile,
-      id: 'physical',
-      bindings: [
-        { command: 'openSettings', scope: 'global', key: input('p'), modifier: 'Meta' },
-        { command: 'openCommandPalette', scope: 'global', key: input('c'), modifier: 'Ctrl' },
-      ],
-    }
-    for (const platform of ['mac', 'windows', 'linux'] as const) {
-      expect(resolveKey(profile, 'global', input('p', { meta: true }), platform)).toEqual({ kind: 'command', command: 'openSettings' })
-      expect(resolveKey(profile, 'global', input('p', { ctrl: true }), platform)).toEqual({ kind: 'pass' })
-      expect(resolveKey(profile, 'global', input('c', { ctrl: true }), platform)).toEqual({ kind: 'command', command: 'openCommandPalette' })
-      expect(resolveKey(profile, 'global', input('c', { meta: true }), platform)).toEqual({ kind: 'pass' })
+  it('ignores IME, keyCode 229, repeat, and disabled input', () => {
+    for (const flag of [{ composing: true }, { keyCode: 229 }, { repeat: true }, { disabled: true }]) {
+      expect(resolveKey(standardProfile, 'question', input('Enter', flag))).toEqual({ kind: 'pass' })
     }
   })
-
-  it('uses browser-safe platform alternatives for global defaults', () => {
-    const start = standardProfile.bindings.find(binding => binding.command === 'startSession' && binding.scope === 'global')
-    expect(start).toEqual({
-      command: 'startSession',
-      scope: 'global',
-      key: { key: 'n', modifiers: ['Meta', 'Alt', 'Shift'] },
-    })
-    expect(resolveKey(standardProfile, 'global', input('n', { meta: true, alt: true, shift: true }), 'mac')).toEqual({ kind: 'command', command: 'startSession' })
-    expect(resolveKey(standardProfile, 'global', input('n', { meta: true, alt: true, shift: true }), 'windows')).toEqual({ kind: 'command', command: 'startSession' })
-    expect(resolveKey(standardProfile, 'global', input('n', { ctrl: true, alt: true, shift: true }), 'mac')).toEqual({ kind: 'pass' })
-  })
-
-  it('resolves shifted global defaults with browser key casing', () => {
-    expect(resolveKey(standardProfile, 'global', input('B', { meta: true, alt: true, shift: true }), 'windows')).toEqual({ kind: 'command', command: 'forkSession' })
-    expect(resolveKey(standardProfile, 'global', input('T', { meta: true, alt: true, shift: true }), 'mac')).toEqual({ kind: 'command', command: 'toggleTheme' })
-  })
-
-  it('resolves the default showShortcuts global binding', () => {
-    const key: KeyInput = { key: 's', alt: true, ctrl: false, meta: true, shift: true, keyCode: 83, composing: false, repeat: false, disabled: false }
-    expect(resolveKey(standardProfile, 'global', key, 'linux')).toEqual({ kind: 'command', command: 'showShortcuts' })
-    expect(resolveKey(standardProfile, 'global', { ...key, ctrl: true }, 'mac')).toEqual({ kind: 'pass' })
-  })
-
-  it('resolves declarative Meta and Alt combinations', () => {
-    const stroke: ShortcutStroke = { key: 'p', modifiers: ['Meta', 'Alt'] }
-    const profile: ShortcutProfile = {
-      ...standardProfile,
-      id: 'declarative-mod',
-      bindings: [{ command: 'openSettings', scope: 'global', key: stroke }],
-    }
-
-    expect(resolveKey(profile, 'global', input('p', { meta: true, alt: true }), 'mac')).toEqual({ kind: 'command', command: 'openSettings' })
-    expect(resolveKey(profile, 'global', input('p', { meta: true, alt: true }), 'mac')).toEqual({ kind: 'command', command: 'openSettings' })
-    expect(resolveKey(profile, 'global', input('p', { ctrl: true, meta: true, alt: true }), 'linux')).toEqual({ kind: 'pass' })
-  })
-  it('resolves two-stroke sequences and alternative sequences', () => {
-    const profile: ShortcutProfile = {
-      ...standardProfile,
-      id: 'sequence',
-      bindings: [{
-        command: 'openSettings',
-        scope: 'global',
-        sequences: [[input('g'), input('s')], [input('s')]],
-      }],
-    }
-
-    expect(resolveKey(profile, 'global', input('g'), 'linux')).toEqual({ kind: 'pass' })
-    expect(resolveKey(profile, 'global', input('s'), 'linux')).toEqual({ kind: 'command', command: 'openSettings' })
-  })
-
-
-  it('does not share partial sequence state between resolver instances', () => {
-    const profile: ShortcutProfile = {
-      ...standardProfile,
-      id: 'isolated',
-      bindings: [{ command: 'openSettings', scope: 'global', sequences: [[input('g'), input('s')]] }],
-    }
-    const first = createKeyResolver()
-    const second = createKeyResolver()
-
-    expect(first.resolve(profile, 'global', input('g'), 'linux')).toEqual({ kind: 'pass' })
-    expect(second.resolve(profile, 'global', input('s'), 'linux')).toEqual({ kind: 'pass' })
-    expect(first.resolve(profile, 'global', input('s'), 'linux')).toEqual({ kind: 'command', command: 'openSettings' })
-  })
-
-  it('matches explicit Meta and Ctrl modifiers exactly', () => {
-    const metaProfile: ShortcutProfile = {
-      ...standardProfile,
-      id: 'mod',
-      bindings: [{ command: 'openSettings', scope: 'global', key: input('p'), modifier: 'Meta' }],
-    }
-    const ctrlProfile: ShortcutProfile = {
-      ...standardProfile,
-      id: 'ctrl',
-      bindings: [{ command: 'openSettings', scope: 'global', key: input('p', { ctrl: true }) }],
-    }
-
-    expect(resolveKey(metaProfile, 'global', input('p', { ctrl: true }), 'linux')).toEqual({ kind: 'pass' })
-    expect(resolveKey(metaProfile, 'global', input('p', { meta: true }), 'mac')).toEqual({ kind: 'command', command: 'openSettings' })
-    expect(resolveKey(ctrlProfile, 'global', input('p', { meta: true }), 'mac')).toEqual({ kind: 'pass' })
-  })
-
-  it('preserves the legacy single-stroke key and exposes sequence canonicalization separately', () => {
-    const profile: ShortcutProfile = {
-      ...standardProfile,
-      id: 'dual-mod',
-      bindings: [{ command: 'openSettings', scope: 'global', key: input('p'), modifier: 'Meta' }],
-    }
-    expect(resolveKey(profile, 'global', input('p', { ctrl: true, meta: true }), 'linux')).toEqual({ kind: 'pass' })
-  })
-
-  it('preserves the legacy single-stroke key and exposes sequence canonicalization separately', () => {
-    const binding = { command: 'activate' as const, scope: 'approval' as const, key: input('Enter') }
-    expect(canonicalBindingKey(binding)).toBe('||||Enter')
-    expect(canonicalSequenceKey({ strokes: [input('g'), input('s')] })).toBe('||||g ||||s')
-  })
-
-  it('selects persisted built-in profiles and falls back when missing', () => {
-    expect(createBuiltinProfileRegistry('missing').active().id).toBe('standard')
-    expect(createBuiltinProfileRegistry('vim').active().id).toBe('vim')
+  it('does not treat modifier combinations as local bindings', () => {
+    expect(resolveKey(standardProfile, 'question', input('ArrowUp', { meta: true }))).toEqual({ kind: 'pass' })
+    expect(resolveKey(standardProfile, 'approval', input('Enter', { ctrl: true }))).toEqual({ kind: 'pass' })
   })
 })

@@ -1,148 +1,132 @@
 # DSH Client UI Shortcuts
 
-[![npm version](https://img.shields.io/npm/v/%40hytime%2Fdsh-client-ui-shortcuts?logo=npm&label=npm)](https://www.npmjs.com/package/@hytime/dsh-client-ui-shortcuts) [![npm downloads](https://img.shields.io/npm/dm/%40hytime%2Fdsh-client-ui-shortcuts?logo=npm&label=downloads)](https://www.npmjs.com/package/@hytime/dsh-client-ui-shortcuts) [![license](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/license/mit/)
+[![npm version](https://img.shields.io/npm/v/%40hytime%2Fdsh-client-ui-shortcuts?logo=npm&label=npm)](https://www.npmjs.com/package/@hytime/dsh-client-ui-shortcuts) [![license](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/license/mit/)
 
 [English](README.md) | 中文
 
-为 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) Web 提供 browser-safe、profile-aware 的键盘控制。
+为 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) Web 提供**快速呼出面板**，以及**默认关闭**的 Question / Approval 交互增强。
 
-插件运行在 DSH Web 内，为 Question 和 Approval 流程提供可预测的键盘操作，并在相应 DSH 能力可用时提供 Session 与 Workspace 导航。它不修改 DSH core、agent loop 或模型协议。
+快捷键由 DSH 官方管理：插件只向官方注册一个可编辑命令，不保留自己的按键存储或第二套快捷键配置。插件不修改 DSH core、agent loop 或模型协议。
 
 ## 为什么安装
 
-- 无需离开键盘即可回答 DSH Question 和 Approval。
-- 为交互卡片和全局动作选择只读的 Standard、Vim profile，或创建并切换多个命名 Custom profile。
-- 使用显式的物理 `Meta`、`Ctrl`、`Alt` 和 `Shift` 修饰键导航 Session 与 Workspace。
-- 打开已有的可用 Session 前，自动展开处于折叠状态的目标 Workspace。
-- 当 DSH 不提供所需能力时，不将不可用动作加入路由和快捷键列表。
-- 遵守浏览器和操作系统边界：浏览器保留的快捷键可能不会到达网页。
-
-## 展示图
-
-`Meta+Alt+Shift+S` 打开的统一快捷键管理面板（Standard 只读方案）：
-
-![统一快捷键管理面板](https://raw.githubusercontent.com/hytime/dsh-client-ui-shortcuts/main/docs/panel-standard.png)
-
-Custom 方案在同一列表中直接编辑，保存 / 取消 / 恢复默认固定在面板底部：
-
-![Custom 方案编辑](https://raw.githubusercontent.com/hytime/dsh-client-ui-shortcuts/main/docs/panel-custom.png)
-
-设置页插件区的「呼出面板快捷键」入口，点击即可打开面板并定位到该行：
-
-![设置页呼出面板快捷键入口](https://raw.githubusercontent.com/hytime/dsh-client-ui-shortcuts/main/docs/settings-entry.png)
+- 一个快捷键即可呼出插件的快速面板。
+- 改键使用官方服务，因此插件面板和 DSH 设置改的是同一份配置，不会互相覆盖。
+- 需要时再开启键盘优先的 Question / Approval 交互；默认使用 DSH 官方界面。
 
 ## 60 秒安装
 
-推荐安装 npm 发布包，因为其中已经包含预构建的 `lib/` 产物，不需要在安装阶段执行构建。通过 DSH CLI 安装插件，然后重启或重新加载 Web composition：
-
 ```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.1.23
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.2.0
 dsh --profile web
 ```
 
-如需改为安装 GitHub 源码，请固定 release tag 或 commit，不要直接安装默认分支：
+安装或升级后必须重新加载 Web composition，已打开的页面不会热更新。完整步骤见[安装指南](docs/installation.zh.md)。
 
-```bash
-dsh plugin --profile web add github:hytime/dsh-client-ui-shortcuts#v0.1.14
+## 界面
+
+`⌘⌥⇧S`（默认）呼出的快速面板。顶部是配置导入导出与搜索，中间列出**官方全部快捷键**，每条都可单独改键，底部是两个默认关闭的增强开关：
+
+![快速面板](https://raw.githubusercontent.com/hytime/dsh-client-ui-shortcuts/main/docs/panel-overview.png)
+
+390×844 窄屏下同样完整可用：
+
+![窄屏快速面板](https://raw.githubusercontent.com/hytime/dsh-client-ui-shortcuts/main/docs/panel-narrow.png)
+
+在面板里改的绑定与 DSH 官方设置是同一份配置，官方侧同步可见：
+
+![官方设置同步](https://raw.githubusercontent.com/hytime/dsh-client-ui-shortcuts/main/docs/official-settings-sync.png)
+
+## 功能
+
+### 快速呼出
+
+插件注册一个官方命令 **打开快速面板**，默认键位：
+
+| 平台 | 默认键 |
+| --- | --- |
+| Web / macOS | `⌘⌥⇧S` |
+| Web / Windows | `Ctrl+Alt+Shift+S` |
+| Web / Linux | 不设默认键（官方在该平台的允许集合更窄） |
+
+面板内含：当前官方键位、录入 / 修改 / 恢复默认 / 清除、两个增强开关，以及入口按钮。设置页插件区也提供「打开快速面板」入口——即使没有绑定键位或键位冲突，仍可点击进入。
+
+### 搜索与改键
+
+快捷键列表上方的搜索框按命令名称、命令 ID 或键帽过滤当前列表，只影响显示、不改变保存内容。
+
+### 面板内改键
+
+面板调用官方 `describeBinding()`、`edit()` 与 `recording()`：
+
+1. 进入录制并让官方在桌面端接管原生按键；
+2. 收集一个候选组合（忽略 IME 组合、重复按键与纯修饰键）；
+3. 由官方做规范化、保留组合与冲突检查；
+4. 通过后按官方 revision 写入。
+
+冲突、不支持、配置已变更、读取失败、写入失败都会显示对应说明。也可以在 **DSH 设置 → 通用 → 快捷键** 中改同一个命令，两处保持同步。
+
+### 配置导入导出
+
+面板顶部提供「导出」和「导入」，用于备份、迁移与团队分发。
+
+导出的是**完整快捷键快照**——官方目录里的每一条命令都会写入，包含未修改的默认项，而不是只导出改过的：
+
+```json
+{
+  "format": "dsh-client-ui-shortcuts/quick-panel",
+  "version": 2,
+  "configuration": {
+    "questionEnabled": false,
+    "approvalEnabled": false,
+    "profile": "web:macos",
+    "shortcuts": {
+      "hytime.shortcuts.open": { "modified": false, "binding": { "code": "KeyS", "modifiers": ["alt","shift","meta"] }, "label": "打开快速面板", "keys": ["⌥","⇧","⌘","S"] },
+      "session.new": { "modified": true, "binding": { "code": "KeyJ", "modifiers": ["shift","meta"] } }
+    }
+  }
+}
 ```
 
-Git 安装会在安装阶段执行包的 `prepare` 脚本。pnpm 可能要求将错误信息给出的精确 package key 加入 profile 的 `allowBuilds`；只应为可信且已固定的源码授予该权限。完整步骤见[安装指南](docs/installation.zh.md)。
+`modified` 决定导入动作，避免把默认项固化成覆盖：
 
-本插件不是独立的 React 或 Vite 应用。不要直接打开 `apps/web`，也不要使用 `npm install`、`pnpm add` 或手动修改 DSH profile manifest、lockfile 的方式安装到 profile。
-
-升级、移除、本地 tarball、profile 检查和排错步骤见[安装指南](docs/installation.zh.md)。
-
-## 当前包含的能力
-
-- Question 卡片：单选、多选、自定义答案、跳过、上一题和提交。
-- Approval 卡片：允许一次、拒绝、详情、取消和键盘确认。
-- 只读的 Standard、Vim profile，以及多个可命名、可编辑的 Custom profile；同一时间只有一个 profile 处于 active 状态。
-- 使用 New、Import、Export 和 Delete 管理可迁移的 Custom profile；导出内容只包含一个已保存方案，不包含内部 ID。
-- 显式物理 `Meta`、`Ctrl`、`Alt` 和 `Shift` 修饰键、候选绑定和两段 chord。
-- 浏览器保留快捷键 denylist 与冲突检查。
-- 对当前 DSH 组合中不可用功能进行能力检查。
-- 在相应 DSH 能力可用时提供 Session、Workspace、session branch 和主题操作。
-- `Meta+Alt+Shift+S` 打开完整快捷键管理面板：方案切换（Standard / Vim / Custom）、新建 / 导入 / 导出 / 删除方案、Custom 键位编辑，以及一个带搜索的、按 Question/Approval/Global 分组的统一快捷键列表。
-- 设置页插件区保留一个轻量的「呼出面板快捷键」入口：显示当前呼出键，点击打开面板并自动定位到该行，方便随时修改呼出键。
-
-## 快捷键参考
-
-### Question 和 Approval 卡片
-
-| 命令 | Question | Approval |
+| 文件中的 `modified` | 当前状态 | 导入动作 |
 | --- | --- | --- |
-| 聚焦上一项 | `ArrowUp` | `ArrowUp` |
-| 聚焦下一项 | `ArrowDown` | `ArrowDown` |
-| 激活当前项 | `Enter` | `Enter` |
-| 取消当前任务 | `Escape` | `Escape` |
+| `true` | — | 写入覆盖；`binding: null` 表示显式清除该键 |
+| `false` | 已有覆盖 | 恢复官方默认 |
+| `false` | 未修改 | 不写入，保持官方默认 |
 
-Vim profile 会将两个聚焦绑定替换为 `k` 和 `j`；确认和取消仍使用 `Enter` 与 `Escape`。这些绑定只在当前交互卡片内生效。
+导入先做严格校验（格式、版本、字段集合、命令 ID、物理键与修饰键，未知字段与更高版本整体拒绝，上限 1 MiB），再按目标快照整体规划：先释放本文件将要移动或清除的键，再经官方 `describeBinding()` 与 `edit()` 写回目标值，因此互换绑定也能正确恢复。两个开关通过一次原子写入提交。官方 `edit()` 没有批量事务，中途失败时会尽力回滚并列出仍未恢复的命令（「部分快捷键未能恢复」），不会谎报成功。导出时会经官方服务把逻辑修饰键 `primary` 归一化为设备明确的 `meta`/`control`，因此导出的文件导入后再导出**逐字节一致**。字段与限制见[接入说明](docs/official-shortcuts-integration.zh.md)。
 
-### 全局动作
+### 可选交互增强
 
-当前 profile 的默认全局绑定如下：
+两个开关**默认关闭**，关闭时不接管任何界面，直接使用 DSH 官方实现：
 
-| 动作 | 默认绑定 |
+| 开关 | 开启后的行为 |
 | --- | --- |
-| 创建 Session | `Meta+Alt+Shift+N` |
-| 上一个 Session | `Meta+Alt+Shift+J` |
-| 下一个 Session | `Meta+Alt+Shift+K` |
-| 上一个 Workspace | `Meta+Alt+Shift+H` |
-| 下一个 Workspace | `Meta+Alt+Shift+L` |
-| Fork 当前 Session | `Meta+Alt+Shift+B` |
-| 切换浅色/深色主题 | `Meta+Alt+Shift+T` |
-| 查看快捷键 | `Meta+Alt+Shift+S` |
+| 增强 Question 交互 | 方向键选择、`Enter` 确认、`Escape` 取消任务 |
+| 增强 Approval 交互 | 键盘选择「允许一次」或「拒绝」；**不会**自动授权 |
 
-只有在 DSH 提供所需能力时，才会注册全局动作。`查看快捷键` 是纯浏览器行为、恒可用，按下即打开当前 profile 的完整快捷键管理面板。默认键 `Meta+Alt+Shift+S` 可在 Custom profile 中改绑；设置页的「呼出面板快捷键」入口可随时定位并修改它。
+`Enter` 始终激活当前聚焦的操作；方向键把焦点移到「拒绝」后按 `Enter` 会拒绝，而不是沿用先前的选择。
 
-## Profile 与 Custom binding
+## 版本兼容
 
-`Standard` 使用方向键、`Enter` 和 `Escape` 处理 Question 与 Approval 交互。`Vim` 使用 `j`/`k`、`Enter` 和 `Escape`。这两个内置 profile 均为只读。
+- 插件 `0.2.0` 以 DSH **`0.2.0-rc.1`** 为已验证基线；`peerDependencies` 为 `>=0.2.0-rc.1 <1.0.0`，接受基线及更高版本（低于 `1.0.0`），拒绝旧版与 `1.0.0`+。
+- DSH 会校验 `@deepseek-ai/dsh-*` 对等依赖（预发布版本参与范围判断）。版本不匹配时安装会给出明确提示和精确豁免方式——**不建议**在未验证版本上授予豁免。
+- 新版**不兼容旧版 DSH**：不再使用 `settingsScope`、旧 Connection settings API、`settings.plugin.item` 坐席或旧交互载体，也不读取 `0.1.x` 的方案配置。旧版用户请继续使用 `0.1.23`。
 
-可在快捷键管理面板（`Meta+Alt+Shift+S` 打开）中创建多个命名 Custom profile，并切换当前 active profile。新建方案会复制当前 profile 的 binding，名称与 binding 在一次操作中保存。每次导入都会创建新的内部 profile ID；重名时会使用连续数字后缀，例如 `Name 1`、`Name 2`。只有当前 active 且已保存的 Custom profile 可以导出，生成不含内部 ID 的单方案 JSON v1 文档。删除操作需要确认；删除 active Custom profile 前会先切回 Standard。JSON 格式与限制见[安装指南](docs/installation.zh.md)。
-
-Custom profile 可以编辑 Question、Approval 以及由 capability 支持的全局 binding，包括显式修饰键、候选绑定和两段 chord。
-
-按物理 `KeyboardEvent.code` 匹配按键，并归一化 `Esc`/`Escape`、`Return`/`Enter` 等别名；会拒绝前缀冲突，并将 chord 限制为最多两段。在 macOS 上，`Meta` 显示为 Command，`Alt` 显示为 Option；其他平台将 `Meta` 显示为 Windows 键，`Ctrl` 显示为 Control。
-
-当前公开的物理修饰键只有 `Meta`、`Ctrl`、`Alt` 和 `Shift`。`Mod` 仅用于旧持久化配置的迁移：读取旧配置时会迁移为 `Meta`，保存时不会写回 `Mod`。
-
-## 浏览器和平台边界
-
-路由器使用浏览器的 capture-phase listener。它会让位于未匹配的文本输入、IME composition、重复事件、待处理的 Question 或 Approval 接管，以及由宿主拥有焦点的 popup。由于全局 binding 是显式配置的，全局动作即使从 input 或 contenteditable 元素中触发，也可以执行。
-
-浏览器 denylist 覆盖已知的 Chrome、Safari、Firefox 和 Edge 组合，并用于冲突检查。它无法查询任意操作系统或浏览器快捷键的占用情况；浏览器或操作系统保留的快捷键可能根本不会把事件分发给网页。capture listener 只能阻止浏览器已经分发到页面的快捷键。
-
-## Workspace 与 Session 导航
-
-Session 导航遵循当前 Workspace 保存的 Session 顺序，并跳过 archived、subagent 和 blank Session。Workspace 导航会在目标 Workspace 中打开已有的非 blank Session。
-
-如果目标 Workspace 处于折叠状态，插件会先自动展开它，再打开符合条件的已有 Session。导航不会创建 blank Session，也不会调用 `connectWorkspace` 来制造目标。
-
-## 界面语言
-
-面板提供简体中文与英文（DSH 自带的两种语言），另外提供日文与韩文——这两种语言由本插件注册为可选语言。在 DSH 设置的「语言」中选择即可，插件渲染的所有界面都会跟随切换；新增语言在缺少某个键时回退到英文。
-
-日文与韩文能否「被选择」依赖 locale 服务的 `addLanguage`，而 `0.1.0-rc.8` 与 `0.1.1-rc.2` 未提供该方法。在这两个版本上插件仍正常加载，只是仅提供中文与英文。
-
-## DSH 兼容边界
-
-DSH `0.1.7-alpha.1` 将客户端 settings service `settingsScope` 改为 `configForms`。兼容适配层优先使用 `configForms` 并回退旧版 binder，因此已移除的服务不会成为启动硬依赖，同时继续支持 DSH `0.1.6-alpha.2`。
-
-一个发布包支持 DSH `0.1.6-alpha.2` 及以后版本（`0.1.6-alpha.2` 是引入 `plugins.bundle.config` 的第一个版本），且不再依赖 `@deepseek-ai/dsh-client-runtime`（该包在 `0.1.5-alpha.1` 已停止发布）。更早的世代——`0.1.0-rc.8` 至 `0.1.1-rc.2`、`0.1.2-alpha.1`、`0.1.5-*`——不再受支持；兼容层的运行时能力探测仍然保留，因此它们不会崩溃，而是退化为插件原有行为（例如落到旧的设置页坐席），但不再纳入验收与修复范围。浏览器 adapter 按运行时能力探测，不按 DSH 版本号分支：优先使用当前的 `remote.settings`，否则回退旧版 Connection settings API；新建 Session 优先使用 `uiWorkspace.startSession`，否则回退 `workspaces.startSession`；pending interaction 优先读取 `uiSession`，否则读取旧版 Session summary；只有在 locale 服务提供 `addLanguage` 时才注册日文与韩文语言项；设置页入口卡片注入运行中 composition 实际声明的插槽——DSH `0.1.6` 及以后为 `plugins.bundle.config`（按 bundle 包名寻址），此前各代为 `settings.plugin.item`（按 settings namespace 寻址）。插件只能通过真实的 DSH Web composition 和 DSH 启动与模块加载器加载。安装更新不会替换已经在打开页面中运行的代码；请重新加载 Web 组合，才能加载新的 Client bundle。
+详见[官方快捷键接入说明](docs/official-shortcuts-integration.zh.md)。
 
 ## 开发与验证
 
-下面的命令用于开发本包，不是 profile 安装命令：
-
 ```bash
 pnpm install
-pnpm run bundle
 pnpm run typecheck
+pnpm run bundle
 pnpm exec vitest run tests
 ```
 
-完整的 DSH composition 流程见[安装指南](docs/installation.zh.md)。浏览器验证必须通过带有 boot data 的真实 DSH Web profile；`apps/web` Vite entry 不是独立的验证目标。
+浏览器验收必须通过装有 `0.2.0-rc.1` 的真实 DSH Web composition；`apps/web` Vite entry 不是本插件的验证目标。
 
 ## 常见问题
 
@@ -150,37 +134,23 @@ pnpm exec vitest run tests
 
 不会。本插件只改变浏览器交互，不增加 tool、prompt section、模型可见 event 或 model request context。
 
-### 为什么没有看到某个全局动作？
+### 为什么快捷键没有生效？
 
-全局动作仅在当前 DSH 组合提供所需能力时可用。不可用的动作不会注册，也不会显示对应的快捷键行。
+按上面的默认键表确认当前平台是否有默认键（Linux Web 默认不绑定），并在 **DSH 设置 → 通用 → 快捷键** 或插件面板中检查是否被改键、清除或冲突。面板入口按钮始终可用。
 
-### 为什么隐藏设置快捷键？
+### 在插件面板改键会影响 DSH 设置吗？
 
-DSH 没有公开的设置打开方式，因此保留的 `Meta+,` 绑定会保持隐藏，不会被激活。
-
-### 如何查看和管理当前 profile 的快捷键？
-
-随时按 `Meta+Alt+Shift+S`（默认键，可在 Custom profile 中改绑）打开完整快捷键管理面板。它搜索当前 profile 的命令并区分 Question、Approval 和 Global 操作，同时提供方案切换、新建 / 导入 / 导出 / 删除与 Custom 键位编辑，不依赖 DSH 是否打开设置页。
-
-### 如何修改打开面板的快捷键？
-
-设置页插件区的「呼出面板快捷键」入口显示当前呼出键，点击会打开管理面板并自动定位到该行。若当前是只读的 Standard / Vim 方案，面板会提示先切换到 Custom 方案即可修改；切到 Custom 后改键保存，下次用新键呼出面板。
-
-### 安装更新后，当前打开的页面为什么没有变化？
-
-DSH 需要重新加载 Web composition，浏览器才会加载新的 Client bundle。安装包不会替换已经在浏览器中运行的代码。
+不会互相覆盖——两处读写的是同一份官方配置，只是界面不同。
 
 ### 不使用 DSH Web 可以运行吗？
 
-不可以。浏览器产物是 DSH loader factory，依赖 DSH boot 注入、slots、settings、locale 和运行时环境。
+不可以。浏览器产物是 DSH loader factory，依赖 DSH boot 注入、slots、locale、settings 与官方 shortcuts 服务。
 
 ## 相关链接
 
+- [官方快捷键接入说明](docs/official-shortcuts-integration.zh.md)
 - [安装指南](docs/installation.zh.md)
-- [English README](README.md)
 - [变更日志](CHANGELOG.zh.md)
-- [English changelog](CHANGELOG.md)
-- [DeepSeek Harness extension 文档](https://github.com/deepseek-ai/deepseek-harness/tree/main/docs)
 - [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)
 
 ## License
