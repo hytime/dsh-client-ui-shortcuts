@@ -34,7 +34,7 @@ describe('package manifest', () => {
 
   it('publishes the DSH Client package and browser entry', () => {
     expect(manifest.name).toBe('@hytime/dsh-client-ui-shortcuts')
-    expect(manifest.version).toBe('0.2.0')
+    expect(manifest.version).toBe('0.2.1')
     expect(manifest.main).toBe('lib/index.js')
     expect(manifest.exports).toEqual({
       '.': { types: './lib/types/index.d.ts', default: './lib/index.js' },

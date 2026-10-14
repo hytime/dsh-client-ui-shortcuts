@@ -4,7 +4,7 @@
 
 ## 当前基线
 
-当前开发版本：`0.2.0`（官方快捷键接入，行为变更）；已发布基线：`0.1.23`（GitHub Release 触发 publish action 发布 npm）
+当前开发版本：`0.2.1`（构建产物路径无关）；已发布：`0.2.0`（官方快捷键接入，行为变更）、`0.1.23`（GitHub Release 触发 publish action 发布 npm）
 
 当前核心能力：
 
@@ -20,13 +20,13 @@
 安装入口：
 
 ```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.2.0
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.2.1
 ```
 
 GitHub 源码安装必须固定 tag 或 commit：
 
 ```bash
-dsh plugin --profile web add github:hytime/dsh-client-ui-shortcuts#v0.2.0
+dsh plugin --profile web add github:hytime/dsh-client-ui-shortcuts#v0.2.1
 ```
 
 ## 产品目标

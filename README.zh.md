@@ -17,7 +17,7 @@
 ## 60 秒安装
 
 ```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.2.0
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.2.1
 dsh --profile web
 ```
 

@@ -1,6 +1,6 @@
 {
   "name": "@hytime/dsh-client-ui-shortcuts",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Quick panel using official DSH shortcuts, with opt-in question and approval enhancements",
   "keywords": [
     "dsh-plugin",
@@ -63,7 +63,16 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
-  "files": ["lib/index.js", "lib/invariant.js", "lib/client.js", "lib/types/**/*.d.ts", "cordis.patch.yml", "README.zh.md", "CHANGELOG.md", "CHANGELOG.zh.md"],
+  "files": [
+    "lib/index.js",
+    "lib/invariant.js",
+    "lib/client.js",
+    "lib/types/**/*.d.ts",
+    "cordis.patch.yml",
+    "README.zh.md",
+    "CHANGELOG.md",
+    "CHANGELOG.zh.md"
+  ],
   "license": "MIT",
   "dependencies": {
     "@deepseek-ai/schemastery": "3.18.4",

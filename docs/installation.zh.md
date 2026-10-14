@@ -19,7 +19,7 @@ DSH CLI 负责 profile 的插件安装、升级和移除。本包声明的 pnpm 
 使用 DSH plugin command 安装到 Web profile：
 
 ```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.2.0
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.2.1
 ```
 
 该命令会把包安装到 profile，并根据包中声明的 `dsh.bundle.patch` 将它加入 `dsh.profile.bundles`。本包 `0.2.0` 支持 DSH `0.2.0-rc.1` 及更高版本（低于 `1.0.0`），详见下文「DSH 版本兼容边界」。
@@ -29,7 +29,7 @@ dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.2.0
 安装源码时必须使用 release tag 或完整 commit SHA，不要安装会持续变化的默认分支：
 
 ```bash
-dsh plugin --profile web add github:hytime/dsh-client-ui-shortcuts#v0.2.0
+dsh plugin --profile web add github:hytime/dsh-client-ui-shortcuts#v0.2.1
 ```
 
 Git dependency 包含源码，不包含仓库提交的 `lib/` 产物。pnpm 会在用户机器的 package installation 阶段执行 `prepare`，由它调用 `pnpm run bundle` 并生成发布入口。这是在 Agent 沙箱之外执行的安装期代码。
@@ -60,7 +60,7 @@ pnpm pack --pack-destination /tmp/dsh-client-ui-shortcuts-pack
 export DSH_HOME="$(mktemp -d)"
 
 dsh plugin --profile web add \\
-  /tmp/dsh-client-ui-shortcuts-pack/hytime-dsh-client-ui-shortcuts-0.2.0.tgz
+  /tmp/dsh-client-ui-shortcuts-pack/hytime-dsh-client-ui-shortcuts-0.2.1.tgz
 ```
 
 如果希望 profile 在 shell 退出后继续存在，请将 `mktemp -d` 换成持久目录。发布 tarball 必须包含 `lib/client.js`、`lib/index.js`、`lib/invariant.js`、类型声明和 `cordis.patch.yml`。

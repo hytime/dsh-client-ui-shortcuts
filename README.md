@@ -17,7 +17,7 @@ DSH owns keybindings: the plugin registers one editable official command and kee
 ## Install in 60 seconds
 
 ```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.2.0
+dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.2.1
 dsh --profile web
 ```
 

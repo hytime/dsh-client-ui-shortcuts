@@ -1,4 +1,12 @@
-## Unreleased - 0.2.0 official shortcut integration (breaking)
+## 0.2.1 - Checkout-independent build artifacts
+
+### Fixed
+
+- **Build artifacts no longer depend on the checkout's absolute path**: with `0.2.0`, the same sources produced different bundle bytes depending on the build directory. The CSS Module class-name hash came from lightningcss's resolved absolute path, and CSS virtual module ids were emitted into `//#region` comments that carried the absolute path too. A CI build under `/home/runner/work/...` and a local clone under e.g. `/Volumes/...` therefore hashed differently, which made a hash useless as proof that the two artifacts were the same. `projectRoot` now anchors the class-name hash at the package root and virtual module ids use package-relative paths, so no absolute path reaches the artifact.
+
+Behavior is identical to `0.2.0`; this release only fixes build reproducibility.
+
+## 0.2.0 - Official shortcut integration (breaking)
 
 ### Added
 
