@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
-import { basename, dirname, resolve } from 'node:path'
+import { basename, dirname, relative, resolve, sep } from 'node:path'
 import type { UserConfig } from 'tsdown'
 import { transform } from 'lightningcss'
 
@@ -22,6 +22,27 @@ export const CLIENT_EXTERNALS = [
 ] as const
 
 const SKIP_WORKSPACE_BUILD: UserConfig = { entry: '' }
+
+/**
+ * The CSS Module transform options the bundle uses for one file. Exported so a test can assert
+ * the hash inputs directly: `projectRoot` anchors the class-name hash at the package root, so the
+ * same source produces the same class names from any checkout directory.
+ * @param file - absolute path of the CSS module being transformed.
+ * @returns the options passed to `lightningcss.transform`.
+ */
+export function cssModuleTransformOptions(file: string): {
+  filename: string
+  projectRoot: string
+  cssModules: { pattern: string }
+  minify: boolean
+} {
+  return {
+    filename: file,
+    projectRoot: resolve(import.meta.dirname, '..'),
+    cssModules: { pattern: '[hash]_[local]' },
+    minify: true,
+  }
+}
 
 type BuildFace = 'host' | 'client' | undefined
 
@@ -114,23 +135,27 @@ function purityPlugin() {
 }
 
 function cssModulePlugin(packageId: string) {
+  const packageRoot = resolve(import.meta.dirname, '..')
   return {
     name: 'dsh-client-shortcuts-css-modules',
     resolveId(specifier: string, importer?: string) {
       if (!specifier.endsWith('.module.css') || importer === undefined) return null
-      return CSS_VIRTUAL_PREFIX + sourceAssetPath(specifier, importer) + CSS_VIRTUAL_SUFFIX
+      // The virtual id becomes a `//#region` comment in the emitted bundle, so it must not carry
+      // the checkout's absolute path: that alone made two builds of identical sources differ.
+      const asset = sourceAssetPath(specifier, importer)
+      const portable = relative(packageRoot, asset).split(sep).join('/')
+      return CSS_VIRTUAL_PREFIX + portable + CSS_VIRTUAL_SUFFIX
     },
     async load(this: { addWatchFile: (file: string) => void }, virtualId: string) {
       if (!virtualId.startsWith(CSS_VIRTUAL_PREFIX)) return null
-      const file = virtualId.slice(CSS_VIRTUAL_PREFIX.length, -CSS_VIRTUAL_SUFFIX.length)
+      const portable = virtualId.slice(CSS_VIRTUAL_PREFIX.length, -CSS_VIRTUAL_SUFFIX.length)
+      const file = resolve(packageRoot, portable)
       this.addWatchFile(file)
       const source = await readFile(file)
-      const result = transform({
-        filename: file,
-        code: source,
-        cssModules: { pattern: '[hash]_[local]' },
-        minify: true,
-      })
+      // lightningcss derives the CSS Module hash from the resolved path, so the same source built
+      // from a different checkout directory (CI vs. a local clone) produced different class names
+      // and a different bundle hash. `projectRoot` anchors that hash at the package root.
+      const result = transform({ ...cssModuleTransformOptions(file), code: source })
       // lightningcss does not guarantee `exports` iteration order, so sort by local name.
       // Without this the emitted `classMap` literal reorders between builds and the bundle
       // hash changes for identical sources, which breaks artifact reproducibility checks.

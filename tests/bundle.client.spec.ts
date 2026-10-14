@@ -79,6 +79,42 @@ describe('client bundle and package artifact', () => {
     expect(readFileSync(resolve(root, 'lib/client.js'), 'utf8')).toBeTruthy()
   })
 
+  it('emits no checkout-absolute path, so artifacts do not depend on where they were built', () => {
+    const clientSource = readFileSync(resolve(root, 'lib/client.js'), 'utf8')
+    // CSS virtual module ids become `//#region` comments; carrying the absolute path made two
+    // builds of identical sources differ. Only the package-relative path may appear.
+    expect(clientSource).not.toContain(root)
+    expect(clientSource).toContain('//#region \\0dsh-shortcuts-css:src/client/styles/')
+  })
+
+  it('anchors CSS Module class names at the package root so any checkout builds identically', async () => {
+    const { transform } = await import('lightningcss')
+    const cssFile = resolve(root, 'src/client/styles/InteractionSurface.module.css')
+    const code = readFileSync(cssFile)
+    const options = (checkoutRoot: string) => ({
+      filename: resolve(checkoutRoot, 'src/client/styles/InteractionSurface.module.css'),
+      projectRoot: checkoutRoot,
+      cssModules: { pattern: '[hash]_[local]' },
+      minify: true,
+    })
+    // Two checkouts of the same source at different absolute paths must emit the same class name.
+    // Without `projectRoot` the hash follows the resolved path, so a CI build under
+    // /home/runner/work/... and a local clone under /Volumes/... produced different bundles.
+    const local = transform({ ...options(root), code })
+    const elsewhere = transform({ ...options('/home/runner/work/dsh-client-ui-shortcuts/dsh-client-ui-shortcuts'), code })
+    expect(local.exports?.root?.name).toBeDefined()
+    expect(elsewhere.exports?.root?.name).toBe(local.exports?.root?.name)
+  })
+
+  it('passes that anchored projectRoot through the real bundle transform options', async () => {
+    const { cssModuleTransformOptions } = await import('../scripts/client-bundle.ts')
+    const cssFile = resolve(root, 'src/client/styles/InteractionSurface.module.css')
+    // The build must use the anchored options, not a bare `filename`; otherwise the test above
+    // would pass while the shipped bundle still depended on the checkout path.
+    expect(cssModuleTransformOptions(cssFile).projectRoot).toBe(root)
+    expect(cssModuleTransformOptions(cssFile).filename).toBe(cssFile)
+  })
+
   it('loads and composes the generated bundle through official DSH tsx when available', () => {
     const official = process.env.DSH_CHECKOUT ?? '/Volumes/hydisk/deepseek-harness'
     const tsx = resolve(official, 'node_modules/.bin/tsx')
