@@ -275,6 +275,8 @@ export function createQuickPanelModel(
         readonly final: { readonly binding: ShortcutBinding | null } | 'reset'
         /** Current accepted override, or undefined when the command inherits its default. */
         readonly previous: ShortcutBinding | null | undefined
+        /** Effective keys must be released even when inherited from the official default. */
+        readonly release: boolean
       }
       const planned: Planned[] = []
       for (const [id, entry] of Object.entries(document.shortcuts)) {
@@ -286,13 +288,14 @@ export function createQuickPanelModel(
         if (!entry.modified) {
           // The file recorded the official default, so the override must go away entirely.
           if (!currentlyModified) continue
-          planned.push({ id: id as ShortcutCommandId, final: 'reset', previous })
+          planned.push({ id: id as ShortcutCommandId, final: 'reset', previous, release: row.binding !== null })
           continue
         }
         const described = describeCandidate(entry.binding, id)
         if (described.issue !== null) { message = { code: 'unsupported' }; publish(); return }
         if (currentlyModified && sameBinding(row.binding, described.binding)) continue
-        planned.push({ id: id as ShortcutCommandId, final: { binding: described.binding ?? null }, previous })
+        planned.push({ id: id as ShortcutCommandId, final: { binding: described.binding ?? null }, previous,
+          release: row.binding !== null })
       }
 
       saving = true
@@ -325,7 +328,7 @@ export function createQuickPanelModel(
         // Release every key the file moves or clears before writing anything back, so the writes
         // never collide with the state they are replacing.
         for (const item of planned) {
-          if (item.previous === undefined) continue
+          if (!item.release) continue
           const failure = await apply({ type: 'set', id: item.id, binding: null }, item.id)
           if (disposed) return
           if (failure !== null) {
@@ -347,7 +350,7 @@ export function createQuickPanelModel(
             }
             continue
           }
-          if (item.previous !== undefined && item.final.binding === null) continue
+          if (item.release && item.final.binding === null) continue
           const failure = await apply({ type: 'set', id: item.id, binding: item.final.binding }, item.id)
           if (disposed) return
           if (failure !== null) {

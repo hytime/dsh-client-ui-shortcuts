@@ -1,3 +1,9 @@
+## Unreleased
+
+### Fixed
+
+- Configuration import now releases affected inherited default bindings before applying a swap or key transfer. Previously only existing overrides were released, causing valid snapshots to fail with a temporary conflict. Regression coverage also verifies restoration of inherited defaults when a later write is refused.
+
 ## 0.2.1 - Checkout-independent build artifacts
 
 ### Fixed

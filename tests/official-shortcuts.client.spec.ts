@@ -616,6 +616,52 @@ describe('complete snapshot import against the published official persistence', 
     b.model.dispose()
   })
 
+  it('imports swapped bindings while both commands still inherit their defaults', async () => {
+    const b = await officialBench()
+
+    await b.model.importConfig(configFile({
+      'a.one': { modified: true, binding: { code: 'KeyM', modifiers: ['shift', 'meta'] } },
+      'a.two': { modified: true, binding: { code: 'KeyB', modifiers: ['shift', 'meta'] } },
+    }))
+
+    expect(b.model.getSnapshot().message).toEqual({ code: 'imported' })
+    expect(b.row('a.one')).toMatchObject({ modified: true, binding: { code: 'KeyM', modifiers: ['shift', 'meta'] } })
+    expect(b.row('a.two')).toMatchObject({ modified: true, binding: { code: 'KeyB', modifiers: ['shift', 'meta'] } })
+    b.model.dispose()
+  })
+
+  it('transfers an inherited default key before clearing its previous owner', async () => {
+    const b = await officialBench()
+
+    await b.model.importConfig(configFile({
+      'a.one': { modified: true, binding: { code: 'KeyM', modifiers: ['shift', 'meta'] } },
+      'a.two': { modified: true, binding: null },
+    }))
+
+    expect(b.model.getSnapshot().message).toEqual({ code: 'imported' })
+    expect(b.row('a.one').binding).toMatchObject({ code: 'KeyM', modifiers: ['shift', 'meta'] })
+    expect(b.row('a.two')).toMatchObject({ modified: true, binding: null })
+    expect(b.overrides()['a.two']).toBeNull()
+    b.model.dispose()
+  })
+
+  it('restores inherited defaults when a later imported binding conflicts with an untouched command', async () => {
+    const b = await officialBench()
+
+    await b.model.importConfig(configFile({
+      'a.one': { modified: true, binding: { code: 'KeyM', modifiers: ['shift', 'meta'] } },
+      'a.two': { modified: true, binding: { code: 'KeyN', modifiers: ['shift', 'meta'] } },
+    }))
+
+    expect(b.model.getSnapshot().message).toEqual({ code: 'conflict', detail: ['New session'] })
+    expect(b.overrides()).toEqual({})
+    expect(b.row('a.one')).toMatchObject({ modified: false, binding: { code: 'KeyB', modifiers: ['shift', 'meta'] } })
+    expect(b.row('a.two')).toMatchObject({ modified: false, binding: { code: 'KeyM', modifiers: ['shift', 'meta'] } })
+    expect(b.row('session.new')).toMatchObject({ modified: false, binding: { code: 'KeyN', modifiers: ['shift', 'meta'] } })
+    expect(b.form.mutate).not.toHaveBeenCalled()
+    b.model.dispose()
+  })
+
   it('frees a key held by a command the same file clears before writing the new owner', async () => {
     const b = await officialBench()
     await b.persist([{ type: 'set', id: 'c.three', binding: { code: 'KeyK', modifiers: ['shift', 'meta'] } }])
