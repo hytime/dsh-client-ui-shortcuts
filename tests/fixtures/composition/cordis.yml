@@ -3,4 +3,4 @@
 # the installed shortcuts bundle row.
 - insert:
     - id: dsh-ui-shortcuts
-      name: '@hytime/dsh-client-ui-shortcuts'
+      name: '@takomitkm/dsh-shortcuts'

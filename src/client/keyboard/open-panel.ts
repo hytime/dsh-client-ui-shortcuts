@@ -1,7 +1,7 @@
 import type { ShortcutCommand, ShortcutCommandId } from '@deepseek-ai/dsh-client-shortcuts/client'
 
-export const OPEN_PANEL_COMMAND = 'hytime.shortcuts.open' as ShortcutCommandId
-export const PROFILE_SHORTCUT_MODAL = 'hytime-shortcuts'
+export const OPEN_PANEL_COMMAND = 'dsh-shortcuts.open' as ShortcutCommandId
+export const PROFILE_SHORTCUT_MODAL = 'dsh-shortcuts-panel'
 
 /** One editable command; DSH owns routing, recording, conflicts and device persistence. */
 export function createOpenPanelCommand(label: () => string, toggle: () => void): ShortcutCommand {

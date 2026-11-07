@@ -1,5 +1,5 @@
 {
-  "name": "@hytime/dsh-client-ui-shortcuts",
+  "name": "@takomitkm/dsh-shortcuts",
   "version": "0.2.1",
   "description": "Quick panel using official DSH shortcuts, with opt-in question and approval enhancements",
   "keywords": [

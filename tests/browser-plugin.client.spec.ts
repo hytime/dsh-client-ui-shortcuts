@@ -74,20 +74,20 @@ describe('current DSH integration', () => {
     const b = await bench()
     const model = b.model()
     expect(model.describe({ code: 'KeyG', modifiers: ['meta'] })).toMatchObject({ keys: ['⌘', 'G'] })
-    await model.startRecording('hytime.shortcuts.open')
+    await model.startRecording('dsh-shortcuts.open')
     expect(b.shortcuts.recording).toHaveBeenCalledWith(true)
-    expect(model.getSnapshot().recordingCommand).toBe('hytime.shortcuts.open')
-    await model.saveBinding('hytime.shortcuts.open', { code: 'KeyG', modifiers: ['meta'] })
-    expect(b.shortcuts.edit).toHaveBeenCalledWith({ type: 'set', id: 'hytime.shortcuts.open', binding: { code: 'KeyG', modifiers: ['meta'] } }, 'r1')
+    expect(model.getSnapshot().recordingCommand).toBe('dsh-shortcuts.open')
+    await model.saveBinding('dsh-shortcuts.open', { code: 'KeyG', modifiers: ['meta'] })
+    expect(b.shortcuts.edit).toHaveBeenCalledWith({ type: 'set', id: 'dsh-shortcuts.open', binding: { code: 'KeyG', modifiers: ['meta'] } }, 'r1')
     model.stopRecording()
     expect(b.shortcuts.recording).toHaveBeenLastCalledWith(false)
-    await model.resetCommand('hytime.shortcuts.open')
-    expect(b.shortcuts.edit).toHaveBeenLastCalledWith({ type: 'reset', id: 'hytime.shortcuts.open' }, 'r1')
+    await model.resetCommand('dsh-shortcuts.open')
+    expect(b.shortcuts.edit).toHaveBeenLastCalledWith({ type: 'reset', id: 'dsh-shortcuts.open' }, 'r1')
     await b.feature.dispose()
   })
   it('registers two official commands (panel + composer focus) and no interaction takeovers by default', async () => {
     const b = await bench()
-    expect([...b.commands.keys()]).toEqual(['hytime.shortcuts.open', 'hytime.shortcuts.composerFocus'])
+    expect([...b.commands.keys()]).toEqual(['dsh-shortcuts.open', 'dsh-shortcuts.composerFocus'])
     expect(b.entries.map(entry => entry.options.name)).toEqual(['shell.overlay', 'plugins.bundle.config'])
     expect(b.model().getSnapshot()).toMatchObject({ questionEnabled: false, approvalEnabled: false })
     await b.feature.dispose()
@@ -97,7 +97,7 @@ describe('current DSH integration', () => {
   })
   it('composer focus command resolves handled and focuses the composer textarea', async () => {
     const b = await bench()
-    const command = b.commands.get('hytime.shortcuts.composerFocus')!
+    const command = b.commands.get('dsh-shortcuts.composerFocus')!
     expect(command.defaults).toEqual({}) // unbound on every profile: the user records a combo
     const textarea = document.createElement('textarea')
     textarea.dataset.phase = 'ready'
@@ -120,11 +120,11 @@ describe('current DSH integration', () => {
   })
   it('opens through the official command or settings click and toggles within its own modal', async () => {
     const b = await bench()
-    const command = b.commands.get('hytime.shortcuts.open')!
+    const command = b.commands.get('dsh-shortcuts.open')!
     const resolution = command.resolve({ modal: null, region: 'page', target: null })
     if (resolution.status === 'handled') resolution.run()
     expect(b.model().getSnapshot().open).toBe(true)
-    const close = command.resolve({ modal: 'hytime-shortcuts', region: 'editable', target: null })
+    const close = command.resolve({ modal: 'dsh-shortcuts-panel', region: 'editable', target: null })
     if (close.status === 'handled') close.run()
     expect(b.model().getSnapshot().open).toBe(false)
     b.entries.find(entry => entry.options.name === 'plugins.bundle.config')!.options.inject().model.open()

@@ -32,7 +32,7 @@ describe('client bundle and package artifact', () => {
   it('emits the lazy loader, source map, inline icons, and no network provider', () => {
     const clientSource = readFileSync(resolve(root, 'lib/client.js'), 'utf8')
     expect(clientSource).toContain('window.__ModuleLoader__.load')
-    expect(clientSource).toContain('@hytime/dsh-client-ui-shortcuts')
+    expect(clientSource).toContain('@takomitkm/dsh-shortcuts')
     expect(clientSource).toContain('data-plugin')
     expect(clientSource).not.toContain('api.iconify.design')
     expect(clientSource).not.toContain('github.com/iconify')
@@ -127,9 +127,9 @@ describe('client bundle and package artifact', () => {
     try {
       const profileDir = join(profile, 'profiles', 'shortcuts')
       execFileSync('mkdir', ['-p', profileDir])
-      const packageDir = join(profileDir, 'node_modules', '@hytime', 'dsh-client-ui-shortcuts')
+      const packageDir = join(profileDir, 'node_modules', '@takomitkm', 'dsh-shortcuts')
       execFileSync('tar', ['-xzf', packed.tarball, '-C', profileDir])
-      execFileSync('mkdir', ['-p', join(profileDir, 'node_modules', '@hytime')])
+      execFileSync('mkdir', ['-p', join(profileDir, 'node_modules', '@takomitkm')])
       execFileSync('mv', [join(profileDir, 'package'), packageDir])
       writeFileSync(join(profileDir, 'package.json'), JSON.stringify({
         name: 'dsh-profile-shortcuts',

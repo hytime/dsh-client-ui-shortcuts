@@ -56,7 +56,7 @@ describe('configuration file codec', () => {
       configuration: { questionEnabled: true, approvalEnabled: true, shortcut: { code: 'KeyG', modifiers: ['meta'] } } })
     expect(decodeConfigFile(legacy)).toEqual({ ok: true, document: {
       questionEnabled: true, approvalEnabled: true,
-      shortcuts: { 'hytime.shortcuts.open': { modified: true, binding: { code: 'KeyG', modifiers: ['meta'] } } },
+      shortcuts: { 'dsh-shortcuts.open': { modified: true, binding: { code: 'KeyG', modifiers: ['meta'] } } },
     } })
     const omitted = JSON.stringify({ format: CONFIG_FILE_FORMAT, version: 1,
       configuration: { questionEnabled: false, approvalEnabled: false } })

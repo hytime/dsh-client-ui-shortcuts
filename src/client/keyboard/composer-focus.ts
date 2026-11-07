@@ -1,6 +1,6 @@
 import type { ShortcutCommand, ShortcutCommandId } from '@deepseek-ai/dsh-client-shortcuts/client'
 
-export const COMPOSER_FOCUS_COMMAND = 'hytime.shortcuts.composerFocus' as ShortcutCommandId
+export const COMPOSER_FOCUS_COMMAND = 'dsh-shortcuts.composerFocus' as ShortcutCommandId
 
 const COMPOSER_SELECTOR = 'textarea[data-phase]'
 

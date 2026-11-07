@@ -160,7 +160,7 @@ describe('official summon command', () => {
   it('allows settings and its own modal but blocks other dialogs even under native dispatch', () => {
     const toggle = vi.fn()
     const command = createOpenPanelCommand(() => 'Open', toggle)
-    for (const modal of [null, 'settings', 'hytime-shortcuts']) {
+    for (const modal of [null, 'settings', 'dsh-shortcuts-panel']) {
       const result = command.resolve({ modal, region: 'page', target: null })
       expect(result.status).toBe('handled')
       if (result.status === 'handled') result.run()
@@ -431,7 +431,7 @@ describe('official settings and shortcut projection', () => {
     expect(document.version).toBe(2)
     expect(document.configuration.profile).toBe('web:macos')
     expect(Object.keys(document.configuration.shortcuts).sort()).toEqual(
-      ['hytime.shortcuts.open', 'session.new', 'session.search'])
+      ['dsh-shortcuts.open', 'session.new', 'session.search'])
     expect(document.configuration.shortcuts['session.new']).toMatchObject({
       modified: true, binding: { code: 'KeyJ', modifiers: ['shift', 'meta'] }, label: 'New session',
     })

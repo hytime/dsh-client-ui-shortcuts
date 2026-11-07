@@ -124,11 +124,11 @@ export function decodeConfigFile(raw: string): ConfigFileDecodeResult {
     // A v1 file names one binding for this plugin's summon command, or omits the field entirely.
     if (!Object.hasOwn(configuration, 'shortcut')) return { ok: true, document: { ...base, shortcuts: {} } }
     if (configuration.shortcut === null) {
-      return { ok: true, document: { ...base, shortcuts: { 'hytime.shortcuts.open': { modified: true, binding: null } } } }
+      return { ok: true, document: { ...base, shortcuts: { 'dsh-shortcuts.open': { modified: true, binding: null } } } }
     }
     const parsedShortcut = parseShortcut(configuration.shortcut)
     if (parsedShortcut === 'invalid') return { ok: false, reason: 'invalid' }
-    return { ok: true, document: { ...base, shortcuts: { 'hytime.shortcuts.open': { modified: true, binding: parsedShortcut } } } }
+    return { ok: true, document: { ...base, shortcuts: { 'dsh-shortcuts.open': { modified: true, binding: parsedShortcut } } } }
   }
   const shortcuts = parseShortcuts(configuration.shortcuts)
   if (shortcuts === 'invalid') return { ok: false, reason: 'invalid' }

@@ -88,7 +88,7 @@ function PanelContent({ model, t }: QuickPanelProps): React.ReactElement {
     return () => document.removeEventListener('keydown', onKeyDown, true)
   }, [model, state.recordingCommand])
 
-  const summon = state.commands.find(command => command.id === 'hytime.shortcuts.open')
+  const summon = state.commands.find(command => command.id === 'dsh-shortcuts.open')
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase()
     if (needle === '') return state.commands

@@ -41,7 +41,7 @@ export function apply(ctx: Context): void {
 
   // The command exists only while its rendering surface exists.
   ctx.effect(() => ctx.slots.inject('shell.overlay', () => {
-    const offSlot = ctx.slots.register({ name: 'shell.overlay', id: 'hytime-shortcuts', locale: NS, inject: props }, QuickPanel)
+    const offSlot = ctx.slots.register({ name: 'shell.overlay', id: 'dsh-shortcuts-panel', locale: NS, inject: props }, QuickPanel)
     try {
       const offCommand = ctx.shortcuts.register(createOpenPanelCommand(() => t('quick.open'), model.toggle))
       // Composer focus fills the official catalog's gap; unbound by default,
