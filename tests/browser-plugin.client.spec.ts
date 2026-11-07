@@ -85,15 +85,29 @@ describe('current DSH integration', () => {
     expect(b.shortcuts.edit).toHaveBeenLastCalledWith({ type: 'reset', id: 'hytime.shortcuts.open' }, 'r1')
     await b.feature.dispose()
   })
-  it('registers one official command and no interaction takeovers by default', async () => {
+  it('registers two official commands (panel + composer focus) and no interaction takeovers by default', async () => {
     const b = await bench()
-    expect([...b.commands.keys()]).toEqual(['hytime.shortcuts.open'])
+    expect([...b.commands.keys()]).toEqual(['hytime.shortcuts.open', 'hytime.shortcuts.composerFocus'])
     expect(b.entries.map(entry => entry.options.name)).toEqual(['shell.overlay', 'plugins.bundle.config'])
     expect(b.model().getSnapshot()).toMatchObject({ questionEnabled: false, approvalEnabled: false })
     await b.feature.dispose()
     expect(b.commands.size).toBe(0)
     expect(b.entries).toEqual([])
     expect(b.form.listeners.size + b.catalog.listeners.size).toBe(0)
+  })
+  it('composer focus command resolves handled and focuses the composer textarea', async () => {
+    const b = await bench()
+    const command = b.commands.get('hytime.shortcuts.composerFocus')!
+    expect(command.defaults).toEqual({}) // unbound on every profile: the user records a combo
+    const textarea = document.createElement('textarea')
+    textarea.dataset.phase = 'ready'
+    document.body.append(textarea)
+    const resolution = command.resolve({ modal: null, region: 'page', target: null })
+    expect(resolution.status).toBe('handled')
+    if (resolution.status === 'handled') resolution.run()
+    expect(document.activeElement).toBe(textarea)
+    textarea.remove()
+    await b.feature.dispose()
   })
   it('does not install a DOM keyboard listener or run a fallback when official shortcuts is missing', async () => {
     const add = vi.spyOn(window, 'addEventListener')
