@@ -94,8 +94,28 @@ dsh plugin --profile desktop add github:takomitkm/dsh-bosskey   # 可选:完整 
 
 ### 结论
 
-- **本插件 13 条命令** = Qoder/贴表里"插件做得了"的那部分全集 + 老板键;其余键位要么 DSH 官方已内置,要么被 deja 占用,要么超出浏览器插件能力(命令化不可达的 UI 内部状态、浏览器保留键、OS 级行为)。
+- **本插件 13 条命令** = Qoder/贴表里"插件做得了"的那部分全集 + 老板键;其余键位要么 DSH 官方已内置,要么被 deja 占用,要么超出浏览器插件能力(见下节)。
 - 想要 Ctrl+M/会话模式/思考深度的快捷键,正确的路径是给 DSH 官方提 issue 请其命令化,而非插件 DOM 点击。
+
+### 超出浏览器插件能力的键位(候选官方命令化清单)
+
+以下键位**本插件做不了**,原因不是实现难度而是架构边界。每条附机制与建议归属,可直接用于向 DSH 官方提 discussion/issue 请求命令化:
+
+| 按键 | 动作 | 为什么插件做不了 | 建议归属 |
+|---|---|---|---|
+| `Ctrl+M` | 打开模型菜单 | 模型选择弹层是会话 UI 内部组件:官方未注册命令 id,没有公开服务或 slot 可从外部触发;硬做只能模拟点击 DOM,脆弱且随版本漂移 | 官方命令化(`session.modelMenu`) |
+| `Ctrl+Shift+M` | 切换会话模式(plan/agent) | 同上:模式 chip 无公开服务;第三方 dsh-quick-keys 用 DOM 点击实现,本仓库不采纳此路径 | 官方命令化(`session.toggleMode`) |
+| `Ctrl+T` | 切换思考深度 | reasoning-effort 控件同属会话 UI 内部状态,未命令化 | 官方命令化(`session.cycleThinking`) |
+| `Ctrl+[` / `Ctrl+]` | 视图后退 / 前进 | 客户端没有可寻址的视图历史栈(导航是 React 状态机,无 back/forward API) | 官方实现历史栈 + 命令化 |
+| `Ctrl+±` / `Ctrl+0` | 放大 / 缩小 / 恢复缩放 | 属壳/浏览器层:桌面壳未注册 zoom 加速器,页面层无法注册浏览器保留键 | 桌面壳应用菜单(Electron zoom role)或命令化 |
+| `Ctrl+Alt+Space` | Quick Ask 小框(全局) | 需要全局热键 + 独立悬浮窗,浏览器插件无 OS 窗口能力 | 桌面壳功能,或 OS 级配套插件(参见 dsh-bosskey 的监听器架构) |
+| `Ctrl+Alt+D` | 显隐主窗完整 toggle | 同上:隐藏半边插件可做(boss-hide),唤回半边需要 OS 窗口能力 | 完整 toggle 归桌面壳或 OS 级插件 |
+
+共性的机制边界三条:
+
+1. **命令化缺失**:动作存在于官方 UI,但没有注册为 `ctx.shortcuts` 命令、也没有公开服务——插件只能触达服务与命令,不能触达组件内部状态。
+2. **浏览器保留键**:页面层 `preventDefault` 之前就被浏览器消费的组合(`Ctrl+T/N/W` 等)永远绑不住,web 端做不了,desktop 端原生拦截可以。
+3. **OS 窗口/全局热键**:BrowserWindow 的显隐、全局热键、独立悬浮窗都在壳或独立进程手里;Host 插件是普通 Node 进程,client 插件在浏览器里,都够不着。
 
 ## 可选交互增强(默认关闭)
 
