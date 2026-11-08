@@ -14,6 +14,17 @@ function messageText(message: QuickPanelMessage, t: (key: string) => string): st
 
 const CONFIG_FILE_NAME = 'dsh-shortcuts-config.json'
 
+/**
+ * Linux Web admits only three default combinations (`Mod+/`, `Mod+Shift+,`,
+ * `Mod+Shift+.`), and `Mod+/` belongs to the official `shortcuts.open`, so the
+ * panel explains the rule where the person is about to record. Read from the
+ * user agent because `navigator.platform` is deprecated.
+ */
+function isLinuxWeb(): boolean {
+  if (typeof navigator === 'undefined') return false
+  return /Linux/.test(navigator.userAgent) && !/Android/.test(navigator.userAgent)
+}
+
 /** Download one exported document through a temporary object URL; revoked after the click. */
 function downloadConfig(raw: string): void {
   const url = URL.createObjectURL(new Blob([raw], { type: 'application/json' }))
@@ -66,6 +77,7 @@ function CommandRow({ command, state, model, t }: {
 
 function PanelContent({ model, t }: QuickPanelProps): React.ReactElement {
   const state = useSyncExternalStore(model.subscribe, model.getSnapshot)
+  const isLinux = isLinuxWeb()
   const recorder = useRef<HTMLButtonElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [query, setQuery] = useState('')
@@ -131,6 +143,7 @@ function PanelContent({ model, t }: QuickPanelProps): React.ReactElement {
       </span>
     </div>
     <p className={styles.hint}>{t('quick.officialHint')}</p>
+    {isLinux ? <p className={styles.hint} style={{ marginTop: '8px' }}>{t('quick.linuxWebHint')}</p> : null}
     {state.message !== null ? <p role="alert" className={styles.error}>{messageText(state.message, t)}</p> : null}
     {!state.officialWritable ? <p role="status" className={styles.hint}>{t('quick.officialReadOnly')}</p> : null}
 

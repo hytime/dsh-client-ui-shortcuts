@@ -56,9 +56,9 @@
   },
   "scripts": {
     "clean:lib": "node scripts/clean-lib.mjs",
-    "build:types": "pnpm run clean:lib && tsc",
-    "bundle": "pnpm run build:types && tsdown",
-    "prepare": "pnpm run bundle",
+    "build:types": "node scripts/clean-lib.mjs && tsc",
+    "bundle": "node scripts/build.mjs",
+    "prepare": "node scripts/build.mjs",
     "watch": "tsdown --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"

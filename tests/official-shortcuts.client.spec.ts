@@ -150,10 +150,18 @@ describe('official summon command', () => {
   it('uses one editable ID and leaves unsupported platform defaults unbound', () => {
     const command = createOpenPanelCommand(() => 'Open', vi.fn())
     expect(command.id).toBe(OPEN_PANEL_COMMAND)
+    // One `primary` declaration covers every desktop platform (it expands to
+    // Meta on macOS and Control elsewhere); both browser profiles keep it too.
+    // Linux Web stays unbound: the official allowed set is narrower there.
+    const binding = { code: 'KeyS', modifiers: ['primary', 'alt', 'shift'] }
     expect(command.defaults).toEqual({
-      'web:macos': { code: 'KeyS', modifiers: ['meta', 'alt', 'shift'] },
-      'web:windows': { code: 'KeyS', modifiers: ['control', 'alt', 'shift'] },
+      'desktop:macos': binding,
+      'desktop:windows': binding,
+      'desktop:linux': binding,
+      'web:macos': binding,
+      'web:windows': binding,
     })
+    expect(command.defaults['web:linux']).toBeUndefined()
     expect(command.regions).toEqual(['page', 'editable'])
   })
 

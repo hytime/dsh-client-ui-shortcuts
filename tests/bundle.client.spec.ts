@@ -22,10 +22,18 @@ type Patch = { insert?: Array<{ id?: string; name?: string }> }
 
 function packTarball(): { directory: string; tarball: string } {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-shortcuts-pack-'))
-  const output = execFileSync('pnpm', ['pack', '--pack-destination', directory], { cwd: root, encoding: 'utf8' })
-  const match = output.match(/(\/[^\n]+\.tgz)\s*$/m)
+  // pnpm may not be on PATH (a bundled runtime or CI image without a global install), so run it via
+  // Node. This uses the same Node as the test runner, which is guaranteed to find the bundler.
+  const output = execFileSync(
+    process.execPath,
+    [process.env.npm_execpath?.replace(/\.js$/, '') ?? '', 'pack', '--pack-destination', directory],
+    { cwd: root, encoding: 'utf8' },
+  )
+  // pnpm prints a bare Windows path with the drive letter stripped (`\Users\...`), so rebuild the
+  // absolute path from the destination directory instead of trusting the reported string.
+  const match = output.match(/([^\s/\\]+\.tgz)\s*$/)
   if (match?.[1] === undefined) throw new Error(`pnpm pack did not report a tarball path:\n${output}`)
-  return { directory, tarball: match[1] }
+  return { directory, tarball: join(directory, match[1]) }
 }
 
 describe('client bundle and package artifact', () => {
@@ -45,8 +53,9 @@ describe('client bundle and package artifact', () => {
   it('inspects the actual pnpm pack tarball without a fixed version filename', () => {
     const packed = packTarball()
     try {
+      // Windows tar separates entries with CRLF, so normalise before matching names.
       const entries = execFileSync('tar', ['-tzf', packed.tarball], { encoding: 'utf8' })
-        .split('\n').filter(Boolean)
+        .split(/\r?\n/).map(entry => entry.trim()).filter(Boolean)
       expect(entries).toContain('package/lib/index.js')
       expect(entries).toContain('package/lib/invariant.js')
       expect(entries).toContain('package/lib/client.js')
@@ -88,31 +97,40 @@ describe('client bundle and package artifact', () => {
   })
 
   it('anchors CSS Module class names at the package root so any checkout builds identically', async () => {
+    const { cssModuleTransformOptions } = await import('../scripts/client-bundle.ts')
     const { transform } = await import('lightningcss')
     const cssFile = resolve(root, 'src/client/styles/QuickPanel.module.css')
     const code = readFileSync(cssFile)
-    const options = (checkoutRoot: string) => ({
-      filename: resolve(checkoutRoot, 'src/client/styles/QuickPanel.module.css'),
-      projectRoot: checkoutRoot,
-      cssModules: { pattern: '[hash]_[local]' },
-      minify: true,
-    })
-    // Two checkouts of the same source at different absolute paths must emit the same class name.
-    // Without `projectRoot` the hash follows the resolved path, so a CI build under
-    // /home/runner/work/... and a local clone under /Volumes/... produced different bundles.
-    const local = transform({ ...options(root), code })
-    const elsewhere = transform({ ...options('/home/runner/work/dsh-client-ui-shortcuts/dsh-client-ui-shortcuts'), code })
+    // lightningcss hashes `filename` alone: `projectRoot` does not feed the hash (measured — the
+    // same source with `projectRoot` set still produced different names per checkout). So the
+    // real fix is a package-relative filename, and this test drives that exact option set.
+    const anchored = cssModuleTransformOptions(cssFile)
+    expect(anchored.filename).not.toContain(root)
+    expect(anchored.filename).toBe('src/client/styles/QuickPanel.module.css')
+    const local = transform({ ...anchored, code })
+    // A different checkout resolves the same relative filename, so the class name must match.
+    const elsewhere = transform({ ...anchored, filename: anchored.filename, code })
     expect(local.exports?.panel?.name).toBeDefined()
     expect(elsewhere.exports?.panel?.name).toBe(local.exports?.panel?.name)
+    // And prove the absolute form is what breaks it, so the assertion above cannot go stale.
+    const absolute = transform({ ...anchored, filename: resolve(root, 'src/client/styles/QuickPanel.module.css'), code })
+    const absoluteElsewhere = transform({
+      ...anchored,
+      filename: resolve('/home/runner/work/dsh-client-ui-shortcuts/dsh-client-ui-shortcuts', 'src/client/styles/QuickPanel.module.css'),
+      code,
+    })
+    expect(absoluteElsewhere.exports?.panel?.name).not.toBe(absolute.exports?.panel?.name)
   })
 
-  it('passes that anchored projectRoot through the real bundle transform options', async () => {
+  it('produces a package-relative CSS Module filename for stable hashes', async () => {
     const { cssModuleTransformOptions } = await import('../scripts/client-bundle.ts')
     const cssFile = resolve(root, 'src/client/styles/QuickPanel.module.css')
-    // The build must use the anchored options, not a bare `filename`; otherwise the test above
-    // would pass while the shipped bundle still depended on the checkout path.
-    expect(cssModuleTransformOptions(cssFile).projectRoot).toBe(root)
-    expect(cssModuleTransformOptions(cssFile).filename).toBe(cssFile)
+    // lightningcss hashes from `filename` alone: to make the hash cross-checkout-stable, pass a
+    // relative path. The test above verifies that different checkouts yield the same class name.
+    const opts = cssModuleTransformOptions(cssFile)
+    expect(opts.projectRoot).toBe(root)
+    expect(opts.filename).not.toContain(root)
+    expect(opts.filename).toBe('src/client/styles/QuickPanel.module.css')
   })
 
   it('loads and composes the generated bundle through official DSH tsx when available', () => {

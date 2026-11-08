@@ -109,13 +109,19 @@ describe('package manifest', () => {
   })
 
   it('builds published entries after a Git source install', () => {
-    expect(manifest.scripts.prepare).toBe('pnpm run bundle')
+    // The prepare script runs on `pnpm pack` and on a Git-source install, where PATH may hold
+    // neither a global pnpm nor a matching Node. It must therefore call Node directly.
+    expect(manifest.scripts.prepare).toBe('node scripts/build.mjs')
+    expect(manifest.scripts.bundle).toBe('node scripts/build.mjs')
     expect(manifest.scripts.typecheck).toBe('tsc --noEmit')
     expect(manifest.scripts.test).toBe('vitest run')
     // tsdown emits both faces into one directory with clean: false, so the build
     // clears lib/ first; otherwise a deleted module keeps shipping its .d.ts.
-    expect(manifest.scripts['build:types']).toBe('pnpm run clean:lib && tsc')
+    expect(manifest.scripts['build:types']).toBe('node scripts/clean-lib.mjs && tsc')
     expect(manifest.scripts['clean:lib']).toBe('node scripts/clean-lib.mjs')
+    // The build script must not shell out to a package manager: that was the packaging failure.
+    const buildScript = readFileSync(resolve(root, 'scripts/build.mjs'), 'utf8')
+    expect(buildScript).not.toMatch(/['"]pnpm['"]/)
   })
 
   it('points every README screenshot at GitHub and keeps the file in the repository', () => {
