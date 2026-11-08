@@ -2,7 +2,22 @@
 
 [![npm version](https://img.shields.io/npm/v/%40hytime%2Fdsh-client-ui-shortcuts?logo=npm&label=upstream)](https://www.npmjs.com/package/@hytime/dsh-client-ui-shortcuts) [![license](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/license/mit/)
 
-DSH(DeepSeek Harness)Web/桌面端的**双轨快捷键插件**(基于 [hytime/dsh-client-ui-shortcuts](https://github.com/hytime/dsh-client-ui-shortcuts) 的 fork)。本插件把一批高频动作注册为 **DSH 官方快捷键命令**——直接出现在 **DSH 设置 → 通用 → 键盘快捷键**(`Ctrl+/`)里,享受官方的录制改键、冲突检测、按设备持久化;另有快速面板与可选的 Question/Approval 键盘增强。`mod` 在 macOS 上匹配 Cmd、其他平台匹配 Ctrl。
+当前版本 **0.3.0** · 包名 `@takomitkm/dsh-shortcuts` · 基于 [hytime/dsh-client-ui-shortcuts](https://github.com/hytime/dsh-client-ui-shortcuts) 的 fork。
+
+## 安装
+
+```sh
+# 本地源码目录(开发)
+dsh plugin --profile desktop add link:S:\apps\llm\agentwork\dsh-client-ui-shortcuts-fork
+# GitHub(发布后)
+dsh plugin --profile desktop add github:takomitkm/dsh-shortcuts@0.3.0
+```
+
+装完**完全退出桌面端(含托盘)再打开**。浏览器 Web profile 同理:`dsh plugin --profile web add …`。
+
+## 简介
+
+DSH(DeepSeek Harness)Web/桌面端的**双轨快捷键插件**:把一批高频动作注册为 **DSH 官方快捷键命令**——直接出现在 **DSH 设置 → 通用 → 键盘快捷键**(`Ctrl+/`)里,享受官方的录制改键、冲突检测、按设备持久化;另有快速面板与可选的 Question/Approval 键盘增强。`mod` 在 macOS 上匹配 Cmd、其他平台匹配 Ctrl。
 
 ## 命令(按功能域分组,快速面板里同款分组渲染)
 
@@ -96,7 +111,9 @@ dsh plugin --profile desktop add github:takomitkm/dsh-bosskey   # 可选:完整 
 
 - **本插件 13 条命令** = Qoder/贴表里"做得了且值得做"的那部分全集 + 老板键;其余键位要么 DSH 官方已内置,要么被 deja 占用,要么是主动取舍或架构边界(见上节,取舍项在官方命令化后可一行接入)。
 
-### 超出浏览器插件能力的键位(候选官方命令化清单)
+### 本插件未实现 / 超出浏览器插件能力的键位(候选官方命令化清单)
+
+> 相关讨论帖:(待补链接 —— 发布后填入)
 
 以下键位**本插件未实现**。其中大部分是主动取舍(价值低/使用频率不足以抵消维护面),并非全部做不了;确实做不了的也在表里标明机制。每条附现状与机制,可直接用于向 DSH 官方提 discussion/issue 请求命令化:
 
@@ -122,15 +139,6 @@ dsh plugin --profile desktop add github:takomitkm/dsh-bosskey   # 可选:完整 
 |---|---|
 | Question 增强 | 问题卡片支持方向键选择、Enter 确认、Escape 取消任务 |
 | Approval 增强 | 审批卡片支持键盘选择「允许一次/拒绝」;绝不自动授权 |
-
-## 安装
-
-```sh
-dsh plugin --profile desktop add link:S:\apps\llm\agentwork\dsh-client-ui-shortcuts-fork   # 本地开发
-dsh plugin --profile desktop add github:takomitkm/dsh-shortcuts                            # 发布后
-```
-
-装完**完全退出桌面端(含托盘)再打开**。浏览器 Web profile 同理(`--profile web`)。
 
 ## 自定义能力
 

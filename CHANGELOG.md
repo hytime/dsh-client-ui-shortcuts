@@ -1,4 +1,16 @@
-## Unreleased
+## 0.3.0 - Boss key, clipboard paste, full action set, functional groups
+
+### Breaking
+
+- **Package renamed** `@hytime/dsh-client-ui-shortcuts` → `@takomitkm/dsh-shortcuts`; command ids now live under `dsh-shortcuts.*` (`open`, `composerFocus`, `bossHide`, `newSession`, `prevSession`, `nextSession`, `forkSession`, `toggleSidebar`, `toggleDetails`, `toggleTheme`, `scrollTop`, `scrollBottom`, `pasteClipboard`). Re-record any bindings that referenced the old ids.
+
+### Added
+
+- **13 official shortcut commands**: panel, composer focus, boss-key hide, session lifecycle (new / previous / next / fork), view actions (sidebar, details, theme, scroll top/bottom) and clipboard paste — all registered through the official shortcuts service, so they appear in DSH keyboard settings with official recording, conflict checks and per-device persistence.
+- **Two boss keys**: the official-track `bossHide` (hide-to-tray via the `ctx.shortcuts.closeWindow()` bridge) and the settings section for the OS-track `dsh-bosskey` companion (global F9 toggle, status page, PowerToys-style conflict probe).
+- **Task-navigation defaults**: `prevSession` / `nextSession` default to `Ctrl+Shift+[` / `Ctrl+Shift+]` (Linux Web unbound) matching the task-navigation chords common in AI IDEs.
+- **Functional grouping** in the quick panel (General / Input / Sessions / View / Boss Key) and a full keybinding comparison table in the README.
+- MIT `LICENSE` file added (upstream declares MIT in `package.json` but never shipped the file).
 
 ### Fixed
 
