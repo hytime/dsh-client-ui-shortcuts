@@ -1,6 +1,6 @@
 # @takomitkm/dsh-shortcuts
 
-[![npm version](https://img.shields.io/npm/v/%40hytime%2Fdsh-client-ui-shortcuts?logo=npm&label=upstream)](https://www.npmjs.com/package/@hytime/dsh-client-ui-shortcuts) [![license](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/license/mit/)
+[![version](https://img.shields.io/badge/version-0.3.0-blue)](https://github.com/takomitkm/dsh-shortcuts) [![upstream](https://img.shields.io/npm/v/%40hytime%2Fdsh-client-ui-shortcuts?logo=npm&label=upstream)](https://www.npmjs.com/package/@hytime/dsh-client-ui-shortcuts) [![license](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/license/mit/)
 
 当前版本 **0.3.0**(插件自身版本,与 DSH 版本独立)· 包名 `@takomitkm/dsh-shortcuts` · 基于 [hytime/dsh-client-ui-shortcuts](https://github.com/hytime/dsh-client-ui-shortcuts) 的 fork。
 
@@ -139,9 +139,36 @@ dsh plugin --profile desktop add github:takomitkm/dsh-bosskey   # 可选:完整 
 
 ## 自定义能力
 
-- **本插件 13 条命令全部可改键**:官方设置页或快速面板里录制,按设备持久化(Web 存 `dsh.keybindings.v1`,Desktop 存 `userData/keybindings.json`),改错有冲突提示,重置一键回默认。
-- **DSH 官方 7+ 条命令同样可改**(同一份配置,两个入口)。
-- **不可改的**:官方 fixed 输入(发送/换行/上下文,官方契约不可覆盖)与浏览器保留组合键(`Ctrl+T/N/W` 等,页面层绑不住)。
+判定标准:**出现在官方命令目录(catalog)里的命令 = 可改键**;**fixed 输入 / 壳与 OS 级 / 浏览器保留组合 = 不可改**。
+
+### 可自定义(官方命令,改键即生效)
+
+| 命令 id | 动作 | 默认键(桌面) |
+|---|---|---|
+| `browser.new` | 新浏览器页 | `Ctrl+T` |
+| `terminal.new` | 新终端 | `` Ctrl+` `` |
+| `settings.open` | 打开设置 | `Ctrl+,` |
+| `shortcuts.open` | 打开键盘设置 | `Ctrl+/` |
+| `sidebar.left.toggle` | 切换左栏 | `Ctrl+B` |
+| `sidebar.right.toggle` | 切换右栏 | 以官方设置为准 |
+| `workspace.files` | 工作区文件 | `Ctrl+P` |
+| `workspace.openLocal` | 打开本地工作区 | `Ctrl+Alt+O` |
+| `page.close` | 关闭当前上下文 | `Ctrl+W` |
+| `page.refresh` | 刷新当前上下文 | `Ctrl+R` |
+| `fullscreen` | 进入/退出完整视图 | `Mod+Alt+Enter` |
+| **本插件 13 条** `dsh-shortcuts.*` | 面板 / 聚焦输入框 / 粘贴剪贴板 / 新建 / 上一个 / 下一个 / 分叉会话 / 切侧栏 / 切详情 / 切主题 / 滚到顶 / 滚到底 / 老板键·隐藏 | 见上方各节 |
+
+改键位置:DSH 官方设置页(`Ctrl+/`)或插件快速面板,两处读写同一份官方配置;Web 存 `dsh.keybindings.v1`,Desktop 存 `userData/keybindings.json`;冲突会提示,重置一键恢复默认。
+
+### 不可自定义(改不了,别费劲)
+
+| 键 | 归属 / 原因 |
+|---|---|
+| `fixed.send`(Enter)、`fixed.newline`(Shift+Enter) | 官方 fixed 输入,官方契约固定,插件与设置都改不了 |
+| `fixed.slash`(`/`)、`fixed.mention`(`@`)、`fixed.complementary` | 同上,输入法级触发符 |
+| `Ctrl+T` / `Ctrl+N` / `Ctrl+W` 等浏览器保留组合(Web) | 页面层被浏览器先消费;Desktop 端由壳原生拦截,才可绑 |
+| `Ctrl+±` / `Ctrl+0` 缩放 | 壳/浏览器层,未注册成命令(见"未实现"节) |
+| 全局热键(如 dsh-bosskey 的 F9) | OS 级监听器注册,不在 DSH 命令目录内 |
 
 ## 上游与差异
 
