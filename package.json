@@ -10,11 +10,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hytime/dsh-client-ui-shortcuts.git"
+    "url": "git+https://github.com/takomitkm/dsh-shortcuts.git"
   },
-  "homepage": "https://github.com/hytime/dsh-client-ui-shortcuts#readme",
+  "homepage": "https://github.com/takomitkm/dsh-shortcuts#readme",
   "bugs": {
-    "url": "https://github.com/hytime/dsh-client-ui-shortcuts/issues"
+    "url": "https://github.com/takomitkm/dsh-shortcuts/issues"
   },
   "type": "module",
   "main": "lib/index.js",
