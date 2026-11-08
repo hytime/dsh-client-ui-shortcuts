@@ -1,6 +1,6 @@
 # @takomitkm/dsh-shortcuts
 
-[![version](https://img.shields.io/badge/version-0.3.0-blue)](https://github.com/takomitkm/dsh-shortcuts) [![upstream](https://img.shields.io/npm/v/%40hytime%2Fdsh-client-ui-shortcuts?logo=npm&label=upstream)](https://www.npmjs.com/package/@hytime/dsh-client-ui-shortcuts) [![license](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/license/mit/)
+[![version](https://img.shields.io/badge/version-0.3.0-blue)](https://github.com/takomitkm/dsh-shortcuts) [![license](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/license/mit/)
 
 当前版本 **0.3.0**(插件自身版本,与 DSH 版本独立)· 包名 `@takomitkm/dsh-shortcuts` · 基于 [hytime/dsh-client-ui-shortcuts](https://github.com/hytime/dsh-client-ui-shortcuts) 的 fork。
 
