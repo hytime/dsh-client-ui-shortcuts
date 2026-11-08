@@ -104,21 +104,22 @@ export function createNewSessionCommand(label: () => string, workspaces: Workspa
 
 /** Walk to the previous/next session in sidebar display order (wraps around).
  *  Defaults mirror the task-navigation chords common in AI IDEs (Qoder-style
- *  Ctrl+Shift+[ / Ctrl+Shift+]); web:windows is allowed by the official
- *  web-binding rules (primary+shift), web:macos uses primary+shift too,
- *  desktop:windows uses control+shift. Linux Web: no default (narrower set). */
+ *  Ctrl+Shift+[ / Ctrl+Shift+]); the official `primary` modifier expands to
+ *  Cmd on macOS and Ctrl elsewhere, so one declaration covers both. The
+ *  web-binding rules admit primary+shift on Windows and macOS; Linux Web keeps
+ *  no default (narrower allowed set). */
 export function createSessionStepCommand(id: ShortcutCommandId, label: () => string, sessions: SessionsNavFace | undefined, workspaces: WorkspacesNavFace | undefined, delta: number): ShortcutCommand {
-  const mac = { code: delta < 0 ? 'BracketLeft' : 'BracketRight', modifiers: ['meta', 'shift'] as const }
-  const windows = { code: delta < 0 ? 'BracketLeft' : 'BracketRight', modifiers: ['control', 'shift'] as const }
+  const binding = { code: delta < 0 ? 'BracketLeft' : 'BracketRight', modifiers: ['primary', 'shift'] as const }
   return {
     id,
     label,
     aliases: [delta < 0 ? 'previous session' : 'next session'],
     defaults: {
-      'web:macos': mac,
-      'web:windows': windows,
-      'desktop:macos': mac,
-      'desktop:windows': windows,
+      'desktop:macos': binding,
+      'desktop:windows': binding,
+      'desktop:linux': binding,
+      'web:macos': binding,
+      'web:windows': binding,
       // Linux Web deliberately has no default: the official allowed set is narrower.
     },
     regions: ['page', 'editable'],
