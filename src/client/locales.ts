@@ -5,6 +5,7 @@ export const en = {
   'quick.title': 'Quick panel',
   'quick.open': 'Open quick panel',
   'quick.focusComposer': 'Focus composer',
+  'quick.bossHide': 'Boss key: hide window to tray',
   'quick.close': 'Close quick panel',
   'quick.summary': 'Quick access and optional question / approval enhancements.',
   'quick.binding': 'Open-panel shortcut',
@@ -52,7 +53,7 @@ export const en = {
 }
 
 export const zh: Record<keyof typeof en, string> = {
-  'quick.title': '快速面板', 'quick.open': '打开快速面板', 'quick.focusComposer': '聚焦输入框', 'quick.close': '关闭快速面板',
+  'quick.title': '快速面板', 'quick.open': '打开快速面板', 'quick.focusComposer': '聚焦输入框', 'quick.bossHide': '老板键：隐藏窗口到托盘', 'quick.close': '关闭快速面板',
   'quick.summary': '快速呼出，以及可选的问题、审批交互增强。',
   'quick.binding': '呼出面板快捷键', 'quick.unbound': '尚未设置快捷键',
   'quick.record': '录入快捷键', 'quick.rebind': '修改快捷键', 'quick.recording': '请按下组合键…',
@@ -91,7 +92,7 @@ export const zh: Record<keyof typeof en, string> = {
 }
 
 export const ja: Record<keyof typeof en, string> = {
-  'quick.title': 'クイックパネル', 'quick.open': 'クイックパネルを開く', 'quick.focusComposer': '入力欄にフォーカス', 'quick.close': '閉じる',
+  'quick.title': 'クイックパネル', 'quick.open': 'クイックパネルを開く', 'quick.focusComposer': '入力欄にフォーカス', 'quick.bossHide': 'ボスキー：ウィンドウをトレイに隠す', 'quick.close': '閉じる',
   'quick.summary': 'クイックアクセスと任意の質問・承認操作。',
   'quick.binding': 'パネルのショートカット', 'quick.unbound': '未設定',
   'quick.record': 'ショートカットを録音', 'quick.rebind': 'ショートカットを変更', 'quick.recording': 'キーを押してください…',
@@ -130,7 +131,7 @@ export const ja: Record<keyof typeof en, string> = {
 }
 
 export const ko: Record<keyof typeof en, string> = {
-  'quick.title': '빠른 패널', 'quick.open': '빠른 패널 열기', 'quick.focusComposer': '입력창 포커스', 'quick.close': '닫기',
+  'quick.title': '빠른 패널', 'quick.open': '빠른 패널 열기', 'quick.focusComposer': '입력창 포커스', 'quick.bossHide': '보스 키: 창을 트레이로 숨기기', 'quick.close': '닫기',
   'quick.summary': '빠른 실행 및 선택적인 질문·승인 상호작용.',
   'quick.binding': '패널 열기 단축키', 'quick.unbound': '지정된 단축키 없음',
   'quick.record': '단축키 기록', 'quick.rebind': '단축키 변경', 'quick.recording': '키를 누르세요…',

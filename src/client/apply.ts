@@ -14,6 +14,7 @@ import { QuickPanel, QuickPanelSettings } from './components/QuickPanel.js'
 import { createQuickPanelModel } from './settings/quick-panel.js'
 import { createOpenPanelCommand } from './keyboard/open-panel.js'
 import { createComposerFocusCommand, focusComposer } from './keyboard/composer-focus.js'
+import { createBossHideCommand, bossHideViaBridge } from './keyboard/boss-hide.js'
 import { standardProfile } from './profiles/builtins.js'
 import { NS, en, ja, ko, zh } from './locales.js'
 import type { ShortcutSettings } from '../settings.js'
@@ -47,7 +48,13 @@ export function apply(ctx: Context): void {
       // Composer focus fills the official catalog's gap; unbound by default,
       // recorded once in DSH keyboard settings, per-device persisted there.
       const offFocus = ctx.shortcuts.register(createComposerFocusCommand(() => t('quick.focusComposer'), focusComposer))
-      return () => { offFocus(); offCommand(); offSlot(); model.close() }
+      // Boss-key hide half: unbound by default; hide goes through the
+      // official closeWindow bridge (try the official service first, then
+      // this plugin's own registry surface if it owns the name). The wake
+      // half belongs to the OS-level companion surfaced in BosskeySection.
+      const official = ctx.get('shortcuts') as { closeWindow?: () => Promise<unknown> } | undefined
+      const offBoss = ctx.shortcuts.register(createBossHideCommand(() => t('quick.bossHide'), () => { bossHideViaBridge([official as never]) }))
+      return () => { offBoss(); offFocus(); offCommand(); offSlot(); model.close() }
     } catch (error) { offSlot(); throw error }
   }), 'shortcuts: official summon command')
   ctx.effect(() => ctx.slots.inject('plugins.bundle.config', () => ctx.slots.register({

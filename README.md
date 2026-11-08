@@ -1,158 +1,70 @@
-# DSH Client UI Shortcuts
+# @takomitkm/dsh-shortcuts
 
-[![npm version](https://img.shields.io/npm/v/%40hytime%2Fdsh-client-ui-shortcuts?logo=npm&label=npm)](https://www.npmjs.com/package/@hytime/dsh-client-ui-shortcuts) [![license](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/license/mit/)
+[![npm version](https://img.shields.io/npm/v/%40hytime%2Fdsh-client-ui-shortcuts?logo=npm&label=upstream)](https://www.npmjs.com/package/@hytime/dsh-client-ui-shortcuts) [![license](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/license/mit/)
 
-English | [中文](README.zh.md)
+DSH(DeepSeek Harness)Web/桌面端的**双轨快捷键插件**(基于 [hytime/dsh-client-ui-shortcuts](https://github.com/hytime/dsh-client-ui-shortcuts) 的 fork,在其官方快捷键接入之上扩展)。`mod` 在 macOS 上匹配 Cmd、其他平台匹配 Ctrl。
 
-A **quick launcher panel** for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) Web, plus **off-by-default** question and approval enhancements.
+## 两种老板键
 
-DSH owns keybindings: the plugin registers one editable official command and keeps no key store and no second shortcut configuration. It does not modify DSH core, the agent loop, or the model protocol.
+| | 第一种:官方轨 `boss-hide` | 第二种:OS 轨 dsh-bosskey(配套插件) |
+|---|---|---|
+| 形态 | 本插件注册的**官方快捷键命令** `dsh-shortcuts.bossHide` | 独立 Host 插件 [takomitkm/dsh-bosskey](https://github.com/takomitkm/dsh-bosskey) |
+| 键位 | 在 **DSH 官方设置 → 通用 → 键盘快捷键**(`Ctrl+/`)里录制,按设备持久化 | OS 级全局热键(默认 **F9**),`~/.dsh/bosskey/config.json` 可改,**改动即时生效** |
+| 能力 | **只藏**:按一下把 DSH 窗口收进托盘(走官方 `ctx.shortcuts.closeWindow()` 桥,与托盘点击同一份账本) | **完整 toggle**:前台→隐藏、后台→唤回(唤回走壳的官方 `dsh://open` 路径,输入正常) |
+| 范围 | DSH 窗口获得过焦点后的应用内按键 | **任意应用前台**都响应(游戏全屏除外) |
+| 平台 | 桌面端有效;浏览器 Web GUI 静默 no-op | 仅 Windows(桌面端);热键只在 DSH 运行期间有效 |
 
-## Why install it
+**怎么选**:装了 dsh-bosskey 就用 F9(一键双向,全局);只想"窗口在前台时一键藏起来"、不想装 Host 插件,录一个 `boss-hide` 的键即可。两者可并存,互不冲突。
 
-- One shortcut opens the plugin's quick panel.
-- Rebinding uses the official service, so the plugin panel and DSH settings edit the same configuration instead of overwriting each other.
-- Enable keyboard-first question and approval interaction only when you want it; the default is the official DSH UI.
+## 双轨架构
 
-## Install in 60 seconds
+本插件的键位分两条轨,互不抢键:
 
-```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.2.1
-dsh --profile web
+- **官方轨**:`dsh-shortcuts.open`(呼出快速面板,默认 `Ctrl+Alt+Shift+S`)、`dsh-shortcuts.composerFocus`(聚焦输入框,默认未绑定)、`dsh-shortcuts.bossHide`(老板键·隐藏,默认未绑定)——三个命令都注册进 DSH 官方快捷键服务,在 **DSH 设置 → 通用 → 键盘快捷键** 与快速面板里双向同步改键,冲突检测、录制、持久化全由 DSH 官方管理
+- **插件轨**:快速面板内的搜索/跳转、Question/Approval 键盘增强(**默认关闭**,开启才接管)、完整老板键区块(dsh-bosskey 开关、状态页/冲突检测入口)
+
+OS 级全局热键(F9)不属于任何一轨——浏览器插件够不着 OS 窗口,它由 dsh-bosskey 的监听器进程(Win32 `RegisterHotKey`)承担。
+
+## 安装
+
+```sh
+dsh plugin --profile desktop add link:S:\apps\llm\agentwork\dsh-client-ui-shortcuts-fork
 ```
 
-Reload the Web composition after installing or upgrading; an already open page is not hot-updated. See the [installation guide](docs/installation.md) for the full flow.
+或 GitHub(发布后):
 
-## Screenshots
-
-The quick panel opened with `⌘⌥⇧S` (the default). Configuration import/export and search sit at the top, **every official shortcut** is listed below with per-command rebinding, and the two enhancement switches default to off:
-
-![Quick panel](https://raw.githubusercontent.com/hytime/dsh-client-ui-shortcuts/main/docs/panel-overview.png)
-
-Fully usable at 390×844:
-
-![Quick panel on a narrow viewport](https://raw.githubusercontent.com/hytime/dsh-client-ui-shortcuts/main/docs/panel-narrow.png)
-
-Bindings changed in the panel are the same configuration DSH's own settings show:
-
-![Official settings stay in sync](https://raw.githubusercontent.com/hytime/dsh-client-ui-shortcuts/main/docs/official-settings-sync.png)
-
-## Features
-
-### Quick launch
-
-The plugin registers one official command, **Open quick panel**, with these default keys:
-
-| Platform | Default |
-| --- | --- |
-| Web / macOS | `⌘⌥⇧S` |
-| Web / Windows | `Ctrl+Alt+Shift+S` |
-| Web / Linux | No default (the official allowed set is narrower there) |
-
-The panel shows the current official binding, record / change / restore-default / clear controls, the two enhancement switches, and an open button. The Plugins-page entry also opens it, so it stays reachable even when the command is unbound or conflicting.
-
-### Search and rebinding
-
-The search field above the shortcut list filters it by command name, command id, or keycap. It only affects what is shown and never changes what is saved.
-
-### Rebinding in the panel
-
-The panel calls the official `describeBinding()`, `edit()`, and `recording()` APIs:
-
-1. Enter recording and let official native interception take over on Desktop;
-2. Capture one candidate combination (IME compositions, repeats, and modifier-only presses are ignored);
-3. Let the official service normalize it and check reservations and conflicts;
-4. Write it with the official revision fence.
-
-Conflicts, unsupported keys, stale configuration, read failures, and write failures each show their own message. The same command can also be changed in **DSH Settings → General → Keyboard shortcuts**; both surfaces stay in sync.
-
-### Configuration import and export
-
-The panel's top row exports and imports a portable JSON document for backup, migration, and team distribution.
-
-The export is a **complete shortcut snapshot**: every command in the official catalog is written, including untouched defaults, not only the customized ones:
-
-```json
-{
-  "format": "dsh-client-ui-shortcuts/quick-panel",
-  "version": 2,
-  "configuration": {
-    "questionEnabled": false,
-    "approvalEnabled": false,
-    "profile": "web:macos",
-    "shortcuts": {
-      "hytime.shortcuts.open": { "modified": false, "binding": { "code": "KeyS", "modifiers": ["alt","shift","meta"] }, "label": "Open quick panel", "keys": ["⌥","⇧","⌘","S"] },
-      "session.new": { "modified": true, "binding": { "code": "KeyJ", "modifiers": ["shift","meta"] } }
-    }
-  }
-}
+```sh
+dsh plugin --profile desktop add github:takomitkm/dsh-shortcuts
 ```
 
-`modified` decides what an import does, so a default is never pinned as a new override:
+装完**完全退出桌面端(含托盘)再打开**。浏览器 Web profile 同理(`--profile web`)。
 
-| `modified` in the file | Current state | Import action |
-| --- | --- | --- |
-| `true` | — | Write the override; `binding: null` clears that key |
-| `false` | overridden | Restore the official default |
-| `false` | untouched | Leave it alone |
+### 完整老板键(可选)
 
-An import is strictly validated first (format, version, exact field sets, command ids, physical codes and modifiers; unknown fields and future versions are refused wholesale, capped at 1 MiB), then planned against the whole target snapshot: keys the file moves or clears are released before the target values are written through the official `describeBinding()` and `edit()`, so swapping two bindings restores correctly. Both switches commit in one atomic write. The official `edit()` has no batch transaction, so a mid-import failure is rolled back on a best-effort basis and any command still unrestored is listed instead of reporting success. A refused or conflicting official edit never writes the plugin switches. Export normalizes the logical `primary` modifier to the device's real `meta`/`control`, so importing an export and exporting again is byte-identical. See the [integration notes (Chinese)](docs/official-shortcuts-integration.zh.md) for format details and limits.
-
-### Optional interaction enhancements
-
-Both switches default to **off** and take over nothing until enabled:
-
-| Switch | Behavior when enabled |
-| --- | --- |
-| Enhanced question interaction | Arrow-key selection, `Enter` confirmation, `Escape` task cancellation |
-| Enhanced approval interaction | Keyboard selection of "Allow once" or "Reject"; it never grants approval automatically |
-
-`Enter` always activates the focused action: after moving focus to "Reject", `Enter` rejects instead of reusing the previous selection.
-
-## Compatibility
-
-- Plugin `0.2.0` has DSH **`0.2.0-rc.1`** as its verified baseline. `peerDependencies` is `>=0.2.0-rc.1 <1.0.0`, so the baseline and newer releases below `1.0.0` are accepted, while older generations and `1.0.0`+ are refused.
-- DSH validates `@deepseek-ai/dsh-*` peers (prereleases participate in the range check). A mismatch reports the exact peer and the exact-version exemption path; granting that exemption on an unverified release is **not** recommended.
-- The new version does **not** support older DSH releases: no `settingsScope`, no legacy Connection settings API, no `settings.plugin.item` seat, no legacy interaction carriers, and no `0.1.x` profile settings are read. Users on older releases should stay on `0.1.23`.
-
-See the [integration notes (Chinese)](docs/official-shortcuts-integration.zh.md).
-
-## Development and verification
-
-```bash
-pnpm install
-pnpm run typecheck
-pnpm run bundle
-pnpm exec vitest run tests
+```sh
+dsh plugin --profile desktop add github:takomitkm/dsh-bosskey
 ```
 
-Browser acceptance must run through a real DSH Web composition on `0.2.0-rc.1`; the `apps/web` Vite entry is not a validation target for this plugin.
+装完重启,按 F9 即完整 toggle;改键/冲突检测/状态页见插件设置页的「完整老板键」区块(`dsh://bosskey/status`、`dsh://bosskey/conflict`)。
 
-## FAQ
+## 使用
 
-### Does this change model behavior?
+### 官方轨命令(在 DSH 官方键盘设置里改键)
 
-No. The plugin changes browser interaction only. It adds no tools, prompt sections, model-visible events, or model request context.
+| 命令 | 动作 | 默认键 |
+|---|---|---|
+| `dsh-shortcuts.open` | 呼出快速面板 | `Ctrl+Alt+Shift+S`(Linux Web 无默认) |
+| `dsh-shortcuts.composerFocus` | 聚焦输入框 | 未绑定 |
+| `dsh-shortcuts.bossHide` | 老板键:隐藏窗口到托盘 | 未绑定 |
 
-### Why does the shortcut not work?
+### 插件轨(快速面板 `Ctrl+Alt+Shift+S`)
 
-Check the default table above for your platform (Linux Web has no default binding), then inspect the command in **DSH Settings → General → Keyboard shortcuts** or in the plugin panel for a rebind, a cleared binding, or a conflict. The panel entry button always works.
+- **官方快捷键**页签:列出全部官方命令(含上面三个),录制/重置/清除,与 DSH 官方设置双向同步;冲突、不支持组合、配置过期、读写失败各有独立提示
+- **配置**:Question/Approval 增强开关(默认关)、配置导入导出(完整快照,经官方服务逐条恢复)
+- **完整老板键区块**:dsh-bosskey 开关(本浏览器偏好)、`dsh://bosskey/status` 状态页、`dsh://bosskey/conflict` 冲突检测对话框(PowerToys 式试探:瞬时 `RegisterHotKey`,1409=占用)
 
-### Does rebinding in the plugin panel affect DSH settings?
+## 上游与差异
 
-They cannot overwrite each other: both surfaces read and write the same official configuration.
+基于 [hytime/dsh-client-ui-shortcuts](https://github.com/hytime/dsh-client-ui-shortcuts)(其本身已把快捷键管理交给 DSH 官方服务)。本仓库在其之上新增:`composerFocus` 与 `bossHide` 两个官方命令、完整老板键区块、包名与命令 id 命名空间(`@takomitkm/dsh-shortcuts` / `dsh-shortcuts.*`)。上游的快速面板、官方键位管理、Question/Approval 增强全部保留。
 
-### Can I use it without DSH Web?
-
-No. The browser artifact is a DSH loader factory and depends on DSH boot injection, slots, locale, settings, and the official shortcuts service.
-
-## Links
-
-- [Integration notes (Chinese)](docs/official-shortcuts-integration.zh.md)
-- [Installation guide](docs/installation.md)
-- [Changelog](CHANGELOG.md)
-- [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)
-
-## License
-
-MIT
+License: MIT(承上游)。

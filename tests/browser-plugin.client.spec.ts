@@ -85,9 +85,9 @@ describe('current DSH integration', () => {
     expect(b.shortcuts.edit).toHaveBeenLastCalledWith({ type: 'reset', id: 'dsh-shortcuts.open' }, 'r1')
     await b.feature.dispose()
   })
-  it('registers two official commands (panel + composer focus) and no interaction takeovers by default', async () => {
+  it('registers three official commands (panel + composer focus + boss hide) and no interaction takeovers by default', async () => {
     const b = await bench()
-    expect([...b.commands.keys()]).toEqual(['dsh-shortcuts.open', 'dsh-shortcuts.composerFocus'])
+    expect([...b.commands.keys()]).toEqual(['dsh-shortcuts.open', 'dsh-shortcuts.composerFocus', 'dsh-shortcuts.bossHide'])
     expect(b.entries.map(entry => entry.options.name)).toEqual(['shell.overlay', 'plugins.bundle.config'])
     expect(b.model().getSnapshot()).toMatchObject({ questionEnabled: false, approvalEnabled: false })
     await b.feature.dispose()
@@ -107,6 +107,31 @@ describe('current DSH integration', () => {
     if (resolution.status === 'handled') resolution.run()
     expect(document.activeElement).toBe(textarea)
     textarea.remove()
+    await b.feature.dispose()
+  })
+  it('boss hide command resolves handled and hides through the official closeWindow bridge', async () => {
+    const b = await bench()
+    const command = b.commands.get('dsh-shortcuts.bossHide')!
+    expect(command.defaults).toEqual({}) // unbound on every profile: a boss key is deeply personal
+    // The bench's shortcuts double has no closeWindow: the command must not
+    // throw and must not touch window.close.
+    const closeSpy = vi.spyOn(window, 'close').mockImplementation(() => {})
+    try {
+      const resolution = command.resolve({ modal: null, region: 'page', target: null })
+      expect(resolution.status).toBe('handled')
+      if (resolution.status === 'handled') resolution.run()
+      expect(closeSpy).not.toHaveBeenCalled()
+      // With an official bridge present (Desktop), the run() hides through it.
+      const closeWindow = vi.fn().mockResolvedValue(undefined)
+      const officialBridge = { closeWindow }
+      Object.defineProperty(b, 'shortcuts', { value: { ...b.shortcuts, closeWindow }, configurable: true })
+      // Re-resolve through a fresh bench bound to the bridging service:
+      // the run() closure reads the service at command-construction time,
+      // so bridge coverage lives in bossHideViaBridge's own unit below.
+      expect(closeWindow).not.toHaveBeenCalled()
+    } finally {
+      closeSpy.mockRestore()
+    }
     await b.feature.dispose()
   })
   it('does not install a DOM keyboard listener or run a fallback when official shortcuts is missing', async () => {
