@@ -3,6 +3,7 @@ import { Button, Modal, ShortcutKeys, Switch } from '@deepseek-ai/dsh-client-ui-
 import type { QuickPanelCommand, QuickPanelMessage, QuickPanelProps } from '../contract/quick-panel.js'
 import { bindingFromKey, isRecordable } from '../keyboard/record.js'
 import { PROFILE_SHORTCUT_MODAL } from '../keyboard/open-panel.js'
+import { groupCommands } from '../keyboard/groups.js'
 import styles from '../styles/QuickPanel.module.css'
 
 function messageText(message: QuickPanelMessage, t: (key: string) => string): string {
@@ -89,6 +90,8 @@ function PanelContent({ model, t }: QuickPanelProps): React.ReactElement {
   }, [model, state.recordingCommand])
 
   const summon = state.commands.find(command => command.id === 'dsh-shortcuts.open')
+  // Qoder-style functional grouping: sections by workflow domain, registration
+  // order kept inside each group; DSH's own commands stay ungrouped on top.
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase()
     if (needle === '') return state.commands
@@ -97,6 +100,7 @@ function PanelContent({ model, t }: QuickPanelProps): React.ReactElement {
       || command.id.toLowerCase().includes(needle)
       || command.keys.join('').toLowerCase().includes(needle))
   }, [query, state.commands])
+  const sections = useMemo(() => groupCommands(visible), [visible])
 
   return <div className={styles.content}>
     <div className={styles.binding}>
@@ -143,8 +147,15 @@ function PanelContent({ model, t }: QuickPanelProps): React.ReactElement {
       <div ref={scrollRef} className={styles.commandScroll} tabIndex={0} role="group" aria-label={t('quick.commands')}>
         {visible.length === 0
           ? <p className={styles.hint}>{state.commands.length === 0 ? t('quick.commandsEmpty') : t('quick.searchEmpty')}</p>
-          : visible.map(command => (
-            <CommandRow key={command.id} command={command} state={state} model={model} t={t} />
+          : sections.map(section => (
+            <div key={section.group ?? 'other'}>
+              {section.group !== null
+                ? <div className={styles.groupTitle}>{t(`quick.group.${section.group}` as never)}</div>
+                : null}
+              {section.commands.map(command => (
+                <CommandRow key={command.id} command={command} state={state} model={model} t={t} />
+              ))}
+            </div>
           ))}
       </div>
       {/* Focusable recorder target: while a command row is armed, this node owns the captured key. */}
