@@ -102,13 +102,25 @@ export function createNewSessionCommand(label: () => string, workspaces: Workspa
   }
 }
 
-/** Walk to the previous/next session in sidebar display order (wraps around). */
+/** Walk to the previous/next session in sidebar display order (wraps around).
+ *  Defaults mirror the task-navigation chords common in AI IDEs (Qoder-style
+ *  Ctrl+Shift+[ / Ctrl+Shift+]); web:windows is allowed by the official
+ *  web-binding rules (primary+shift), web:macos uses primary+shift too,
+ *  desktop:windows uses control+shift. Linux Web: no default (narrower set). */
 export function createSessionStepCommand(id: ShortcutCommandId, label: () => string, sessions: SessionsNavFace | undefined, workspaces: WorkspacesNavFace | undefined, delta: number): ShortcutCommand {
+  const mac = { code: delta < 0 ? 'BracketLeft' : 'BracketRight', modifiers: ['meta', 'shift'] as const }
+  const windows = { code: delta < 0 ? 'BracketLeft' : 'BracketRight', modifiers: ['control', 'shift'] as const }
   return {
     id,
     label,
     aliases: [delta < 0 ? 'previous session' : 'next session'],
-    defaults: {},
+    defaults: {
+      'web:macos': mac,
+      'web:windows': windows,
+      'desktop:macos': mac,
+      'desktop:windows': windows,
+      // Linux Web deliberately has no default: the official allowed set is narrower.
+    },
     regions: ['page', 'editable'],
     modals: [],
     resolve: () => ({ status: 'handled', run: () => { navigateSession(sessions, workspaces, delta) } }),

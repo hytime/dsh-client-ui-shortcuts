@@ -2,47 +2,47 @@
 
 [![npm version](https://img.shields.io/npm/v/%40hytime%2Fdsh-client-ui-shortcuts?logo=npm&label=upstream)](https://www.npmjs.com/package/@hytime/dsh-client-ui-shortcuts) [![license](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/license/mit/)
 
-DSH(DeepSeek Harness)Web/桌面端的**双轨快捷键插件**(基于 [hytime/dsh-client-ui-shortcuts](https://github.com/hytime/dsh-client-ui-shortcuts) 的 fork)。本插件把一批高频动作注册为 **DSH 官方快捷键命令**——它们直接出现在 **DSH 设置 → 通用 → 键盘快捷键**(`Ctrl+/`)里,享受官方的录制改键、冲突检测、按设备持久化;另有快速面板与可选的 Question/Approval 键盘增强。`mod` 在 macOS 上匹配 Cmd、其他平台匹配 Ctrl。
+DSH(DeepSeek Harness)Web/桌面端的**双轨快捷键插件**(基于 [hytime/dsh-client-ui-shortcuts](https://github.com/hytime/dsh-client-ui-shortcuts) 的 fork)。本插件把一批高频动作注册为 **DSH 官方快捷键命令**——直接出现在 **DSH 设置 → 通用 → 键盘快捷键**(`Ctrl+/`)里,享受官方的录制改键、冲突检测、按设备持久化;另有快速面板与可选的 Question/Approval 键盘增强。`mod` 在 macOS 上匹配 Cmd、其他平台匹配 Ctrl。
 
-命令按**功能域**分组(Qoder 风格),快速面板里按组渲染:
+## 命令(按功能域分组,快速面板里同款分组渲染)
 
-## 通用(General)
+### 通用(General)
 
 | 命令 | 动作 | 默认键 |
 |---|---|---|
 | `dsh-shortcuts.open` | 呼出快速面板 | `Ctrl+Alt+Shift+S`(Linux Web 无默认) |
 
-快速面板列出**全部官方命令**(含 DSH 自带的 7 条),搜索过滤、录制/重置/清除,与 DSH 官方设置双向同步;配置导入导出(完整快照,经官方服务逐条恢复,支持键位互换)。
+快速面板列出**全部官方命令**(含 DSH 自带的),搜索过滤、录制/重置/清除,与 DSH 官方设置双向同步;配置导入导出(完整快照,经官方服务逐条恢复,支持键位互换)。
 
-## 输入(Input)
+### 输入(Input)
 
 | 命令 | 动作 | 默认键 |
 |---|---|---|
 | `dsh-shortcuts.composerFocus` | 聚焦输入框 | 未绑定 |
 | `dsh-shortcuts.pasteClipboard` | 粘贴剪贴板到输入框(光标处插入,替换选区,自动聚焦) | 未绑定 |
 
-## 会话(Sessions)
+### 会话(Sessions)
 
 | 命令 | 动作 | 默认键 |
 |---|---|---|
 | `dsh-shortcuts.newSession` | 新建会话 | 未绑定 |
-| `dsh-shortcuts.prevSession` | 上一个会话(侧栏顺序,循环) | 未绑定 |
-| `dsh-shortcuts.nextSession` | 下一个会话(侧栏顺序,循环) | 未绑定 |
+| `dsh-shortcuts.prevSession` | 上一个会话(侧栏顺序,循环) | `Ctrl+Shift+[`(Linux Web 无默认) |
+| `dsh-shortcuts.nextSession` | 下一个会话(侧栏顺序,循环) | `Ctrl+Shift+]`(Linux Web 无默认) |
 | `dsh-shortcuts.forkSession` | 分叉当前会话 | 未绑定 |
 
 会话切换镜像侧栏的完整显示顺序(工作区按注册表顺序、组内按最近活动排序、未分组桶垫底),跳过空白与归档行,两端循环。
 
-## 视图(View)
+### 视图(View)
 
 | 命令 | 动作 | 默认键 |
 |---|---|---|
-| `dsh-shortcuts.toggleSidebar` | 切换侧栏 | 未绑定 |
+| `dsh-shortcuts.toggleSidebar` | 切换侧栏 | 未绑定(DSH 官方已有 `Ctrl+B`,勿重复录制) |
 | `dsh-shortcuts.toggleDetails` | 切换详情面板 | 未绑定 |
 | `dsh-shortcuts.toggleTheme` | 切换浅色/深色主题 | 未绑定 |
 | `dsh-shortcuts.scrollTop` | 滚动到对话顶部 | 未绑定 |
 | `dsh-shortcuts.scrollBottom` | 滚动到对话底部 | 未绑定 |
 
-## 老板键(Boss Key)——两种
+### 老板键(Boss Key)——两种
 
 | | 第一种:官方轨 `dsh-shortcuts.bossHide` | 第二种:OS 轨 dsh-bosskey(配套插件) |
 |---|---|---|
@@ -58,6 +58,44 @@ dsh plugin --profile desktop add github:takomitkm/dsh-bosskey   # 可选:完整 
 ```
 
 装完重启,设置页的「完整老板键」区块提供开关、状态页(`dsh://bosskey/status`)与 **PowerToys 式冲突检测**(`dsh://bosskey/conflict`:瞬时 `RegisterHotKey` 试探,1409=被系统/其他应用占用)。
+
+## 常见客户端键位对照
+
+对照 ZCode 会话里贴的键位表、Qoder IDE、DSH 官方与其他插件,标注每个键位的归属——**哪些不用本插件做、哪些已由本插件覆盖**。
+
+### AI IDE 常见键位(Qoder / ZCode 贴表)
+
+| 按键 | 动作 | 归属 |
+|---|---|---|
+| `Ctrl+L` / `Ctrl+I` / `Ctrl+Shift+L` | 开关聊天面板 / inline chat | **DSH 官方 UI 自带**(侧栏常驻,无开关语义,官方未注册命令) |
+| `Ctrl+,` / `Ctrl+Shift+,` | 设置 / 个人设置 | **DSH 官方自带**(`settings.open` = `Ctrl+,`) |
+| `Ctrl+Shift+P` | 命令面板 | **DSH 官方自带**(快速命令菜单) |
+| Enter / Shift+Enter | 发送 / 换行 | **DSH 官方 fixed 输入**(`fixed.send` / `fixed.newline`) |
+| `#` / `/` / `@` | 加上下文 / 快捷命令 | **DSH 官方 UI 自带**(`fixed.slash` / `fixed.mention` 等) |
+| `Ctrl+Enter` / `Ctrl+Backspace` | 接受/拒绝全部变更 | **DSH 官方 diff UI 自带**(无插件介入点) |
+| `Ctrl+Shift+⏎` / `Ctrl+Shift+⌫` | 接受/拒绝单条变更 | 同上 |
+| `Ctrl+Shift+[` / `]` | 上一个/下一个任务 | **本插件** `prevSession`/`nextSession`(会话级;默认键已对齐) |
+| `Alt+J` / `Alt+K` | 下一个/上一个变更 | **DSH 官方 diff UI 自带** |
+| `Ctrl+F` | 任务内查找 | **deja 插件专属**(DSH PR #5978 把会话内查找交给 deja;勿在本插件重复) |
+| `Ctrl+M` | 打开模型菜单 | ❌ 超出插件能力:模型菜单是会话 UI 内部组件,官方无命令 id、无服务可触发 |
+| `Ctrl+Shift+M` | 切换会话模式 | ❌ 超出插件能力(无公开服务;第三方用 DOM 点击实现,脆弱,本仓库不做) |
+| `Ctrl+T` | 切换思考深度 | ❌ 同上(官方 reasoning-effort 控件无命令化) |
+| `Ctrl+[` / `Ctrl+]` | 后退 / 前进 | ❌ 超出插件能力:客户端无视图历史栈可寻址 |
+| `Ctrl+N` | 新建任务 | **本插件** `newSession`(官方 `session.new` 未注册成命令,且 Ctrl+N 是浏览器保留键;本插件默认未绑定,规避此问题) |
+| `Ctrl+O` | 打开工作区 | **DSH 官方自带**(`workspace.openLocal`) |
+| `Ctrl+W` | 关闭当前上下文 | **DSH 官方自带**(`page.close`,桌面端兜底 closeWindow) |
+| `Ctrl+B` | 切换左侧栏 | **DSH 官方自带**(`sidebar.left.toggle`;本插件另有 `toggleSidebar` 未绑定,别录重) |
+| `` Ctrl+` `` | 切换终端 | **DSH 官方自带**(`terminal.new`) |
+| `Ctrl+Alt` | 切换右侧面板 | **DSH 官方自带**(`sidebar.right.toggle`) |
+| `Ctrl+Shift`(全屏 chord) | 进入/退出完整视图 | **DSH 官方自带**(fullscreen,Mod+Alt+Enter) |
+| `Ctrl+±` / `Ctrl+0` | 放大/缩小/恢复缩放 | **壳/浏览器层**(桌面壳未注册 zoom 加速器;网页继承 Chromium,插件无法注册浏览器保留键) |
+| `Ctrl+Alt+Space` | Quick Ask 小框 | **壳级能力**(MochiNek0/dsh-desktop 等客户端实现);超出浏览器插件范围 |
+| `Ctrl+Alt+D` | 显隐主窗 toggle | **OS 轨**:dsh-bosskey F9 同义;完整 toggle 需 OS 级热键 |
+
+### 结论
+
+- **本插件 13 条命令** = Qoder/贴表里"插件做得了"的那部分全集 + 老板键;其余键位要么 DSH 官方已内置,要么被 deja 占用,要么超出浏览器插件能力(命令化不可达的 UI 内部状态、浏览器保留键、OS 级行为)。
+- 想要 Ctrl+M/会话模式/思考深度的快捷键,正确的路径是给 DSH 官方提 issue 请其命令化,而非插件 DOM 点击。
 
 ## 可选交互增强(默认关闭)
 
@@ -75,8 +113,14 @@ dsh plugin --profile desktop add github:takomitkm/dsh-shortcuts                 
 
 装完**完全退出桌面端(含托盘)再打开**。浏览器 Web profile 同理(`--profile web`)。
 
+## 自定义能力
+
+- **本插件 13 条命令全部可改键**:官方设置页或快速面板里录制,按设备持久化(Web 存 `dsh.keybindings.v1`,Desktop 存 `userData/keybindings.json`),改错有冲突提示,重置一键回默认。
+- **DSH 官方 7+ 条命令同样可改**(同一份配置,两个入口)。
+- **不可改的**:官方 fixed 输入(发送/换行/上下文,官方契约不可覆盖)与浏览器保留组合键(`Ctrl+T/N/W` 等,页面层绑不住)。
+
 ## 上游与差异
 
-基于 [hytime/dsh-client-ui-shortcuts](https://github.com/hytime/dsh-client-ui-shortcuts)(其本身已把快捷键管理交给 DSH 官方服务)。本仓库把 [blue-a11y/dsh-client-shortcuts](https://github.com/blue-a11y/dsh-client-shortcuts) 的全部动作集重新实现为官方命令(输入/会话/视图域 + 老板键),新增功能域分组与完整老板键区块;上游的快速面板、官方键位管理、Question/Approval 增强全部保留。
+基于 [hytime/dsh-client-ui-shortcuts](https://github.com/hytime/dsh-client-ui-shortcuts)(其本身已把快捷键管理交给 DSH 官方服务)。本仓库把 [blue-a11y/dsh-client-shortcuts](https://github.com/blue-a11y/dsh-client-shortcuts) 的全部动作集重新实现为官方命令,新增功能域分组、完整老板键区块与键位对照表。上游的快速面板、官方键位管理、Question/Approval 增强全部保留。
 
 License: MIT(承上游)。
