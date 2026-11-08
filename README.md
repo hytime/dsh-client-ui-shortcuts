@@ -2,7 +2,9 @@
 
 [![npm version](https://img.shields.io/npm/v/%40hytime%2Fdsh-client-ui-shortcuts?logo=npm&label=upstream)](https://www.npmjs.com/package/@hytime/dsh-client-ui-shortcuts) [![license](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/license/mit/)
 
-当前版本 **0.3.0** · 包名 `@takomitkm/dsh-shortcuts` · 基于 [hytime/dsh-client-ui-shortcuts](https://github.com/hytime/dsh-client-ui-shortcuts) 的 fork。
+当前版本 **0.3.0**(插件自身版本,与 DSH 版本独立)· 包名 `@takomitkm/dsh-shortcuts` · 基于 [hytime/dsh-client-ui-shortcuts](https://github.com/hytime/dsh-client-ui-shortcuts) 的 fork。
+
+兼容性:适配 **DSH 0.2.x**(本机实测 `0.2.1-rc.5`;`peerDependencies` 声明 `>=0.2.0-rc.1 <1.0.0`)。DSH 大版本升级导致 API 变更时,本插件升次版本号并同步放宽/收紧 peer 范围。
 
 ## 安装
 
