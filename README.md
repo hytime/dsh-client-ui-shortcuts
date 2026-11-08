@@ -65,6 +65,7 @@ dsh plugin --profile desktop add github:takomitkm/dsh-bosskey
 | `dsh-shortcuts.toggleTheme` | 切换浅色/深色主题 | 未绑定 |
 | `dsh-shortcuts.scrollTop` | 滚动到对话顶部 | 未绑定 |
 | `dsh-shortcuts.scrollBottom` | 滚动到对话底部 | 未绑定 |
+| `dsh-shortcuts.pasteClipboard` | 粘贴剪贴板到输入框 | 未绑定 |
 
 除面板外的命令默认未绑定——在官方设置页或快速面板里录制一次,按设备持久化。会话切换镜像侧栏的完整显示顺序(工作区按注册表顺序、组内按最近活动排序、未分组桶垫底),跳过空白与归档行,两端循环。
 

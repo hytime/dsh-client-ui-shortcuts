@@ -19,6 +19,7 @@ import { createNewSessionCommand, createPrevSessionCommand, createNextSessionCom
 import type { SessionsNavFace, WorkspacesNavFace } from './keyboard/session-actions.js'
 import { createToggleSidebarCommand, createToggleDetailsCommand, createToggleThemeCommand, createScrollTopCommand, createScrollBottomCommand } from './keyboard/ui-actions.js'
 import type { LayoutFace, ThemeFace } from './keyboard/ui-actions.js'
+import { createPasteClipboardCommand } from './keyboard/paste-clipboard.js'
 import { standardProfile } from './profiles/builtins.js'
 import { NS, en, ja, ko, zh } from './locales.js'
 import type { ShortcutSettings } from '../settings.js'
@@ -75,6 +76,7 @@ export function apply(ctx: Context): void {
         ctx.shortcuts.register(createToggleThemeCommand(() => t('quick.toggleTheme'), theme)),
         ctx.shortcuts.register(createScrollTopCommand(() => t('quick.scrollTop'))),
         ctx.shortcuts.register(createScrollBottomCommand(() => t('quick.scrollBottom'))),
+        ctx.shortcuts.register(createPasteClipboardCommand(() => t('quick.pasteClipboard'))),
       ]
       return () => { for (const d of disposers.reverse()) d(); offBoss(); offFocus(); offCommand(); offSlot(); model.close() }
     } catch (error) { offSlot(); throw error }

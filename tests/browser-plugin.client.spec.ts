@@ -100,6 +100,7 @@ describe('current DSH integration', () => {
       'dsh-shortcuts.toggleTheme',
       'dsh-shortcuts.scrollTop',
       'dsh-shortcuts.scrollBottom',
+      'dsh-shortcuts.pasteClipboard',
     ])
     expect(b.entries.map(entry => entry.options.name)).toEqual(['shell.overlay', 'plugins.bundle.config'])
     expect(b.model().getSnapshot()).toMatchObject({ questionEnabled: false, approvalEnabled: false })
