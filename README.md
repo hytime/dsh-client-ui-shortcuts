@@ -25,11 +25,13 @@ DSH(DeepSeek Harness)Web/桌面端的**纯快捷键插件**:把一批高频动�
 
 ## 命令(按功能域分组,快速面板里同款分组渲染)
 
+> **Linux Web (浏览器端) 的默认键位限制**:DSH 的 Web 快捷键服务在 Linux 上仅允许三个组合作为默认键 — **`Mod+/`**、**`Mod+Shift+,`**、**`Mod+Shift+.`**；其它组合在注册期会被拒。其中 `Mod+/` 已被官方 `shortcuts.open` 占用，因此本插件在 Linux Web 上不声明默认键（显示"Linux Web 无默认"），用户可在设置页自行录制白名单内的组合。
+
 ### 通用(General)
 
 | 命令 | 动作 | 默认键 |
 |---|---|---|
-| `dsh-shortcuts.open` | 呼出快速面板 | `Mod+Alt+Shift+S`(Linux Web 无默认) |
+| `dsh-shortcuts.open` | 呼出快速面板 | `Mod+Alt+Shift+S`(Linux Web 无默认；浏览器服务仅允许 `Mod+/`、`Mod+Shift+,`、`Mod+Shift+.` 三组合，其中 `Mod+/` 已被官方 `shortcuts.open` 占用) |
 
 快速面板列出**全部官方命令**(含 DSH 自带的),搜索过滤、录制/重置/清除,与 DSH 官方设置双向同步;配置导入导出(完整快照,经官方服务逐条恢复,支持键位互换)。DSH 官方自带的「打开键盘设置」= `shortcuts.open`(`Mod+/`),注册位置见 [ui-shortcuts/src/client/index.ts:48](https://github.com/deepseek-ai/deepseek-harness/blob/fcc0ad462172522aaf5c93a7b2e01f6b9f0b0159/packages/client/ui-shortcuts/src/client/index.ts#L48)。
 
@@ -45,8 +47,8 @@ DSH(DeepSeek Harness)Web/桌面端的**纯快捷键插件**:把一批高频动�
 | 命令 | 动作 | 默认键 |
 |---|---|---|
 | `dsh-shortcuts.newSession` | 新建会话 | 未绑定 |
-| `dsh-shortcuts.prevSession` | 上一个会话(侧栏顺序,循环) | `Mod+Shift+[`(Linux Web 无默认) |
-| `dsh-shortcuts.nextSession` | 下一个会话(侧栏顺序,循环) | `Mod+Shift+]`(Linux Web 无默认) |
+| `dsh-shortcuts.prevSession` | 上一个会话(侧栏顺序,循环) | `Mod+Shift+[`(Linux Web 无默认；浏览器服务仅允许 `Mod+/`、`Mod+Shift+,`、`Mod+Shift+.` 三组合) |
+| `dsh-shortcuts.nextSession` | 下一个会话(侧栏顺序,循环) | `Mod+Shift+]`(Linux Web 无默认；浏览器服务仅允许 `Mod+/`、`Mod+Shift+,`、`Mod+Shift+.` 三组合) |
 | `dsh-shortcuts.forkSession` | 分叉当前会话 | 未绑定 |
 
 会话切换镜像侧栏的完整显示顺序(工作区按注册表顺序、组内按最近活动排序、未分组桶垫底),跳过空白与归档行,两端循环。
@@ -97,9 +99,9 @@ dsh plugin --profile desktop add github:takomitkm/dsh-bosskey   # 可选:完整 
 | `Mod+Shift+⏎` / `Mod+Shift+⌫` | 接受/拒绝单条变更 | 同上 |
 | `Mod+Shift+[` / `]` | 上一个/下一个任务 | **本插件** `prevSession`/`nextSession`(会话级;默认键已对齐) |
 | `Alt+J` / `Alt+K` | 下一个/上一个变更 | **DSH 官方 diff UI 自带** |
-| `Mod+F` | 任务内查找 | **官方暂缺**,推荐使用 Deja |
+| `Mod+F` | 任务内查找 | **官方暂缺**,推荐使用 [deja-vu](https://github.com/vshulcz/deja-vu) |
 | `Mod+K` | 搜索会话(标题 + 内容摘录) | **DSH 官方自带**(`session.search`,桌面 `Mod+K` / Web `Mod+Alt+K`;Web 端单 `Mod+K` 被判浏览器保留) |
-| `Mod+Shift+K` | 全局对话搜索(带内容) | 推荐使用 Deja (桌面/Win Web 空位可用; Web macOS/Linux 不可用) |
+| `Mod+Shift+K` | 全局对话搜索(带内容) | 推荐使用 [deja-vu](https://github.com/vshulcz/deja-vu) (桌面/Win Web 空位可用; Web macOS/Linux 不可用) |
 | `Mod+M` | 打开模型菜单 | ❌ 超出插件能力:模型菜单是会话 UI 内部组件,官方无命令 id、无服务可触发 |
 | `Mod+Shift+M` | 切换会话模式 | ❌ 超出插件能力(无公开服务;第三方用 DOM 点击实现,脆弱,本仓库不做) |
 | `Mod+T` | 切换思考深度 | ❌ 同上(官方 reasoning-effort 控件无命令化) |
@@ -117,7 +119,7 @@ dsh plugin --profile desktop add github:takomitkm/dsh-bosskey   # 可选:完整 
 
 ### 结论
 
-- **本插件 13 条命令** = Qoder/贴表里"做得了且值得做"的那部分全集 + 老板键;其余键位要么 DSH 官方已内置,要么被 deja 占用,要么是主动取舍或架构边界(见上节,取舍项在官方命令化后可一行接入)。
+- **本插件 13 条命令** = Qoder/贴表里"做得了且值得做"的那部分全集 + 老板键;其余键位要么 DSH 官方已内置,要么推荐使用 [deja-vu](https://github.com/vshulcz/deja-vu),要么是主动取舍或架构边界(见上节,取舍项在官方命令化后可一行接入)。
 
 ### 本插件未实现 / 超出浏览器插件能力的键位(候选官方命令化清单)
 
