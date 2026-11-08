@@ -118,7 +118,7 @@ dsh plugin --profile desktop add github:takomitkm/dsh-bosskey   # 可选:完整 
 > 关联**已有**请求(均已有人提过,故本插件**未新发** discussion;若要跟进,可在 [Ideas](https://github.com/deepseek-ai/deepseek-harness/discussions/categories/ideas) 分类下回复):
 > - 完整窗口唤起/隐藏(半实现项):[#8749 希望支持全局唤起/隐藏快捷键,以及输入框聚焦快捷键](https://github.com/deepseek-ai/deepseek-harness/discussions/8749)
 > - 桌面端缩放 `Ctrl+±/0`(做不了项):[#8355 [Feature] Windows 桌面版支持 Ctrl+= / Ctrl+- 页面缩放](https://github.com/deepseek-ai/deepseek-harness/discussions/8355) · 另见 [#7769](https://github.com/deepseek-ai/deepseek-harness/discussions/7769)、[#8648](https://github.com/deepseek-ai/deepseek-harness/discussions/8648)、[#8646](https://github.com/deepseek-ai/deepseek-harness/discussions/8646)、[#8962](https://github.com/deepseek-ai/deepseek-harness/discussions/8962)
-> - **若上游接手实现上述任一能力,本 fork 将停止维护并删除**(届时无需再维护本仓库)。
+> - **若上游接手本 fork(合并本 PR 或采纳本仓库实现),本 fork 将停止维护并删除**(届时无需再维护本仓库)。
 
 以下键位**本插件未实现**。其中大部分是主动取舍(价值低/使用频率不足以抵消维护面),并非全部做不了;确实做不了的也在表里标明机制。每条附现状与机制,可直接用于向 DSH 官方提 discussion/issue 请求命令化:
 
@@ -173,6 +173,6 @@ dsh plugin --profile desktop add github:takomitkm/dsh-bosskey   # 可选:完整 
 
 ## 上游与差异
 
-基于 [hytime/dsh-client-ui-shortcuts](https://github.com/hytime/dsh-client-ui-shortcuts)(其本身已把快捷键管理交给 DSH 官方服务)。本仓库把 [blue-a11y/dsh-client-shortcuts](https://github.com/blue-a11y/dsh-client-shortcuts) 的全部动作集重新实现为官方命令,新增功能域分组、完整老板键区块与键位对照表。上游的快速面板与官方键位管理全部保留。已向上游提 PR:[hytime/dsh-client-ui-shortcuts#2](https://github.com/hytime/dsh-client-ui-shortcuts/pull/2);**若上游接手,本 fork 将删除,不再维护**。
+基于 [hytime/dsh-client-ui-shortcuts](https://github.com/hytime/dsh-client-ui-shortcuts)(其本身已把快捷键管理交给 DSH 官方服务)。本仓库把 [blue-a11y/dsh-client-shortcuts](https://github.com/blue-a11y/dsh-client-shortcuts) 的全部动作集重新实现为官方命令,新增功能域分组、完整老板键区块与键位对照表。上游的快速面板与官方键位管理全部保留。已向上游提 PR:[hytime/dsh-client-ui-shortcuts#2](https://github.com/hytime/dsh-client-ui-shortcuts/pull/2);**若上游接手本 fork(合并本 PR 或采纳本仓库实现),将删除本 fork,不再维护**。
 
 License: MIT(承上游)。
