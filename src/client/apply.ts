@@ -15,6 +15,10 @@ import { createQuickPanelModel } from './settings/quick-panel.js'
 import { createOpenPanelCommand } from './keyboard/open-panel.js'
 import { createComposerFocusCommand, focusComposer } from './keyboard/composer-focus.js'
 import { createBossHideCommand, bossHideViaBridge } from './keyboard/boss-hide.js'
+import { createNewSessionCommand, createPrevSessionCommand, createNextSessionCommand, createForkSessionCommand } from './keyboard/session-actions.js'
+import type { SessionsNavFace, WorkspacesNavFace } from './keyboard/session-actions.js'
+import { createToggleSidebarCommand, createToggleDetailsCommand, createToggleThemeCommand, createScrollTopCommand, createScrollBottomCommand } from './keyboard/ui-actions.js'
+import type { LayoutFace, ThemeFace } from './keyboard/ui-actions.js'
 import { standardProfile } from './profiles/builtins.js'
 import { NS, en, ja, ko, zh } from './locales.js'
 import type { ShortcutSettings } from '../settings.js'
@@ -54,7 +58,25 @@ export function apply(ctx: Context): void {
       // half belongs to the OS-level companion surfaced in BosskeySection.
       const official = ctx.get('shortcuts') as { closeWindow?: () => Promise<unknown> } | undefined
       const offBoss = ctx.shortcuts.register(createBossHideCommand(() => t('quick.bossHide'), () => { bossHideViaBridge([official as never]) }))
-      return () => { offBoss(); offFocus(); offCommand(); offSlot(); model.close() }
+      // The blue-a11y action set, translated into official commands: every
+      // action now lives in the DSH keyboard settings with per-device
+      // persistence. Unbound by default where the old set shipped unbound.
+      const workspaces = ctx.get('workspaces') as WorkspacesNavFace | undefined
+      const sessions = ctx.get('sessions') as SessionsNavFace | undefined
+      const layout = ctx.get('layout') as LayoutFace | undefined
+      const theme = ctx.get('theme') as ThemeFace | undefined
+      const disposers = [
+        ctx.shortcuts.register(createNewSessionCommand(() => t('quick.newSession'), workspaces)),
+        ctx.shortcuts.register(createPrevSessionCommand(() => t('quick.prevSession'), sessions, workspaces)),
+        ctx.shortcuts.register(createNextSessionCommand(() => t('quick.nextSession'), sessions, workspaces)),
+        ctx.shortcuts.register(createForkSessionCommand(() => t('quick.forkSession'), sessions)),
+        ctx.shortcuts.register(createToggleSidebarCommand(() => t('quick.toggleSidebar'), layout)),
+        ctx.shortcuts.register(createToggleDetailsCommand(() => t('quick.toggleDetails'), layout)),
+        ctx.shortcuts.register(createToggleThemeCommand(() => t('quick.toggleTheme'), theme)),
+        ctx.shortcuts.register(createScrollTopCommand(() => t('quick.scrollTop'))),
+        ctx.shortcuts.register(createScrollBottomCommand(() => t('quick.scrollBottom'))),
+      ]
+      return () => { for (const d of disposers.reverse()) d(); offBoss(); offFocus(); offCommand(); offSlot(); model.close() }
     } catch (error) { offSlot(); throw error }
   }), 'shortcuts: official summon command')
   ctx.effect(() => ctx.slots.inject('plugins.bundle.config', () => ctx.slots.register({

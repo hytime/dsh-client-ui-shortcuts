@@ -56,6 +56,17 @@ dsh plugin --profile desktop add github:takomitkm/dsh-bosskey
 | `dsh-shortcuts.open` | 呼出快速面板 | `Ctrl+Alt+Shift+S`(Linux Web 无默认) |
 | `dsh-shortcuts.composerFocus` | 聚焦输入框 | 未绑定 |
 | `dsh-shortcuts.bossHide` | 老板键:隐藏窗口到托盘 | 未绑定 |
+| `dsh-shortcuts.newSession` | 新建会话 | 未绑定 |
+| `dsh-shortcuts.prevSession` | 上一个会话(侧栏顺序,循环) | 未绑定 |
+| `dsh-shortcuts.nextSession` | 下一个会话(侧栏顺序,循环) | 未绑定 |
+| `dsh-shortcuts.forkSession` | 分叉当前会话 | 未绑定 |
+| `dsh-shortcuts.toggleSidebar` | 切换侧栏 | 未绑定 |
+| `dsh-shortcuts.toggleDetails` | 切换详情面板 | 未绑定 |
+| `dsh-shortcuts.toggleTheme` | 切换浅色/深色主题 | 未绑定 |
+| `dsh-shortcuts.scrollTop` | 滚动到对话顶部 | 未绑定 |
+| `dsh-shortcuts.scrollBottom` | 滚动到对话底部 | 未绑定 |
+
+除面板外的命令默认未绑定——在官方设置页或快速面板里录制一次,按设备持久化。会话切换镜像侧栏的完整显示顺序(工作区按注册表顺序、组内按最近活动排序、未分组桶垫底),跳过空白与归档行,两端循环。
 
 ### 插件轨(快速面板 `Ctrl+Alt+Shift+S`)
 
@@ -65,6 +76,6 @@ dsh plugin --profile desktop add github:takomitkm/dsh-bosskey
 
 ## 上游与差异
 
-基于 [hytime/dsh-client-ui-shortcuts](https://github.com/hytime/dsh-client-ui-shortcuts)(其本身已把快捷键管理交给 DSH 官方服务)。本仓库在其之上新增:`composerFocus` 与 `bossHide` 两个官方命令、完整老板键区块、包名与命令 id 命名空间(`@takomitkm/dsh-shortcuts` / `dsh-shortcuts.*`)。上游的快速面板、官方键位管理、Question/Approval 增强全部保留。
+基于 [hytime/dsh-client-ui-shortcuts](https://github.com/hytime/dsh-client-ui-shortcuts)(其本身已把快捷键管理交给 DSH 官方服务)。本仓库在其之上把 [blue-a11y/dsh-client-shortcuts](https://github.com/blue-a11y/dsh-client-shortcuts) 的**全部动作集**(聚焦输入框、新建/切换/分叉会话、切侧栏/详情、主题、滚动、老板键·隐藏)重新实现为**官方命令**,外加完整老板键区块、包名与命令 id 命名空间(`@takomitkm/dsh-shortcuts` / `dsh-shortcuts.*`)。上游的快速面板、官方键位管理、Question/Approval 增强全部保留。
 
 License: MIT(承上游)。

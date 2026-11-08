@@ -85,9 +85,22 @@ describe('current DSH integration', () => {
     expect(b.shortcuts.edit).toHaveBeenLastCalledWith({ type: 'reset', id: 'dsh-shortcuts.open' }, 'r1')
     await b.feature.dispose()
   })
-  it('registers three official commands (panel + composer focus + boss hide) and no interaction takeovers by default', async () => {
+  it('registers the full official command set (12) and no interaction takeovers by default', async () => {
     const b = await bench()
-    expect([...b.commands.keys()]).toEqual(['dsh-shortcuts.open', 'dsh-shortcuts.composerFocus', 'dsh-shortcuts.bossHide'])
+    expect([...b.commands.keys()]).toEqual([
+      'dsh-shortcuts.open',
+      'dsh-shortcuts.composerFocus',
+      'dsh-shortcuts.bossHide',
+      'dsh-shortcuts.newSession',
+      'dsh-shortcuts.prevSession',
+      'dsh-shortcuts.nextSession',
+      'dsh-shortcuts.forkSession',
+      'dsh-shortcuts.toggleSidebar',
+      'dsh-shortcuts.toggleDetails',
+      'dsh-shortcuts.toggleTheme',
+      'dsh-shortcuts.scrollTop',
+      'dsh-shortcuts.scrollBottom',
+    ])
     expect(b.entries.map(entry => entry.options.name)).toEqual(['shell.overlay', 'plugins.bundle.config'])
     expect(b.model().getSnapshot()).toMatchObject({ questionEnabled: false, approvalEnabled: false })
     await b.feature.dispose()
