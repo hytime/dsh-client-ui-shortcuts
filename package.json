@@ -1,7 +1,7 @@
 {
   "name": "@takomitkm/dsh-shortcuts",
   "version": "0.3.0",
-  "description": "Official DSH shortcut commands (session / view / input / boss key), quick panel, and opt-in question/approval enhancements",
+  "description": "Official DSH shortcut commands (session / view / input / boss key) plus the quick panel",
   "keywords": [
     "dsh-plugin",
     "deepseek-harness",

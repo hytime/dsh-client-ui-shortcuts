@@ -113,22 +113,22 @@ export function decodeConfigFile(raw: string): ConfigFileDecodeResult {
   if (!hasOnlyFields(configuration, legacy ? CONFIGURATION_V1_FIELDS : CONFIGURATION_FIELDS)) {
     return { ok: false, reason: 'invalid' }
   }
-  if (typeof configuration.questionEnabled !== 'boolean' || typeof configuration.approvalEnabled !== 'boolean') {
-    return { ok: false, reason: 'invalid' }
-  }
-  const base = {
-    questionEnabled: configuration.questionEnabled,
-    approvalEnabled: configuration.approvalEnabled,
+  // v1/v2 files may still carry the retired plugin switches. They are accepted as optional
+  // booleans for backward compatibility, and their value is ignored on import.
+  for (const legacySwitch of ['questionEnabled', 'approvalEnabled'] as const) {
+    if (Object.hasOwn(configuration, legacySwitch) && typeof configuration[legacySwitch] !== 'boolean') {
+      return { ok: false, reason: 'invalid' }
+    }
   }
   if (legacy) {
     // A v1 file names one binding for this plugin's summon command, or omits the field entirely.
-    if (!Object.hasOwn(configuration, 'shortcut')) return { ok: true, document: { ...base, shortcuts: {} } }
+    if (!Object.hasOwn(configuration, 'shortcut')) return { ok: true, document: { shortcuts: {} } }
     if (configuration.shortcut === null) {
-      return { ok: true, document: { ...base, shortcuts: { 'dsh-shortcuts.open': { modified: true, binding: null } } } }
+      return { ok: true, document: { shortcuts: { 'dsh-shortcuts.open': { modified: true, binding: null } } } }
     }
     const parsedShortcut = parseShortcut(configuration.shortcut)
     if (parsedShortcut === 'invalid') return { ok: false, reason: 'invalid' }
-    return { ok: true, document: { ...base, shortcuts: { 'dsh-shortcuts.open': { modified: true, binding: parsedShortcut } } } }
+    return { ok: true, document: { shortcuts: { 'dsh-shortcuts.open': { modified: true, binding: parsedShortcut } } } }
   }
   const shortcuts = parseShortcuts(configuration.shortcuts)
   if (shortcuts === 'invalid') return { ok: false, reason: 'invalid' }
@@ -139,7 +139,6 @@ export function decodeConfigFile(raw: string): ConfigFileDecodeResult {
   return {
     ok: true,
     document: {
-      ...base,
       shortcuts,
       ...(typeof configuration.profile === 'string' ? { profile: configuration.profile } : {}),
     },
@@ -159,7 +158,7 @@ function encodeShortcut(shortcut: ConfigFileShortcut): Record<string, unknown> {
  * one configuration are byte-identical. Each entry keeps `modified` because an import must
  * reproduce the source state: a modified command is written back, an unmodified one that still
  * matches its default is left alone, and an unmodified command the user had cleared is re-cleared.
- * @param document - preferences plus the complete official keyboard snapshot.
+ * @param document - the complete official keyboard snapshot plus the optional device profile.
  * @returns pretty-printed JSON with a trailing newline.
  */
 export function encodeConfigFile(document: ConfigFileDocument): string {
@@ -174,8 +173,6 @@ export function encodeConfigFile(document: ConfigFileDocument): string {
     }
   }
   const configuration: Record<string, unknown> = {
-    questionEnabled: document.questionEnabled,
-    approvalEnabled: document.approvalEnabled,
     shortcuts,
     ...(document.profile === undefined ? {} : { profile: document.profile }),
   }

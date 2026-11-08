@@ -61,7 +61,7 @@ async function bench(initial: Partial<ShortcutSettings> = {}, withoutShortcuts =
 
 describe('current DSH integration', () => {
   it('requires official services and never declares a legacy provider', () => {
-    expect(inject).toEqual(['slots', 'locale', 'shortcuts', 'configForms', 'sessions', 'conversation'])
+    expect(inject).toEqual(['slots', 'locale', 'shortcuts', 'configForms'])
   })
   it('keeps DSH as the only keybinding owner: no plugin edit surface is created', async () => {
     const b = await bench()
@@ -103,7 +103,6 @@ describe('current DSH integration', () => {
       'dsh-shortcuts.pasteClipboard',
     ])
     expect(b.entries.map(entry => entry.options.name)).toEqual(['shell.overlay', 'plugins.bundle.config'])
-    expect(b.model().getSnapshot()).toMatchObject({ questionEnabled: false, approvalEnabled: false })
     await b.feature.dispose()
     expect(b.commands.size).toBe(0)
     expect(b.entries).toEqual([])
@@ -168,46 +167,6 @@ describe('current DSH integration', () => {
     expect(b.model().getSnapshot().open).toBe(false)
     b.entries.find(entry => entry.options.name === 'plugins.bundle.config')!.options.inject().model.open()
     expect(b.model().getSnapshot().open).toBe(true)
-    await b.feature.dispose()
-  })
-  it('enables and disables each takeover independently after accepted settings', async () => {
-    const b = await bench()
-    const takeovers = () => b.entries.filter(entry => entry.options.name === 'conversation.composer')
-    await b.model().setEnabled('questionEnabled', true)
-    expect(takeovers()).toHaveLength(1)
-    const questionEntry = takeovers()[0]!
-    const question = { kind: 'question', key: 'q', questions: [], answer: vi.fn() }
-    const approval = { kind: 'approval', key: 'a', toolName: 'bash', answer: vi.fn() }
-    expect(questionEntry.options.select({ pendingInteraction: question })).toBe(question)
-    expect(questionEntry.options.select({ pendingInteraction: approval })).toBeNull()
-    await b.model().setEnabled('approvalEnabled', true)
-    expect(takeovers()).toHaveLength(2)
-    expect(takeovers()[0]).toBe(questionEntry)
-    const approvalEntry = takeovers()[1]!
-    expect(approvalEntry.options.select({ pendingInteraction: approval })).toBe(approval)
-    await b.model().setEnabled('questionEnabled', false)
-    expect(takeovers()).toEqual([approvalEntry])
-    expect(question.answer).not.toHaveBeenCalled()
-    expect(approval.answer).not.toHaveBeenCalled()
-    await b.model().setEnabled('approvalEnabled', false)
-    expect(takeovers()).toHaveLength(0)
-    await b.feature.dispose()
-  })
-  it('does not enable old stored profiles and rejects legacy carriers', async () => {
-    const b = await bench({ activeProfile: 'vim', customProfiles: [{}] } as never)
-    expect(b.entries.filter(entry => entry.options.name === 'conversation.composer')).toHaveLength(0)
-    await b.model().setEnabled('questionEnabled', true)
-    const entry = b.entries.find(entry => entry.options.name === 'conversation.composer')!
-    expect(entry.options.select({ pendingInteraction: { kind: 'question', payload: { questions: [] }, respond: vi.fn() } })).toBeNull()
-    await b.feature.dispose()
-  })
-  it('uses current scoped cancellation and removes takeovers when settings become unavailable', async () => {
-    const b = await bench({ approvalEnabled: true })
-    const entry = b.entries.find(entry => entry.options.name === 'conversation.composer')!
-    await entry.options.inject('s1').cancelTask()
-    expect(b.cancel).toHaveBeenCalledOnce()
-    b.form.publish({ ...b.form.getSnapshot(), status: 'unavailable' })
-    expect(b.entries.some(entry => entry.options.name === 'conversation.composer')).toBe(false)
     await b.feature.dispose()
   })
 })

@@ -12,6 +12,10 @@
 - **Functional grouping** in the quick panel (General / Input / Sessions / View / Boss Key) and a full keybinding comparison table in the README.
 - MIT `LICENSE` file added (upstream declares MIT in `package.json` but never shipped the file).
 
+### Removed
+
+- The opt-in **Question / Approval interaction cards** (and the two settings switches that enabled them) are gone; the plugin is now purely keyboard shortcuts, no UI takeover. Old exported configs that still carry `questionEnabled` / `approvalEnabled` remain importable — the values are tolerated and ignored.
+
 ### Fixed
 
 - Configuration import now releases affected inherited default bindings before applying a swap or key transfer. Previously only existing overrides were released, causing valid snapshots to fail with a temporary conflict. Regression coverage also verifies restoration of inherited defaults when a later write is refused.

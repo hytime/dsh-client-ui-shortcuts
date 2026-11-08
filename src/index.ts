@@ -4,11 +4,8 @@ import z from '@deepseek-ai/schemastery'
 
 export { SHORTCUTS_SETTINGS_NAMESPACE, ShortcutSettingsSchema, type ShortcutSettings } from './settings.js'
 
-/** DSH discovers settings from the Host entry's Config; volatile fields update without remounting it. */
-export const Config = z.object({
-  questionEnabled: z.boolean().default(false).volatile(),
-  approvalEnabled: z.boolean().default(false).volatile(),
-})
+/** DSH discovers settings from the Host entry's Config; there are no volatile fields left. */
+export const Config = z.object({})
 
 /** Keep the custom bundle configuration card as the single settings presentation. */
 export function apply(ctx: Context): void {

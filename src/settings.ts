@@ -1,14 +1,8 @@
 import z from '@deepseek-ai/schemastery'
 
-/** Only opt-in presentation preferences belong to this plugin. Keybindings belong to DSH. */
-export interface ShortcutSettings {
-  readonly questionEnabled: boolean
-  readonly approvalEnabled: boolean
-}
+/** No plugin-owned settings remain: keybindings and every preference belong to DSH. */
+export interface ShortcutSettings {}
 
-export const ShortcutSettingsSchema = z.object({
-  questionEnabled: z.boolean().default(false),
-  approvalEnabled: z.boolean().default(false),
-})
+export const ShortcutSettingsSchema = z.object({})
 
 export { SHORTCUTS_SETTINGS_NAMESPACE } from './settings-namespace.js'

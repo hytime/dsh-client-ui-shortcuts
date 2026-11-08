@@ -11,7 +11,6 @@
 - 一个官方可编辑命令 `hytime.shortcuts.open`（默认 `⌘⌥⇧S` / `Ctrl+Alt+Shift+S`）呼出快速面板；
 - 快速面板列出**官方全部快捷键**，可搜索，并逐条录入 / 恢复默认 / 清除，与 DSH 官方快捷键设置双向同步；
 - 完整快捷键快照的导入导出（含未修改默认项；按目标快照先释放后写入，中途失败会报告未恢复项）；
-- 两个**默认关闭**的 Question / Approval 增强开关，关闭时不注册任何 composer 替换；
 - 适配 DSH `0.2.1-alpha.2` 的只读问答回顾卡与限时问题计时生命周期，旧基线缺少相应方法时自动跳过；
 - 面板界面支持简体中文、英文、日文与韩文。
 
@@ -49,12 +48,11 @@ dsh plugin --profile web add github:hytime/dsh-client-ui-shortcuts#v0.2.1
 
 1. **快捷键归官方**：插件只注册一个可编辑命令 `hytime.shortcuts.open` 用于呼出快速面板，不自建按键存储、方案或冲突检查；
 2. **插件界面可改键**：面板通过官方 `describeBinding()`、`edit()`、`recording()` 完成录入、校验与保存，与 DSH 设置读写同一份配置；
-3. **Question / Approval 增强默认关闭**：关闭时不注册 composer 替换，使用官方界面；开启也不自动授权；
-4. **新版不兼容旧版**：移除 `settingsScope`、旧 Connection settings API、双坐席探测、旧 sessions 摘要与 question/approval payload 适配，以及插件自建 profile / 键位编辑。
+3. **新版不兼容旧版**：移除 `settingsScope`、旧 Connection settings API、双坐席探测、旧 sessions 摘要与 question/approval payload 适配，以及插件自建 profile / 键位编辑。
 
 已验证基线为 DSH `0.2.0-rc.1`；`peerDependencies` 为 `>=0.2.0-rc.1 <1.0.0`（接受基线及更高版本，拒绝旧版与 `1.0.0`+），`devDependencies` 仍精确固定 `0.2.0-rc.1` 作为编译与类型基线。DSH 会按 `evaluatePluginCompatibility` 校验预发布范围。设计与边界见[官方快捷键接入说明](official-shortcuts-integration.zh.md)。
 
-发布前验收：真实 `0.2.0-rc.1` Web composition 中确认插件行进入 boot graph、官方快捷键列表出现「打开快速面板」、面板改键与官方设置同步、两个开关默认关闭且可独立启停、控制台无报错。源码接口与自动化测试通过不等同于浏览器验收。
+发布前验收：真实 `0.2.0-rc.1` Web composition 中确认插件行进入 boot graph、官方快捷键列表出现「打开快速面板」、面板改键与官方设置同步、控制台无报错。源码接口与自动化测试通过不等同于浏览器验收。
 
 修复记录：增强 Approval 卡片此前用方向键把焦点移到「拒绝」后按 `Enter` 仍会提交先前的「允许一次」，已改为 `Enter` 始终激活当前聚焦操作（该缺陷有自动化回归）。
 

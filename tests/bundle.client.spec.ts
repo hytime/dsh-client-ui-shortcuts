@@ -89,10 +89,10 @@ describe('client bundle and package artifact', () => {
 
   it('anchors CSS Module class names at the package root so any checkout builds identically', async () => {
     const { transform } = await import('lightningcss')
-    const cssFile = resolve(root, 'src/client/styles/InteractionSurface.module.css')
+    const cssFile = resolve(root, 'src/client/styles/QuickPanel.module.css')
     const code = readFileSync(cssFile)
     const options = (checkoutRoot: string) => ({
-      filename: resolve(checkoutRoot, 'src/client/styles/InteractionSurface.module.css'),
+      filename: resolve(checkoutRoot, 'src/client/styles/QuickPanel.module.css'),
       projectRoot: checkoutRoot,
       cssModules: { pattern: '[hash]_[local]' },
       minify: true,
@@ -102,13 +102,13 @@ describe('client bundle and package artifact', () => {
     // /home/runner/work/... and a local clone under /Volumes/... produced different bundles.
     const local = transform({ ...options(root), code })
     const elsewhere = transform({ ...options('/home/runner/work/dsh-client-ui-shortcuts/dsh-client-ui-shortcuts'), code })
-    expect(local.exports?.root?.name).toBeDefined()
-    expect(elsewhere.exports?.root?.name).toBe(local.exports?.root?.name)
+    expect(local.exports?.panel?.name).toBeDefined()
+    expect(elsewhere.exports?.panel?.name).toBe(local.exports?.panel?.name)
   })
 
   it('passes that anchored projectRoot through the real bundle transform options', async () => {
     const { cssModuleTransformOptions } = await import('../scripts/client-bundle.ts')
-    const cssFile = resolve(root, 'src/client/styles/InteractionSurface.module.css')
+    const cssFile = resolve(root, 'src/client/styles/QuickPanel.module.css')
     // The build must use the anchored options, not a bare `filename`; otherwise the test above
     // would pass while the shipped bundle still depended on the checkout path.
     expect(cssModuleTransformOptions(cssFile).projectRoot).toBe(root)

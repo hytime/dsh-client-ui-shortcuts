@@ -8,7 +8,6 @@ const manifest = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8'))
 
 const STYLE_FILES = [
   'src/client/styles/QuickPanel.module.css',
-  'src/client/styles/InteractionSurface.module.css',
 ] as const
 
 /** DSH alias tokens this package must never reference; a missing property resolves to empty. */

@@ -123,7 +123,7 @@ async function officialBench() {
   }
   const edit = vi.fn((editValue: never, revision: never) => persistence.edit(editValue, revision))
   const form = {
-    getSnapshot: () => ({ status: 'ready', writable: true, value: { questionEnabled: false, approvalEnabled: false } }),
+    getSnapshot: () => ({ status: 'ready', writable: true, value: {} }),
     subscribe: () => () => {},
     set: vi.fn(async () => true),
     mutate: vi.fn(async () => true),
@@ -249,10 +249,10 @@ describe('official settings and shortcut projection', () => {
     b.model.dispose()
   })
 
-  it('defaults both enhancements off and never writes on its own', () => {
+  it('never writes to the settings form on its own', () => {
     const b = bench()
-    expect(b.model.getSnapshot()).toMatchObject({ questionEnabled: false, approvalEnabled: false })
     expect(b.form.set).not.toHaveBeenCalled()
+    expect(b.form.mutate).not.toHaveBeenCalled()
     expect(b.edit).not.toHaveBeenCalled()
     b.model.dispose()
   })
@@ -309,8 +309,7 @@ describe('official settings and shortcut projection', () => {
     expect(b.model.getSnapshot()).toMatchObject({ recordingCommand: null, message: null })
     expect(b.edit).toHaveBeenCalledTimes(1)
     await b.model.importConfig(JSON.stringify({ format: CONFIG_FILE_FORMAT, version: 2,
-      configuration: { questionEnabled: false, approvalEnabled: false,
-        shortcuts: { [OPEN_PANEL_COMMAND]: { modified: true, binding } } } }))
+      configuration: { shortcuts: { [OPEN_PANEL_COMMAND]: { modified: true, binding } } } }))
     expect(b.model.getSnapshot().message).toEqual({ code: 'imported' })
     expect(b.edit).toHaveBeenCalledTimes(2)
     b.model.dispose()
@@ -405,17 +404,15 @@ describe('official settings and shortcut projection', () => {
     b.model.dispose()
   })
 
-  it('handles transport failures and refuses writes while settings are unavailable', async () => {
+  it('handles transport failures and keeps official edits independent of plugin settings', async () => {
     const b = bench()
     b.edit.mockRejectedValueOnce(new Error('offline'))
     await b.model.saveBinding(OPEN_PANEL_COMMAND, { code: 'KeyG', modifiers: ['meta'] })
     expect(b.model.getSnapshot().message).toEqual({ code: 'write-failed' })
 
     // Official keybindings are independent of the plugin's own settings namespace.
-    b.form.publish({ status: 'unavailable', writable: false, value: { approvalEnabled: true } })
-    expect(b.model.getSnapshot()).toMatchObject({ approvalEnabled: false, writable: false })
-    await b.model.setEnabled('approvalEnabled', true)
-    expect(b.form.set).not.toHaveBeenCalled()
+    b.form.publish({ status: 'unavailable', writable: false, value: {} })
+    expect(b.model.getSnapshot().writable).toBe(false)
     const edits = b.edit.mock.calls.length
     await b.model.saveBinding(OPEN_PANEL_COMMAND, { code: 'KeyG', modifiers: ['meta'] })
     expect(b.edit.mock.calls.length).toBe(edits + 1)
@@ -424,7 +421,7 @@ describe('official settings and shortcut projection', () => {
 
   it('exports every official command, not only the customized ones', () => {
     const b = bench()
-    b.form.publish({ status: 'ready', writable: true, value: { questionEnabled: true, approvalEnabled: false } })
+    b.form.publish({ status: 'ready', writable: true, value: {} })
     // One customized command and two untouched defaults must all appear in the file.
     b.publish('session.new', { modified: true, keys: ['⇧', '⌘', 'J'], binding: { code: 'KeyJ', modifiers: ['shift', 'meta'] } })
     const document = JSON.parse(b.model.exportConfig())
@@ -464,32 +461,27 @@ describe('official settings and shortcut projection', () => {
     b.model.dispose()
   })
 
-  it('imports switches and every official command through their own owners', async () => {
+  it('imports every official command through its own owner', async () => {
     const b = bench()
     await b.model.importConfig(JSON.stringify({
       format: CONFIG_FILE_FORMAT, version: 2,
-      configuration: { questionEnabled: true, approvalEnabled: true,
-        shortcuts: { 'session.new': { modified: true, binding: { code: 'KeyG', modifiers: ['meta'] } } } },
+      configuration: { shortcuts: { 'session.new': { modified: true, binding: { code: 'KeyG', modifiers: ['meta'] } } } },
     }))
     expect(b.edit).toHaveBeenCalledExactlyOnceWith(
       { type: 'set', id: 'session.new', binding: { code: 'KeyG', modifiers: ['meta'] } }, 'rev-1')
-    // Both switches travel in one accepted mutation, so neither can be left half-applied.
-    expect(b.form.mutate).toHaveBeenCalledExactlyOnceWith([
-      { op: 'set', path: ['questionEnabled'], value: true },
-      { op: 'set', path: ['approvalEnabled'], value: true },
-    ])
+    // The document no longer carries any plugin switches, so the form is never written.
+    expect(b.form.mutate).not.toHaveBeenCalled()
     expect(b.form.set).not.toHaveBeenCalled()
     expect(b.model.getSnapshot().message).toEqual({ code: 'imported' })
     b.model.dispose()
   })
 
-  it('leaves the plugin switches untouched when the official binding is refused', async () => {
+  it('leaves the official state untouched when the binding is refused', async () => {
     const b = bench()
     b.shortcuts.describeBinding = vi.fn(() => ({ binding: null, keys: [], issue: 'reserved', conflicts: [] })) as never
     await b.model.importConfig(JSON.stringify({
       format: CONFIG_FILE_FORMAT, version: 2,
-      configuration: { questionEnabled: true, approvalEnabled: true,
-        shortcuts: { 'session.new': { modified: true, binding: { code: 'KeyQ', modifiers: ['meta'] } } } },
+      configuration: { shortcuts: { 'session.new': { modified: true, binding: { code: 'KeyQ', modifiers: ['meta'] } } } },
     }))
     expect(b.model.getSnapshot().message).toEqual({ code: 'unsupported' })
     expect(b.form.set).not.toHaveBeenCalled()
@@ -498,7 +490,7 @@ describe('official settings and shortcut projection', () => {
     b.model.dispose()
   })
 
-  it('leaves the plugin switches untouched when the official edit is rejected', async () => {
+  it('leaves the official state untouched when the official edit is rejected', async () => {
     const b = bench()
     // The official service reports the *other* command that occupies the combination,
     // resolved to its official label; a command never conflicts with itself.
@@ -506,8 +498,7 @@ describe('official settings and shortcut projection', () => {
     b.setEdit({ status: 'conflict', conflicts: ['session.search'], snapshot: {} })
     await b.model.importConfig(JSON.stringify({
       format: CONFIG_FILE_FORMAT, version: 2,
-      configuration: { questionEnabled: true, approvalEnabled: true,
-        shortcuts: { 'session.new': { modified: true, binding: { code: 'KeyU', modifiers: ['meta'] } } } },
+      configuration: { shortcuts: { 'session.new': { modified: true, binding: { code: 'KeyU', modifiers: ['meta'] } } } },
     }))
     expect(b.model.getSnapshot().message).toEqual({ code: 'conflict', detail: ['Search sessions'] })
     expect(b.form.set).not.toHaveBeenCalled()
@@ -515,17 +506,13 @@ describe('official settings and shortcut projection', () => {
     b.model.dispose()
   })
 
-  it('imports switches when the document carries no shortcut at all', async () => {
+  it('reports a clean import when the document carries no shortcut at all', async () => {
     const b = bench()
     await b.model.importConfig(JSON.stringify({
-      format: CONFIG_FILE_FORMAT, version: 2, configuration: { questionEnabled: true, approvalEnabled: false, shortcuts: {} },
+      format: CONFIG_FILE_FORMAT, version: 2, configuration: { shortcuts: {} },
     }))
     expect(b.edit).not.toHaveBeenCalled()
-    // The fixture starts with no accepted section, so both switches differ from the file.
-    expect(b.form.mutate).toHaveBeenCalledExactlyOnceWith([
-      { op: 'set', path: ['questionEnabled'], value: true },
-      { op: 'set', path: ['approvalEnabled'], value: false },
-    ])
+    expect(b.form.mutate).not.toHaveBeenCalled()
     expect(b.form.set).not.toHaveBeenCalled()
     expect(b.model.getSnapshot().message).toEqual({ code: 'imported' })
     b.model.dispose()
@@ -533,7 +520,7 @@ describe('official settings and shortcut projection', () => {
 
   it.each([
     ['invalid document', '{}', 'import-invalid'],
-    ['future version', JSON.stringify({ format: CONFIG_FILE_FORMAT, version: 99, configuration: { questionEnabled: true, approvalEnabled: true, shortcuts: {} } }), 'import-future'],
+    ['future version', JSON.stringify({ format: CONFIG_FILE_FORMAT, version: 99, configuration: { shortcuts: {} } }), 'import-future'],
     ['oversized text', 'x'.repeat((1 << 20) + 1), 'import-too-large'],
     ['unreadable file', null, 'import-read-failed'],
   ])('reports %s without writing anything', async (_label, raw, code) => {
@@ -546,18 +533,12 @@ describe('official settings and shortcut projection', () => {
     b.model.dispose()
   })
 
-  it('reports a refused switch write and ignores imports after disposal', async () => {
+  it('ignores imports after disposal', async () => {
     const b = bench()
-    b.form.mutate.mockResolvedValueOnce(false)
-    await b.model.importConfig(JSON.stringify({
-      format: CONFIG_FILE_FORMAT, version: 2, configuration: { questionEnabled: true, approvalEnabled: false, shortcuts: {} },
-    }))
-    // The shortcuts stood but the switches did not, so the panel must not claim a clean import.
-    expect(b.model.getSnapshot().message).toEqual({ code: 'import-partial', detail: ['questionEnabled', 'approvalEnabled'] })
     const calls = b.edit.mock.calls.length
     b.model.dispose()
     await b.model.importConfig(JSON.stringify({
-      format: CONFIG_FILE_FORMAT, version: 2, configuration: { questionEnabled: true, approvalEnabled: true, shortcuts: {} },
+      format: CONFIG_FILE_FORMAT, version: 2, configuration: { shortcuts: {} },
     }))
     expect(b.edit.mock.calls.length).toBe(calls)
   })
@@ -578,7 +559,7 @@ describe('official settings and shortcut projection', () => {
 describe('complete snapshot import against the published official persistence', () => {
   const configFile = (shortcuts: Record<string, unknown>): string => JSON.stringify({
     format: CONFIG_FILE_FORMAT, version: 2,
-    configuration: { questionEnabled: false, approvalEnabled: false, shortcuts },
+    configuration: { shortcuts },
   })
 
   it('restores a default instead of pinning the exported value as an override', async () => {

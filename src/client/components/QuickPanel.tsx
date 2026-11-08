@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import { Button, Modal, ShortcutKeys, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, Modal, ShortcutKeys } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { QuickPanelCommand, QuickPanelMessage, QuickPanelProps } from '../contract/quick-panel.js'
 import { bindingFromKey, isRecordable } from '../keyboard/record.js'
 import { PROFILE_SHORTCUT_MODAL } from '../keyboard/open-panel.js'
@@ -163,18 +163,6 @@ function PanelContent({ model, t }: QuickPanelProps): React.ReactElement {
         aria-hidden="true" aria-label={t('quick.recording')} />
     </section>
 
-    <div className={styles.settingRow}>
-      <strong className={styles.settingTitle}>{t('quick.question')}</strong>
-      <Switch label={t('quick.question')} checked={state.questionEnabled} disabled={!state.writable || state.saving}
-        onChange={enabled => { void model.setEnabled('questionEnabled', enabled) }} />
-      <p className={styles.settingHint}>{t('quick.questionHint')}</p>
-    </div>
-    <div className={styles.settingRow}>
-      <strong className={styles.settingTitle}>{t('quick.approval')}</strong>
-      <Switch label={t('quick.approval')} checked={state.approvalEnabled} disabled={!state.writable || state.saving}
-        onChange={enabled => { void model.setEnabled('approvalEnabled', enabled) }} />
-      <p className={styles.settingHint}>{t('quick.approvalHint')}</p>
-    </div>
     {!state.writable ? <p role="status" className={styles.hint}>{t('quick.unavailable')}</p> : null}
     {state.saving ? <p role="status" className={styles.hint}>{t('quick.saving')}</p> : null}
   </div>

@@ -1,6 +1,6 @@
 # 与官方快捷键的接入
 
-本插件的新版（`0.2.1`）按 DSH `0.2.0-rc.1` 的公开接口设计：**快捷键由官方管理，插件只做快速呼出界面和可选交互增强**。
+本插件的新版（`0.2.1`）按 DSH `0.2.0-rc.1` 的公开接口设计：**快捷键由官方管理，插件只做快速呼出界面**。
 
 ## 分工
 
@@ -10,7 +10,6 @@
 | 快捷键列表与录键界面 | 官方 `@deepseek-ai/dsh-client-ui-shortcuts` |
 | 呼出插件的快速面板 | 插件注册一个官方可编辑命令 `hytime.shortcuts.open` |
 | 面板内改键 | 插件界面调用官方 `describeBinding()` / `edit()` / `recording()` |
-| Question / Approval 增强交互 | 插件提供，**默认关闭**，在面板中手动开启 |
 
 插件不自建按键存储，也不内置第二套快捷键配置。默认键声明在官方命令上：
 
@@ -46,8 +45,6 @@
   "format": "dsh-client-ui-shortcuts/quick-panel",
   "version": 2,
   "configuration": {
-    "questionEnabled": false,
-    "approvalEnabled": false,
     "profile": "web:macos",
     "shortcuts": {
       "hytime.shortcuts.open": {
