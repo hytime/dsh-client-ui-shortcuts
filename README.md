@@ -99,7 +99,7 @@ dsh plugin --profile desktop add github:takomitkm/dsh-bosskey   # 可选:完整 
 | `Mod+Shift+⏎` / `Mod+Shift+⌫` | 接受/拒绝单条变更 | 同上 |
 | `Mod+Shift+[` / `]` | 上一个/下一个任务 | **本插件** `prevSession`/`nextSession`(会话级;默认键已对齐) |
 | `Alt+J` / `Alt+K` | 下一个/上一个变更 | **DSH 官方 diff UI 自带** |
-| `Mod+F` | 任务内查找 | **官方暂缺**,推荐使用 [deja-vu](https://github.com/vshulcz/deja-vu) |
+| `Mod+F` | 任务内查找 | **官方暂缺**,推荐使用 [deja-vu](https://github.com/vshulcz/deja-vu);装有 [dsh-session-find](https://github.com/fomalhaut1998/dsh-session-find) 时由它接管 `Ctrl+F`(会话内页内查找,捕获阶段拦截),deja-vu 的 `Mod+F` 会被覆盖、不再触发 |
 | `Mod+K` | 搜索会话(标题 + 内容摘录) | **DSH 官方自带**(`session.search`,桌面 `Mod+K` / Web `Mod+Alt+K`;Web 端单 `Mod+K` 被判浏览器保留) |
 | `Mod+Shift+K` | 全局对话搜索(带内容) | 推荐使用 [deja-vu](https://github.com/vshulcz/deja-vu) (桌面/Win Web 空位可用; Web macOS/Linux 不可用) |
 | `Mod+M` | 打开模型菜单 | ❌ 超出插件能力:模型菜单是会话 UI 内部组件,官方无命令 id、无服务可触发 |
