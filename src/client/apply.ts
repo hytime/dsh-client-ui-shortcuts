@@ -12,7 +12,7 @@ import { createOpenPanelCommand } from './keyboard/open-panel.js'
 import { createComposerFocusCommand, focusComposer } from './keyboard/composer-focus.js'
 import { createBossHideCommand, bossHideViaBridge } from './keyboard/boss-hide.js'
 import { createNewSessionCommand, createPrevSessionCommand, createNextSessionCommand, createForkSessionCommand } from './keyboard/session-actions.js'
-import type { SessionsNavFace, WorkspacesNavFace } from './keyboard/session-actions.js'
+import type { SessionsNavFace, WorkspacesNavFace, UiWorkspaceNavFace } from './keyboard/session-actions.js'
 import { createToggleSidebarCommand, createToggleDetailsCommand, createToggleThemeCommand, createScrollTopCommand, createScrollBottomCommand } from './keyboard/ui-actions.js'
 import type { LayoutFace, ThemeFace } from './keyboard/ui-actions.js'
 import { createPasteClipboardCommand } from './keyboard/paste-clipboard.js'
@@ -58,13 +58,14 @@ export function apply(ctx: Context): void {
       // persistence. Unbound by default where the old set shipped unbound.
       const workspaces = ctx.get('workspaces') as WorkspacesNavFace | undefined
       const sessions = ctx.get('sessions') as SessionsNavFace | undefined
+      const uiWorkspace = ctx.get('uiWorkspace') as UiWorkspaceNavFace | undefined
       const layout = ctx.get('layout') as LayoutFace | undefined
       const theme = ctx.get('theme') as ThemeFace | undefined
       const disposers = [
-        ctx.shortcuts.register(createNewSessionCommand(() => t('quick.newSession'), workspaces)),
-        ctx.shortcuts.register(createPrevSessionCommand(() => t('quick.prevSession'), sessions, workspaces)),
-        ctx.shortcuts.register(createNextSessionCommand(() => t('quick.nextSession'), sessions, workspaces)),
-        ctx.shortcuts.register(createForkSessionCommand(() => t('quick.forkSession'), sessions)),
+        ctx.shortcuts.register(createNewSessionCommand(() => t('quick.newSession'), uiWorkspace, workspaces)),
+        ctx.shortcuts.register(createPrevSessionCommand(() => t('quick.prevSession'), sessions, workspaces, uiWorkspace)),
+        ctx.shortcuts.register(createNextSessionCommand(() => t('quick.nextSession'), sessions, workspaces, uiWorkspace)),
+        ctx.shortcuts.register(createForkSessionCommand(() => t('quick.forkSession'), sessions, uiWorkspace)),
         ctx.shortcuts.register(createToggleSidebarCommand(() => t('quick.toggleSidebar'), layout)),
         ctx.shortcuts.register(createToggleDetailsCommand(() => t('quick.toggleDetails'), layout)),
         ctx.shortcuts.register(createToggleThemeCommand(() => t('quick.toggleTheme'), theme)),

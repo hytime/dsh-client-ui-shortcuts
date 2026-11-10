@@ -8,8 +8,9 @@ export const SCROLL_BOTTOM_COMMAND = 'dsh-shortcuts.scrollBottom' as ShortcutCom
 
 export interface LayoutFace {
   toggleSidebar(): void
-  openDetails(): void
-  closeDetails(): void
+  /** Official right-panel controls; both verified on the shipped layout service. */
+  openRightbar?(track: boolean, fullscreen: boolean): void
+  closeRightbar?(): void
 }
 
 export interface ThemeFace {
@@ -27,15 +28,18 @@ export function toggleTheme(theme: ThemeFace | undefined): void {
 }
 
 /**
- * Toggle the details panel: the layout frame carries data-details-collapsed
- * exactly while the column is closed. Matching on the bare "minmax" substring
- * because the browser may serialize the grid template with or without spaces.
+ * Toggle the details (right) panel. The shipped layout service exposes
+ * `openRightbar(track, fullscreen)` / `closeRightbar()` — there is no
+ * `openDetails`/`closeDetails`. Closed detection mirrors the old DOM probe
+ * (`data-details-collapsed` exists exactly while the column is closed), but
+ * falls back to assuming open when the probe finds nothing and the panel
+ * has never been used.
  */
 export function toggleDetails(layout: LayoutFace | undefined): void {
   const frame = document.querySelector<HTMLDivElement>('div[style*="minmax"]')
   const collapsed = frame === null || frame.hasAttribute('data-details-collapsed')
-  if (collapsed) layout?.openDetails()
-  else layout?.closeDetails()
+  if (collapsed) layout?.openRightbar?.(false, false)
+  else layout?.closeRightbar?.()
 }
 
 /** Best-effort scroll of the conversation transcript to top/bottom. */
