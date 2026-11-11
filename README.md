@@ -195,7 +195,7 @@ dsh plugin --profile desktop add github:takomitkm/dsh-bosskey   # 可选:完整 
 
 ## 上游与差异
 
-基于 [hytime/dsh-client-ui-shortcuts](https://github.com/hytime/dsh-client-ui-shortcuts)(其本身已把快捷键管理交给 DSH 官方服务)。本仓库把 [blue-a11y/dsh-client-shortcuts](https://github.com/blue-a11y/dsh-client-shortcuts) 的全部动作集重新实现为官方命令,新增功能域分组、完整老板键区块与键位对照表。上游的快速面板与官方键位管理全部保留。已向上游提 PR:[hytime/dsh-client-ui-shortcuts#2](https://github.com/hytime/dsh-client-ui-shortcuts/pull/2);**若上游接手本 fork(合并本 PR 或采纳本仓库实现),将删除本 fork,不再维护**。
+基于 [hytime/dsh-client-ui-shortcuts](https://github.com/hytime/dsh-client-ui-shortcuts)(其本身已把快捷键管理交给 DSH 官方服务)。本仓库把 [blue-a11y/dsh-client-shortcuts](https://github.com/blue-a11y/dsh-client-shortcuts) 的动作集重新实现为官方命令——**DSH 后来自己命令化的那几条(新建会话、分叉会话、左右侧栏开关)不再重复提供**,插件只保留官方尚未覆盖的动作;新增功能域分组、完整老板键区块与键位对照表。上游的快速面板与官方键位管理全部保留。已向上游提 PR:[hytime/dsh-client-ui-shortcuts#2](https://github.com/hytime/dsh-client-ui-shortcuts/pull/2);**若上游接手本 fork(合并本 PR 或采纳本仓库实现),将删除本 fork,不再维护**。
 
 License: MIT(承上游)。
 

@@ -1,8 +1,8 @@
-# `@hytime/dsh-client-ui-shortcuts` package rules
+# `@takomitkm/dsh-shortcuts` package rules
 
 ## Ownership and dependency direction
 
-This repository owns the independent package `@hytime/dsh-client-ui-shortcuts`. Profile ids such as `standard` and `vim` are data values and must not become package names. The package extends DSH through its declared Client plugin and does not modify DSH core.
+This repository owns the independent package `@takomitkm/dsh-shortcuts`. Profile ids such as `standard` and `vim` are data values and must not become package names. The package extends DSH through its declared Client plugin and does not modify DSH core.
 
 Keep public Client types in `src/client/contract`. Keep `src/client/apply.ts` as the only cross-domain assembly point. Dependencies flow from `contract` to `profiles`/`keyboard`, then to `settings`/`components`, and finally to `apply`. React components receive plain props and callbacks; they do not receive `ctx`, Cordis services, or module-level singleton stores.
 
