@@ -1,4 +1,7 @@
 import type { ShortcutCommand, ShortcutCommandId } from '@deepseek-ai/dsh-client-shortcuts/client'
+import { resolveService } from './service-source.js'
+import type { ServiceSource } from './service-source.js'
+import { recordDiag } from './diag.js'
 
 /** Defensive views over the sessions/workspaces/uiWorkspace services; every field optional. */
 export interface SessionRowShape {
@@ -23,26 +26,21 @@ export interface SessionsNavFace {
   list?: { getSnapshot?: () => SessionListSnapshotShape }
   /** Legacy fallback only: the current official Session Controller exposes no service-level `open`. */
   open?: (id: string) => void
-  fork?: (opts: { sessionId: string }) => Promise<unknown>
 }
 
 export interface WorkspacesNavFace {
-  /** Legacy fallback only: `startSession` is owned by the UI Workspace service. */
-  startSession?: () => void
   list?: { getSnapshot?: () => { items?: Array<{ sessionIds?: string[] }>; archivedSessionIds?: string[] } }
 }
 
 /**
  * Official UI Workspace service (cordis name `uiWorkspace`): the sanctioned
- * entry points for creating, opening, and forking the main-view session.
- * Verified against the shipped implementation: `startSession(workspaceId?, options?)`,
- * `openSession(target)` → `replaceMain(target, lifetime, "reveal")`,
- * `forkSession(sessionId, onCreated?, options?)`.
+ * entry point for replacing the main-view session.
+ * Verified against the shipped implementation: `openSession(target)` →
+ * `replaceMain(target, lifetime, "reveal")`, and the target accepts a known
+ * Session id (the same call the official sidebar makes).
  */
 export interface UiWorkspaceNavFace {
-  startSession?: (workspaceId?: string, options?: unknown) => unknown
   openSession?: (target: string) => unknown
-  forkSession?: (sessionId: string, onCreated?: (childId: string) => void, options?: { allowMigration?: boolean }) => Promise<unknown>
 }
 
 const asStrings = (arr: unknown): string[] =>
@@ -75,16 +73,30 @@ export function readSessionOrder(sessions: SessionsNavFace | undefined): { ids: 
 }
 
 /** Open a session through the official UI Workspace path, falling back defensively. */
-export function openSessionTarget(uiWorkspace: UiWorkspaceNavFace | undefined, sessions: SessionsNavFace | undefined, target: string): void {
+export function openSessionTarget(
+  uiWorkspaceSource: ServiceSource<UiWorkspaceNavFace>,
+  sessionsSource: ServiceSource<SessionsNavFace>,
+  target: string,
+): void {
+  const uiWorkspace = resolveService(uiWorkspaceSource)
+  const sessions = resolveService(sessionsSource)
   const open = uiWorkspace?.openSession
   if (typeof open === 'function') {
     try {
       void open.call(uiWorkspace, target)
+      recordDiag('open', { via: 'uiWorkspace.openSession', target })
       return
-    } catch { /* workspace lost the session: fall through to the defensive path */ }
+    } catch (error) {
+      recordDiag('open.error', { via: 'uiWorkspace.openSession', target, error: String(error) })
+    }
   }
   const legacy = (sessions as { open?: (id: string) => unknown } | undefined)?.open
-  if (typeof legacy === 'function') legacy.call(sessions, target)
+  if (typeof legacy === 'function') {
+    legacy.call(sessions, target)
+    recordDiag('open', { via: 'sessions.open', target })
+    return
+  }
+  recordDiag('open', { via: 'none', target })
 }
 
 /**
@@ -95,9 +107,26 @@ export function openSessionTarget(uiWorkspace: UiWorkspaceNavFace | undefined, s
  * exactly like the sidebar's grouping. The walk wraps around at both ends;
  * a blank/unlisted current sits "before the head".
  */
-export function navigateSession(sessions: SessionsNavFace | undefined, workspaces: WorkspacesNavFace | undefined, uiWorkspace: UiWorkspaceNavFace | undefined, delta: number): void {
+export function navigateSession(
+  sessionsSource: ServiceSource<SessionsNavFace>,
+  workspacesSource: ServiceSource<WorkspacesNavFace>,
+  uiWorkspaceSource: ServiceSource<UiWorkspaceNavFace>,
+  delta: number,
+): void {
+  // Resolved at invoke time: these services may be provided after this plugin activates.
+  const sessions = resolveService(sessionsSource)
+  const workspaces = resolveService(workspacesSource)
   const { ids: flatIds, current } = readSessionOrder(sessions)
-  if (current === undefined) return
+  recordDiag('nav.enter', {
+    delta,
+    services: { uiWorkspace: resolveService(uiWorkspaceSource) !== undefined, sessions: sessions !== undefined, workspaces: workspaces !== undefined },
+    current,
+    flatIds: flatIds.length,
+  })
+  if (current === undefined) {
+    recordDiag('nav.stop', { reason: 'no current session (no retainedBy.mainView row)' })
+    return
+  }
   const snap = (() => { try { return sessions?.list?.getSnapshot?.() } catch { return undefined } })()
   const summaryOf = (id: string) => snap?.byId?.[id]
   const itemOf = (id: string) => snap?.items?.find(i => (i?.sessionId ?? i?.id) === id)
@@ -123,45 +152,29 @@ export function navigateSession(sessions: SessionsNavFace | undefined, workspace
   const stray = flatIds.filter(id => !accounted.has(id) && !hidden(id))
   stray.sort(byRecency)
   ordered.push(...stray)
-  if (ordered.length === 0) return
+  recordDiag('nav.plan', {
+    delta,
+    groups: wsSnap?.items?.map(w => w?.sessionIds?.length ?? 0) ?? null,
+    ordered: ordered.length,
+    orderedHead: ordered.slice(0, 6),
+    archived: archived.size,
+  })
+  if (ordered.length === 0) {
+    recordDiag('nav.stop', { reason: 'empty display order' })
+    return
+  }
   const len = ordered.length
   const idx = ordered.indexOf(current)
   const next = idx === -1
     ? (delta > 0 ? 0 : len - 1)
     : (((idx + delta) % len) + len) % len
   const target = ordered[next]
-  if (target !== undefined) openSessionTarget(uiWorkspace, sessions, target)
+  recordDiag('nav.decide', { idx, next, target, same: target === current })
+  if (target !== undefined) openSessionTarget(uiWorkspaceSource, sessionsSource, target)
 }
 
-export const NEW_SESSION_COMMAND = 'dsh-shortcuts.newSession' as ShortcutCommandId
 export const PREV_SESSION_COMMAND = 'dsh-shortcuts.prevSession' as ShortcutCommandId
 export const NEXT_SESSION_COMMAND = 'dsh-shortcuts.nextSession' as ShortcutCommandId
-export const FORK_SESSION_COMMAND = 'dsh-shortcuts.forkSession' as ShortcutCommandId
-
-/** Start a brand-new session through the official UI Workspace service. */
-export function createNewSessionCommand(label: () => string, uiWorkspace: UiWorkspaceNavFace | undefined, workspaces: WorkspacesNavFace | undefined): ShortcutCommand {
-  return {
-    id: NEW_SESSION_COMMAND,
-    label,
-    aliases: ['new session', 'new chat'],
-    defaults: {},
-    regions: ['page', 'editable'],
-    modals: [],
-    resolve: () => ({
-      status: 'handled',
-      run: () => {
-        const start = uiWorkspace?.startSession
-        if (typeof start === 'function') {
-          try {
-            void start.call(uiWorkspace, void 0)
-            return
-          } catch { /* fall through to the defensive path */ }
-        }
-        workspaces?.startSession?.()
-      },
-    }),
-  }
-}
 
 /** Walk to the previous/next session in sidebar display order (wraps around).
  *  Defaults mirror the task-navigation chords common in AI IDEs (Qoder-style
@@ -169,7 +182,14 @@ export function createNewSessionCommand(label: () => string, uiWorkspace: UiWork
  *  Cmd on macOS and Ctrl elsewhere, so one declaration covers both. The
  *  web-binding rules admit primary+shift on Windows and macOS; Linux Web keeps
  *  no default (narrower allowed set). */
-export function createSessionStepCommand(id: ShortcutCommandId, label: () => string, sessions: SessionsNavFace | undefined, workspaces: WorkspacesNavFace | undefined, uiWorkspace: UiWorkspaceNavFace | undefined, delta: number): ShortcutCommand {
+export function createSessionStepCommand(
+  id: ShortcutCommandId,
+  label: () => string,
+  sessionsSource: ServiceSource<SessionsNavFace>,
+  workspacesSource: ServiceSource<WorkspacesNavFace>,
+  uiWorkspaceSource: ServiceSource<UiWorkspaceNavFace>,
+  delta: number,
+): ShortcutCommand {
   const binding = { code: delta < 0 ? 'BracketLeft' : 'BracketRight', modifiers: ['primary', 'shift'] as const }
   return {
     id,
@@ -185,44 +205,24 @@ export function createSessionStepCommand(id: ShortcutCommandId, label: () => str
     },
     regions: ['page', 'editable'],
     modals: [],
-    resolve: () => ({ status: 'handled', run: () => { navigateSession(sessions, workspaces, uiWorkspace, delta) } }),
+    resolve: () => ({ status: 'handled', run: () => { navigateSession(sessionsSource, workspacesSource, uiWorkspaceSource, delta) } }),
   }
 }
 
-export function createPrevSessionCommand(label: () => string, sessions: SessionsNavFace | undefined, workspaces: WorkspacesNavFace | undefined, uiWorkspace: UiWorkspaceNavFace | undefined): ShortcutCommand {
-  return createSessionStepCommand(PREV_SESSION_COMMAND, label, sessions, workspaces, uiWorkspace, -1)
+export function createPrevSessionCommand(
+  label: () => string,
+  sessionsSource: ServiceSource<SessionsNavFace>,
+  workspacesSource: ServiceSource<WorkspacesNavFace>,
+  uiWorkspaceSource: ServiceSource<UiWorkspaceNavFace>,
+): ShortcutCommand {
+  return createSessionStepCommand(PREV_SESSION_COMMAND, label, sessionsSource, workspacesSource, uiWorkspaceSource, -1)
 }
 
-export function createNextSessionCommand(label: () => string, sessions: SessionsNavFace | undefined, workspaces: WorkspacesNavFace | undefined, uiWorkspace: UiWorkspaceNavFace | undefined): ShortcutCommand {
-  return createSessionStepCommand(NEXT_SESSION_COMMAND, label, sessions, workspaces, uiWorkspace, +1)
-}
-
-/** Fork the current session from its completed-turn prefix; the child opens from the sidebar. */
-export async function forkCurrentSession(sessions: SessionsNavFace | undefined, uiWorkspace: UiWorkspaceNavFace | undefined): Promise<void> {
-  const { current } = readSessionOrder(sessions)
-  if (current === undefined) return
-  const fork = uiWorkspace?.forkSession
-  if (typeof fork === 'function') {
-    try {
-      await fork.call(uiWorkspace, current)
-      return
-    } catch { /* fall through to the controller's own fork */ }
-  }
-  const legacy = (sessions as { fork?: (o: { sessionId: string }) => Promise<unknown> } | undefined)?.fork
-  if (typeof legacy === 'function') void legacy.call(sessions, { sessionId: current }).catch(() => {})
-}
-
-export function createForkSessionCommand(label: () => string, sessions: SessionsNavFace | undefined, uiWorkspace: UiWorkspaceNavFace | undefined): ShortcutCommand {
-  return {
-    id: FORK_SESSION_COMMAND,
-    label,
-    aliases: ['fork session'],
-    defaults: {},
-    regions: ['page', 'editable'],
-    modals: [],
-    resolve: () => ({
-      status: 'handled',
-      run: () => { void forkCurrentSession(sessions, uiWorkspace).catch(() => {}) },
-    }),
-  }
+export function createNextSessionCommand(
+  label: () => string,
+  sessionsSource: ServiceSource<SessionsNavFace>,
+  workspacesSource: ServiceSource<WorkspacesNavFace>,
+  uiWorkspaceSource: ServiceSource<UiWorkspaceNavFace>,
+): ShortcutCommand {
+  return createSessionStepCommand(NEXT_SESSION_COMMAND, label, sessionsSource, workspacesSource, uiWorkspaceSource, +1)
 }

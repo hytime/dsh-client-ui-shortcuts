@@ -1,3 +1,13 @@
+## Unreleased
+
+### Fixed
+
+- **The session shortcuts fired but did nothing.** `prevSession` and `nextSession` captured `ctx.get('uiWorkspace')` and `ctx.get('workspaces')` at activation. Neither service is declared in this plugin's `inject`, so cordis does not gate activation on them: the plugin could activate first and hold `undefined` forever, so a recorded binding ran the command and it silently skipped the "open the session" step. Every service is now resolved inside `run()`, which makes the result independent of activation order. `toggleTheme` carried the same class of bug and is fixed the same way.
+
+### Removed
+
+- **Four commands that duplicated official DSH commands**: `newSession` (= `session.new`, `Mod+N`), `forkSession` (= `session.fork`, `Mod+Alt+F`), `toggleSidebar` (= `sidebar.left.toggle`, `Mod+B`) and `toggleDetails` (= `sidebar.right.toggle`, `Mod+Alt+B`). The plugin now carries only the 9 commands DSH does not already own. Recorded bindings for the remaining ids are unaffected; a record for a removed id becomes an orphan row in the official configuration.
+
 ## 0.3.0 - Boss key, clipboard paste, full action set, functional groups
 
 ### Breaking

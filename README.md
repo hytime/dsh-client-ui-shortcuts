@@ -46,22 +46,22 @@ DSH(DeepSeek Harness)Web/桌面端的**纯快捷键插件**:把一批高频动�
 
 | 命令 | 动作 | 默认键 |
 |---|---|---|
-| `dsh-shortcuts.newSession` | 新建会话 | 未绑定 |
 | `dsh-shortcuts.prevSession` | 上一个会话(侧栏顺序,循环) | `Mod+Shift+[`(Linux Web 无默认；浏览器服务仅允许 `Mod+/`、`Mod+Shift+,`、`Mod+Shift+.` 三组合) |
 | `dsh-shortcuts.nextSession` | 下一个会话(侧栏顺序,循环) | `Mod+Shift+]`(Linux Web 无默认；浏览器服务仅允许 `Mod+/`、`Mod+Shift+,`、`Mod+Shift+.` 三组合) |
-| `dsh-shortcuts.forkSession` | 分叉当前会话 | 未绑定 |
 
 会话切换镜像侧栏的完整显示顺序(工作区按注册表顺序、组内按最近活动排序、未分组桶垫底),跳过空白与归档行,两端循环。
+
+新建会话、分叉会话官方已有命令(`session.new` = `Mod+N`、`session.fork` = `Mod+Alt+F`),本插件**不再重复提供**。
 
 ### 视图(View)
 
 | 命令 | 动作 | 默认键 |
 |---|---|---|
-| `dsh-shortcuts.toggleSidebar` | 切换侧栏 | 未绑定(DSH 官方已有 `Mod+B`,勿重复录制) |
-| `dsh-shortcuts.toggleDetails` | 切换详情面板 | 未绑定 |
 | `dsh-shortcuts.toggleTheme` | 切换浅色/深色主题 | 未绑定 |
 | `dsh-shortcuts.scrollTop` | 滚动到对话顶部 | 未绑定 |
 | `dsh-shortcuts.scrollBottom` | 滚动到对话底部 | 未绑定 |
+
+侧栏与详情面板官方已有命令(`sidebar.left.toggle` = `Mod+B`、`sidebar.right.toggle` = `Mod+Alt+B`),本插件**不再重复提供**。
 
 ### 老板键(Boss Key)——两种
 
@@ -106,10 +106,10 @@ dsh plugin --profile desktop add github:takomitkm/dsh-bosskey   # 可选:完整 
 | `Mod+Shift+M` | 切换会话模式 | ❌ 超出插件能力(无公开服务;第三方用 DOM 点击实现,脆弱,本仓库不做) |
 | `Mod+T` | 切换思考深度 | ❌ 同上(官方 reasoning-effort 控件无命令化) |
 | `Mod+[` / `Mod+]` | 后退 / 前进 | ❌ 超出插件能力:客户端无视图历史栈可寻址 |
-| `Mod+N` | 新建任务 | **DSH 官方自带**(`session.new`,桌面 `Mod+N` / Web `Mod+Alt+N`);本插件另有 `newSession` 默认未绑定,别录重 |
+| `Mod+N` | 新建任务 | **DSH 官方自带**(`session.new`,桌面 `Mod+N` / Web `Mod+Alt+N`);本插件不再重复提供 |
 | `Mod+O` | 添加工作区 | **DSH 官方自带**(`workspace.add`,见 `dsh-client-ui-workspace/lib/client.js`;另有 `workspace.openLocal` = 桌面 `Mod+Alt+O`) |
 | `Mod+W` | 关闭当前上下文 | **DSH 官方自带**(`page.close`,见 [ui-sidebar-right/src/client/shortcuts.ts:65](https://github.com/deepseek-ai/deepseek-harness/blob/fcc0ad462172522aaf5c93a7b2e01f6b9f0b0159/packages/client/ui-sidebar-right/src/client/shortcuts.ts#L65);桌面端兜底 closeWindow) |
-| `Mod+B` | 切换左侧栏 | **DSH 官方自带**(`sidebar.left.toggle`,见 [ui-layout/src/client/index.ts:207](https://github.com/deepseek-ai/deepseek-harness/blob/fcc0ad462172522aaf5c93a7b2e01f6b9f0b0159/packages/client/ui-layout/src/client/index.ts#L207);本插件另有 `toggleSidebar` 未绑定,别录重) |
+| `Mod+B` | 切换左侧栏 | **DSH 官方自带**(`sidebar.left.toggle`,见 [ui-layout/src/client/index.ts:207](https://github.com/deepseek-ai/deepseek-harness/blob/fcc0ad462172522aaf5c93a7b2e01f6b9f0b0159/packages/client/ui-layout/src/client/index.ts#L207);本插件不再重复提供) |
 | `` Mod+` `` | 切换终端 | **DSH 官方自带**(`terminal.new`,见 [ui-sidebar-terminal/src/client/index.ts:55](https://github.com/deepseek-ai/deepseek-harness/blob/fcc0ad462172522aaf5c93a7b2e01f6b9f0b0159/packages/client/ui-sidebar-terminal/src/client/index.ts#L55)) |
 | `Mod+Alt+B`(桌面)/ `Mod+Shift+B`(Web) | 切换右侧面板 | **DSH 官方自带**(`sidebar.right.toggle`,见 `dsh-client-ui-sidebar-right/lib/client.js`) |
 | `Mod+Alt+Enter` | 进入/退出完整视图 | **DSH 官方自带**(`pane.fullscreen.toggle`;另有 `pane.split` = `Mod+\`) |
@@ -119,7 +119,7 @@ dsh plugin --profile desktop add github:takomitkm/dsh-bosskey   # 可选:完整 
 
 ### 结论
 
-- **本插件 13 条命令** = Qoder/贴表里"做得了且值得做"的那部分全集 + 老板键;其余键位要么 DSH 官方已内置,要么推荐使用 [deja-vu](https://github.com/vshulcz/deja-vu),要么是主动取舍或架构边界(见上节,取舍项在官方命令化后可一行接入)。
+- **本插件 9 条命令** = Qoder/贴表里"做得了且值得做"的那部分全集 + 老板键;官方已命令化的(新建/分叉/侧栏/详情)不再重复提供,其余键位要么 DSH 官方已内置,要么推荐使用 [deja-vu](https://github.com/vshulcz/deja-vu),要么是主动取舍或架构边界(见上节)。
 
 ### 本插件未实现 / 超出浏览器插件能力的键位(候选官方命令化清单)
 
@@ -177,7 +177,7 @@ dsh plugin --profile desktop add github:takomitkm/dsh-bosskey   # 可选:完整 
 | `page.refresh` | 刷新当前上下文 | `Mod+R` | `Mod+Alt+R` |
 | `page.close` | 关闭当前上下文 | `Mod+W` | `Mod+Alt+W` |
 | `fontSize.increase` / `fontSize.decrease` | 字号增减 | 官方 `coreActionOrder` 登记,注册点在壳层 | 同左 |
-| **本插件 13 条** `dsh-shortcuts.*` | 面板 / 聚焦输入框 / 粘贴剪贴板 / 新建 / 上一个 / 下一个 / 分叉会话 / 切侧栏 / 切详情 / 切主题 / 滚到顶 / 滚到底 / 老板键·隐藏 | 见上方各节 | 见上方各节 |
+| **本插件 9 条** `dsh-shortcuts.*` | 面板 / 聚焦输入框 / 粘贴剪贴板 / 上一个 / 下一个 / 切主题 / 滚到顶 / 滚到底 / 老板键·隐藏 | 见上方各节 | 见上方各节 |
 
 `session.search` 官方中文文案是「搜索会话」、输入框占位「搜索会话名称」,结果行带 `content excerpt`(会话历史内容摘录),不只是标题;它在 **desktop 是 `Mod+K`、Web 是 `Mod+Alt+K`**(Web 端单 `Mod+K` 被判 `unsupported-browser`)。
 
@@ -220,7 +220,7 @@ License: MIT(承上游)。
 
 ### 为什么默认键不覆盖官方键位
 
-本插件 13 条命令的**出厂默认键,一个都不碰官方键位**。不是做不到,而是那些组合**已被官方命令占用**,DSH 在三层都会拦:
+本插件 9 条命令的**出厂默认键,一个都不碰官方键位**。不是做不到,而是那些组合**已被官方命令占用**,DSH 在三层都会拦:
 
 | 层次 | 行为 |
 |---|---|
@@ -228,7 +228,7 @@ License: MIT(承上游)。
 | 录制期 `describeBinding()` | 预检发现该组合已被占用就报冲突,不发起写入 |
 | 持久层 `edit()` | 即使绕过界面,`displaced` 校验也返回 `status: conflict`,不写盘 |
 
-因此占用官方键只能由**用户手动两步**完成(见上文),且改动落在官方配置里、卸载后残留。插件默认键只从官方目录里确认空闲的组合里挑(`Mod+Alt+Shift+S`、`Mod+Shift+[` / `]`),其余 10 条干脆不绑定——这就是"不覆盖官方"的全部原因。`Mod+Shift+K` 同理:本插件不把它设为默认键、也不与官方冲突;`Mod+F` 与 `Mod+Shift+K` 这类组合都允许你在设置页自行改键成别的键位。
+因此占用官方键只能由**用户手动两步**完成(见上文),且改动落在官方配置里、卸载后残留。插件默认键只从官方目录里确认空闲的组合里挑(`Mod+Alt+Shift+S`、`Mod+Shift+[` / `]`),其余 6 条干脆不绑定——这就是"不覆盖官方"的全部原因。`Mod+Shift+K` 同理:本插件不把它设为默认键、也不与官方冲突;`Mod+F` 与 `Mod+Shift+K` 这类组合都允许你在设置页自行改键成别的键位。
 
 ### 卸载为什么会有残留
 

@@ -85,18 +85,16 @@ describe('current DSH integration', () => {
     expect(b.shortcuts.edit).toHaveBeenLastCalledWith({ type: 'reset', id: 'dsh-shortcuts.open' }, 'r1')
     await b.feature.dispose()
   })
-  it('registers the full official command set (12) and no interaction takeovers by default', async () => {
+  it('registers only the commands DSH does not already own (9) and no interaction takeovers by default', async () => {
     const b = await bench()
+    // New session, fork, left sidebar and right panel are official commands;
+    // this plugin deliberately does not duplicate them.
     expect([...b.commands.keys()]).toEqual([
       'dsh-shortcuts.open',
       'dsh-shortcuts.composerFocus',
       'dsh-shortcuts.bossHide',
-      'dsh-shortcuts.newSession',
       'dsh-shortcuts.prevSession',
       'dsh-shortcuts.nextSession',
-      'dsh-shortcuts.forkSession',
-      'dsh-shortcuts.toggleSidebar',
-      'dsh-shortcuts.toggleDetails',
       'dsh-shortcuts.toggleTheme',
       'dsh-shortcuts.scrollTop',
       'dsh-shortcuts.scrollBottom',

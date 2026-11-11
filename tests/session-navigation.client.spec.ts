@@ -1,14 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
-  FORK_SESSION_COMMAND,
-  NEW_SESSION_COMMAND,
   NEXT_SESSION_COMMAND,
   PREV_SESSION_COMMAND,
-  createForkSessionCommand,
-  createNewSessionCommand,
   createNextSessionCommand,
   createPrevSessionCommand,
-  forkCurrentSession,
   mainViewSessionId,
   navigateSession,
   openSessionTarget,
@@ -242,29 +237,6 @@ describe('openSessionTarget prefers the official uiWorkspace path', () => {
   })
 })
 
-describe('new-session command', () => {
-  it('starts a session through the official uiWorkspace.startSession', () => {
-    const startSession = vi.fn()
-    const command = createNewSessionCommand(() => 'label', { startSession }, undefined)
-    expect(command.id).toBe(NEW_SESSION_COMMAND)
-    expect(command.defaults).toEqual({})
-    runHandled(command as never)
-    expect(startSession).toHaveBeenCalledTimes(1)
-  })
-
-  it('falls back to workspaces.startSession when uiWorkspace is absent', () => {
-    const startSession = vi.fn()
-    const command = createNewSessionCommand(() => 'label', undefined, { startSession })
-    runHandled(command as never)
-    expect(startSession).toHaveBeenCalledTimes(1)
-  })
-
-  it('is a harmless no-op when neither service can start a session', () => {
-    const command = createNewSessionCommand(() => 'label', undefined, undefined)
-    expect(() => runHandled(command as never)).not.toThrow()
-  })
-})
-
 describe('session step command shape', () => {
   it('carries the bracket defaults under every supported profile', () => {
     const prev = createPrevSessionCommand(() => 'p', undefined, undefined, undefined)
@@ -276,42 +248,5 @@ describe('session step command shape', () => {
     // Linux Web deliberately has no default (narrower official allowed set).
     expect(prev.defaults['web:linux']).toBeUndefined()
     expect(next.defaults['web:linux']).toBeUndefined()
-  })
-})
-
-describe('fork-session command', () => {
-  it('forks the current session through the official uiWorkspace.forkSession', async () => {
-    const sessions = sessionsService(
-      [{ sessionId: 's1' }],
-      { s1: { id: 's1', retainedBy: { mainView: 1 } } },
-    )
-    const forkSession = vi.fn(async () => ({}))
-    await forkCurrentSession(sessions, { forkSession })
-    expect(forkSession).toHaveBeenCalledWith('s1')
-  })
-
-  it('falls back to the controller fork only when uiWorkspace cannot fork', async () => {
-    const sessions = sessionsService(
-      [{ sessionId: 's7' }],
-      { s7: { id: 's7', retainedBy: { mainView: 1 } } },
-      { fork: vi.fn(async () => ({})) },
-    )
-    await forkCurrentSession(sessions, undefined)
-    expect((sessions.fork as unknown as { mock: { calls: unknown[][] } }).mock.calls[0]).toEqual([{ sessionId: 's7' }])
-  })
-
-  it('does nothing when there is no current session (no retained row)', async () => {
-    const sessions = sessionsService([{ sessionId: 's1' }], { s1: { id: 's1' } }, { fork: vi.fn(async () => ({})) })
-    const forkSession = vi.fn(async () => ({}))
-    await forkCurrentSession(sessions, { forkSession })
-    expect(forkSession).not.toHaveBeenCalled()
-    expect((sessions.fork as unknown as { mock: { calls: unknown[][] } }).mock.calls.length).toBe(0)
-  })
-
-  it('exposes the official id, unbound defaults, and never throws into the dispatcher', () => {
-    const command = createForkSessionCommand(() => 'fork', undefined, undefined)
-    expect(command.id).toBe(FORK_SESSION_COMMAND)
-    expect(command.defaults).toEqual({})
-    expect(() => runHandled(command as never)).not.toThrow()
   })
 })

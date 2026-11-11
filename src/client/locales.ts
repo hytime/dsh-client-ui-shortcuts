@@ -6,12 +6,8 @@ export const en = {
   'quick.open': 'Open quick panel',
   'quick.focusComposer': 'Focus composer',
   'quick.bossHide': 'Boss key: hide window to tray',
-  'quick.newSession': 'New session',
   'quick.prevSession': 'Previous session',
   'quick.nextSession': 'Next session',
-  'quick.forkSession': 'Fork current session',
-  'quick.toggleSidebar': 'Toggle sidebar',
-  'quick.toggleDetails': 'Toggle details panel',
   'quick.toggleTheme': 'Toggle light/dark theme',
   'quick.scrollTop': 'Scroll conversation to top',
   'quick.scrollBottom': 'Scroll conversation to bottom',
@@ -66,8 +62,7 @@ export const en = {
 
 export const zh: Record<keyof typeof en, string> = {
   'quick.title': '快速面板', 'quick.open': '打开快速面板', 'quick.focusComposer': '聚焦输入框', 'quick.bossHide': '老板键：隐藏窗口到托盘', 'quick.close': '关闭快速面板',
-  'quick.newSession': '新建会话', 'quick.prevSession': '上一个会话', 'quick.nextSession': '下一个会话',
-  'quick.forkSession': '分叉当前会话', 'quick.toggleSidebar': '切换侧栏', 'quick.toggleDetails': '切换详情面板',
+  'quick.prevSession': '上一个会话', 'quick.nextSession': '下一个会话',
   'quick.toggleTheme': '切换浅色/深色主题', 'quick.scrollTop': '滚动到对话顶部', 'quick.scrollBottom': '滚动到对话底部',
   'quick.pasteClipboard': '粘贴剪贴板到输入框',
   'quick.group.general': '通用',
@@ -111,8 +106,7 @@ export const zh: Record<keyof typeof en, string> = {
 
 export const ja: Record<keyof typeof en, string> = {
   'quick.title': 'クイックパネル', 'quick.open': 'クイックパネルを開く', 'quick.focusComposer': '入力欄にフォーカス', 'quick.bossHide': 'ボスキー：ウィンドウをトレイに隠す', 'quick.close': '閉じる',
-  'quick.newSession': '新しいセッション', 'quick.prevSession': '前のセッション', 'quick.nextSession': '次のセッション',
-  'quick.forkSession': '現在のセッションをフォーク', 'quick.toggleSidebar': 'サイドバー切り替え', 'quick.toggleDetails': '詳細パネル切り替え',
+  'quick.prevSession': '前のセッション', 'quick.nextSession': '次のセッション',
   'quick.toggleTheme': 'ライト/ダークテーマ切り替え', 'quick.scrollTop': '会話の先頭へスクロール', 'quick.scrollBottom': '会話の末尾へスクロール',
   'quick.pasteClipboard': 'クリップボードを入力欄に貼り付け',
   'quick.group.general': '一般',
@@ -156,8 +150,7 @@ export const ja: Record<keyof typeof en, string> = {
 
 export const ko: Record<keyof typeof en, string> = {
   'quick.title': '빠른 패널', 'quick.open': '빠른 패널 열기', 'quick.focusComposer': '입력창 포커스', 'quick.bossHide': '보스 키: 창을 트레이로 숨기기', 'quick.close': '닫기',
-  'quick.newSession': '새 세션', 'quick.prevSession': '이전 세션', 'quick.nextSession': '다음 세션',
-  'quick.forkSession': '현재 세션 포크', 'quick.toggleSidebar': '사이드바 전환', 'quick.toggleDetails': '세부 정보 패널 전환',
+  'quick.prevSession': '이전 세션', 'quick.nextSession': '다음 세션',
   'quick.toggleTheme': '라이트/다크 테마 전환', 'quick.scrollTop': '대화 맨 위로 스크롤', 'quick.scrollBottom': '대화 맨 아래로 스크롤',
   'quick.pasteClipboard': '클립보드를 입력창에 붙여넣기',
   'quick.group.general': '일반',
