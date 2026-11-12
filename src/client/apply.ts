@@ -16,6 +16,7 @@ import type { SessionsNavFace, WorkspacesNavFace, UiWorkspaceNavFace } from './k
 import { createToggleThemeCommand, createScrollTopCommand, createScrollBottomCommand } from './keyboard/ui-actions.js'
 import type { ThemeFace } from './keyboard/ui-actions.js'
 import { createPasteClipboardCommand } from './keyboard/paste-clipboard.js'
+import { createOpenModelMenuCommand, createOpenThinkingDepthCommand } from './keyboard/model-menu.js'
 import { NS, en, ja, ko, zh } from './locales.js'
 import type { ShortcutSettings } from '../settings.js'
 import { SHORTCUTS_SETTINGS_NAMESPACE } from '../settings-namespace.js'
@@ -77,6 +78,11 @@ export function apply(ctx: Context): void {
         ctx.shortcuts.register(createScrollTopCommand(() => t('quick.scrollTop'))),
         ctx.shortcuts.register(createScrollBottomCommand(() => t('quick.scrollBottom'))),
         ctx.shortcuts.register(createPasteClipboardCommand(() => t('quick.pasteClipboard'))),
+        // Non-official interaction commands: DSH ships no model / thinking-depth
+        // command, so these drive the composer's seat popup through the DOM
+        // (documented as non-official and possibly unstable in the README).
+        ctx.shortcuts.register(createOpenModelMenuCommand(() => t('quick.openModelMenu'))),
+        ctx.shortcuts.register(createOpenThinkingDepthCommand(() => t('quick.openThinkingDepth'))),
       ]
       return () => { for (const d of disposers.reverse()) d(); offBoss(); offFocus(); offCommand(); offSlot(); model.close() }
     } catch (error) { offSlot(); throw error }

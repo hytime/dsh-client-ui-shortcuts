@@ -21,6 +21,8 @@ const GROUP_BY_COMMAND: Record<string, CommandGroup> = {
   'dsh-shortcuts.toggleTheme': 'view',
   'dsh-shortcuts.scrollTop': 'view',
   'dsh-shortcuts.scrollBottom': 'view',
+  'dsh-shortcuts.openModelMenu': 'view',
+  'dsh-shortcuts.openThinkingDepth': 'view',
   'dsh-shortcuts.bossHide': 'bosskey',
 }
 

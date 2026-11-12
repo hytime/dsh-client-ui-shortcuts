@@ -23,6 +23,8 @@ dsh plugin --profile desktop add github:takomitkm/dsh-shortcuts@0.3.0
 
 DSH(DeepSeek Harness)Web/桌面端的**纯快捷键插件**:把一批高频动作注册为 **DSH 官方快捷键命令**——直接出现在 **DSH 设置 → 通用 → 键盘快捷键**(`Mod+/`)里,享受官方的录制改键、冲突检测、按设备持久化;另有快速面板。`mod` 在 macOS 上匹配 Cmd、其他平台匹配 Ctrl。
 
+> ℹ️ **非官方补充说明**:上表绝大多数是 DSH 官方快捷键命令;但「打开模型菜单」「打开思考深度」两条官方并未提供命令或服务,本插件改用 **DOM 嗅探 + 模拟点击**实现,属**非官方实现、可能随 DSH 版本更新而失效或不稳定**,详见 [模型与推理](#model-reasoning)。
+
 ## 命令(按功能域分组,快速面板里同款分组渲染)
 
 > **Linux Web (浏览器端) 的默认键位限制**:DSH 的 Web 快捷键服务在 Linux 上仅允许三个组合作为默认键 — **`Mod+/`**、**`Mod+Shift+,`**、**`Mod+Shift+.`**；其它组合在注册期会被拒。其中 `Mod+/` 已被官方 `shortcuts.open` 占用，因此本插件在 Linux Web 上不声明默认键（显示"Linux Web 无默认"），用户可在设置页自行录制白名单内的组合。
@@ -63,6 +65,20 @@ DSH(DeepSeek Harness)Web/桌面端的**纯快捷键插件**:把一批高频动�
 
 侧栏与详情面板官方已有命令(`sidebar.left.toggle` = `Mod+B`、`sidebar.right.toggle` = `Mod+Alt+B`),本插件**不再重复提供**。
 
+<a id="model-reasoning"></a>
+
+### 模型与推理(非官方 · DOM 点击,可能不稳定)
+
+> ⚠️ **这两条不是 DSH 官方命令**。官方既没有对应的 `ctx.shortcuts` 命令 id,也没有公开服务可触发模型菜单 / 思考深度控件;本插件改用**在页面里嗅探 DOM 并模拟点击**(找到 `conversation.input.model` 的弹层按钮 → 点开 → 点对应 `role="menuitem"`)。因此它们**不出现在官方命令目录里享受官方冲突检测**,且**组件结构一变就可能失效**——这是与上方所有官方命令的本质区别。快速面板里它们归到「视图」组。
+
+| 命令 | 动作 | 默认键 |
+|---|---|---|
+| `dsh-shortcuts.openModelMenu` | 打开模型菜单(点开模型选择弹层) | `Mod+M`(**macOS 上 `Cmd+M` 被系统「最小化窗口」占用**,macOS 浏览器/桌面端通常到不了页面,建议改键) |
+| `dsh-shortcuts.openThinkingDepth` | 打开思考深度选择(点开弹层里的「思考深度」项) | 未绑定(官方 `browser.new` 已占 `Mod+T`,请自行在设置页录一个不冲突的键) |
+
+- 仅当页面上存在模型选择按钮时才生效;找不到就静默 no-op(不报错、不干扰)。
+- 若官方日后把这两个动作命令化,本插件会改为接入官方命令,届时此处的 DOM 方案即废弃。
+
 ### 老板键(Boss Key)——两种
 
 | | 第一种:官方轨 `dsh-shortcuts.bossHide` | 第二种:OS 轨 dsh-bosskey(配套插件) |
@@ -102,9 +118,9 @@ dsh plugin --profile desktop add github:takomitkm/dsh-bosskey   # 可选:完整 
 | `Mod+F` | 任务内查找 | **官方暂缺**,推荐使用 [deja-vu](https://github.com/vshulcz/deja-vu);装有 [dsh-session-find](https://github.com/fomalhaut1998/dsh-session-find) 时由它接管 `Ctrl+F`(会话内页内查找,捕获阶段拦截),deja-vu 的 `Mod+F` 会被覆盖、不再触发 |
 | `Mod+K` | 搜索会话(标题 + 内容摘录) | **DSH 官方自带**(`session.search`,桌面 `Mod+K` / Web `Mod+Alt+K`;Web 端单 `Mod+K` 被判浏览器保留) |
 | `Mod+Shift+K` | 全局对话搜索(带内容) | 推荐使用 [deja-vu](https://github.com/vshulcz/deja-vu) (桌面/Win Web 空位可用; Web macOS/Linux 不可用) |
-| `Mod+M` | 打开模型菜单 | ❌ 超出插件能力:模型菜单是会话 UI 内部组件,官方无命令 id、无服务可触发 |
+| `Mod+M` | 打开模型菜单 | **本插件** `openModelMenu`(**非官方 · DOM 点击,可能不稳定**;官方无命令 id、无服务;macOS `Cmd+M` 被系统最小化占用,建议改键) |
 | `Mod+Shift+M` | 切换会话模式 | ❌ 超出插件能力(无公开服务;第三方用 DOM 点击实现,脆弱,本仓库不做) |
-| `Mod+T` | 切换思考深度 | ❌ 同上(官方 reasoning-effort 控件无命令化) |
+| `Mod+T` | 切换思考深度 | **本插件** `openThinkingDepth`(**非官方 · DOM 点击,可能不稳定**,默认未绑定;`Mod+T` 已被官方 `browser.new` 占用,需自行改键) |
 | `Mod+[` / `Mod+]` | 后退 / 前进 | ❌ 超出插件能力:客户端无视图历史栈可寻址 |
 | `Mod+N` | 新建任务 | **DSH 官方自带**(`session.new`,桌面 `Mod+N` / Web `Mod+Alt+N`);本插件不再重复提供 |
 | `Mod+O` | 添加工作区 | **DSH 官方自带**(`workspace.add`,见 `dsh-client-ui-workspace/lib/client.js`;另有 `workspace.openLocal` = 桌面 `Mod+Alt+O`) |
@@ -119,7 +135,7 @@ dsh plugin --profile desktop add github:takomitkm/dsh-bosskey   # 可选:完整 
 
 ### 结论
 
-- **本插件 9 条命令** = Qoder/贴表里"做得了且值得做"的那部分全集 + 老板键;官方已命令化的(新建/分叉/侧栏/详情)不再重复提供,其余键位要么 DSH 官方已内置,要么推荐使用 [deja-vu](https://github.com/vshulcz/deja-vu),要么是主动取舍或架构边界(见上节)。
+- **本插件 11 条命令** = Qoder/贴表里"做得了且值得做"的那部分全集 + 老板键;其中 9 条是 DSH 官方快捷键命令,另 2 条(`openModelMenu` / `openThinkingDepth`)是**非官方 DOM 点击**(见 [模型与推理](#model-reasoning))。官方已命令化的(新建/分叉/侧栏/详情)不再重复提供,其余键位要么 DSH 官方已内置,要么推荐使用 [deja-vu](https://github.com/vshulcz/deja-vu),要么是主动取舍或架构边界(见上节)。
 
 ### 本插件未实现 / 超出浏览器插件能力的键位(候选官方命令化清单)
 
@@ -132,9 +148,9 @@ dsh plugin --profile desktop add github:takomitkm/dsh-bosskey   # 可选:完整 
 
 | 按键 | 动作 | 状态 | 机制与说明 |
 |---|---|---|---|
-| `Ctrl+M` | 打开模型菜单 | **取舍不做** | 模型选择弹层是会话 UI 内部组件:官方未注册命令 id,没有公开服务可从外部触发;硬做只能模拟点击 DOM,脆弱且随版本漂移。若官方命令化(`session.modelMenu`)本插件可一行接入 |
+| `Ctrl+M` | 打开模型菜单 | **已用非官方方案做**(可能不稳定) | 官方未注册命令 id、无公开服务;本插件改为 `openModelMenu` **DOM 嗅探 + 模拟点击**实现(见 [模型与推理](#model-reasoning)),脆弱、随版本漂移,失败时静默 no-op。若官方命令化(`session.modelMenu`)则改接官方 |
 | `Ctrl+Shift+M` | 切换会话模式(plan/agent) | **取舍不做** | 模式 chip 无公开服务;第三方 dsh-quick-keys 用 DOM 点击实现,本仓库不采纳此路径。官方命令化(`session.toggleMode`)后可接入 |
-| `Ctrl+T` | 切换思考深度 | **取舍不做** | reasoning-effort 控件同属会话 UI 内部状态,未命令化。官方命令化(`session.cycleThinking`)后可接入 |
+| `Ctrl+T` | 切换思考深度 | **已用非官方方案做**(可能不稳定,默认未绑定) | reasoning-effort 控件未命令化;本插件用 `openThinkingDepth` **DOM 点击**点开弹层里的思考深度项(见 [模型与推理](#model-reasoning))。`Ctrl+T` 本身与官方 `browser.new`(及浏览器保留组合)冲突,需自行改键。官方命令化(`session.cycleThinking`)后改接官方 |
 | `Ctrl+[` / `Ctrl+]` | 视图后退 / 前进 | **取舍不做** | 客户端没有可寻址的视图历史栈(导航是 React 状态机,无 back/forward API),官方先建栈才有的接 |
 | `Ctrl+Alt+Space` | Quick Ask 小框(全局) | **取舍不做** | 需要全局热键 + 独立悬浮窗,超出本插件定位;如需此形态,dsh-bosskey 的监听器架构(Win32 RegisterHotKey + 独立进程)是现成路径,但目前只有老板键 |
 | `Ctrl+±` / `Ctrl+0` | 放大 / 缩小 / 恢复缩放 | **做不了**([#8355](https://github.com/deepseek-ai/deepseek-harness/discussions/8355)) | 属壳/浏览器层:桌面壳未注册 zoom 加速器,页面层无法注册浏览器保留键。桌面端 Ctrl+±/0 本来就由 Chromium 处理 |
@@ -142,7 +158,7 @@ dsh plugin --profile desktop add github:takomitkm/dsh-bosskey   # 可选:完整 
 
 共性的机制边界三条(适用于所有"做不了"的行):
 
-1. **命令化缺失**:动作存在于官方 UI,但没有注册为 `ctx.shortcuts` 命令、也没有公开服务——插件只能触达服务与命令,不能触达组件内部状态。
+1. **命令化缺失**:动作存在于官方 UI,但没有注册为 `ctx.shortcuts` 命令、也没有公开服务——插件只能触达服务与命令,不能触达组件内部状态。本插件对「模型菜单 / 思考深度」两条改用 **DOM 嗅探 + 模拟点击**绕过了这条边界,代价是非官方、易随版本失效(见 [模型与推理](#model-reasoning))。
 2. **浏览器保留键**:页面层 `preventDefault` 之前就被浏览器消费的组合(`Ctrl+T/N/W` 等)永远绑不住,web 端做不了,desktop 端原生拦截可以。
 3. **OS 窗口/全局热键**:BrowserWindow 的显隐、全局热键、独立悬浮窗都在壳或独立进程手里;Host 插件是普通 Node 进程,client 插件在浏览器里,都够不着。
 
@@ -177,7 +193,7 @@ dsh plugin --profile desktop add github:takomitkm/dsh-bosskey   # 可选:完整 
 | `page.refresh` | 刷新当前上下文 | `Mod+R` | `Mod+Alt+R` |
 | `page.close` | 关闭当前上下文 | `Mod+W` | `Mod+Alt+W` |
 | `fontSize.increase` / `fontSize.decrease` | 字号增减 | 官方 `coreActionOrder` 登记,注册点在壳层 | 同左 |
-| **本插件 9 条** `dsh-shortcuts.*` | 面板 / 聚焦输入框 / 粘贴剪贴板 / 上一个 / 下一个 / 切主题 / 滚到顶 / 滚到底 / 老板键·隐藏 | 见上方各节 | 见上方各节 |
+| **本插件 11 条** `dsh-shortcuts.*` | 面板 / 聚焦输入框 / 粘贴剪贴板 / 上一个 / 下一个 / 切主题 / 滚到顶 / 滚到底 / 老板键·隐藏 / **打开模型菜单** / **打开思考深度**(后两条非官方 DOM 点击) | 见上方各节 | 见上方各节 |
 
 `session.search` 官方中文文案是「搜索会话」、输入框占位「搜索会话名称」,结果行带 `content excerpt`(会话历史内容摘录),不只是标题;它在 **desktop 是 `Mod+K`、Web 是 `Mod+Alt+K`**(Web 端单 `Mod+K` 被判 `unsupported-browser`)。
 
@@ -195,7 +211,7 @@ dsh plugin --profile desktop add github:takomitkm/dsh-bosskey   # 可选:完整 
 
 ## 上游与差异
 
-基于 [hytime/dsh-client-ui-shortcuts](https://github.com/hytime/dsh-client-ui-shortcuts)(其本身已把快捷键管理交给 DSH 官方服务)。本仓库把 [blue-a11y/dsh-client-shortcuts](https://github.com/blue-a11y/dsh-client-shortcuts) 的动作集重新实现为官方命令——**DSH 后来自己命令化的那几条(新建会话、分叉会话、左右侧栏开关)不再重复提供**,插件只保留官方尚未覆盖的动作;新增功能域分组、完整老板键区块与键位对照表。上游的快速面板与官方键位管理全部保留。已向上游提 PR:[hytime/dsh-client-ui-shortcuts#2](https://github.com/hytime/dsh-client-ui-shortcuts/pull/2);**若上游接手本 fork(合并本 PR 或采纳本仓库实现),将删除本 fork,不再维护**。
+基于 [hytime/dsh-client-ui-shortcuts](https://github.com/hytime/dsh-client-ui-shortcuts)(其本身已把快捷键管理交给 DSH 官方服务)。本仓库把 [blue-a11y/dsh-client-shortcuts](https://github.com/blue-a11y/dsh-client-shortcuts) 的动作集重新实现为官方命令——**DSH 后来自己命令化的那几条(新建会话、分叉会话、左右侧栏开关)不再重复提供**,插件只保留官方尚未覆盖的动作;新增功能域分组、完整老板键区块与键位对照表。上游的快速面板与官方键位管理全部保留。已向上游提 PR:[hytime/dsh-client-ui-shortcuts#2](https://github.com/hytime/dsh-client-ui-shortcuts/pull/2);**若上游接手本 fork(合并本 PR 或采纳本仓库实现),将删除本 fork,不再维护**。本 fork 另加了两条**非官方 DOM 点击**命令(打开模型菜单 / 打开思考深度),见 [模型与推理](#model-reasoning)。
 
 License: MIT(承上游)。
 
@@ -220,7 +236,7 @@ License: MIT(承上游)。
 
 ### 为什么默认键不覆盖官方键位
 
-本插件 9 条命令的**出厂默认键,一个都不碰官方键位**。不是做不到,而是那些组合**已被官方命令占用**,DSH 在三层都会拦:
+本插件 11 条命令的**出厂默认键,一个都不碰官方键位**(两条非官方命令里 `openModelMenu` 绑 `Mod+M`、`openThinkingDepth` 未绑定)。不是做不到,而是那些组合**已被官方命令占用**,DSH 在三层都会拦:
 
 | 层次 | 行为 |
 |---|---|
@@ -228,7 +244,7 @@ License: MIT(承上游)。
 | 录制期 `describeBinding()` | 预检发现该组合已被占用就报冲突,不发起写入 |
 | 持久层 `edit()` | 即使绕过界面,`displaced` 校验也返回 `status: conflict`,不写盘 |
 
-因此占用官方键只能由**用户手动两步**完成(见上文),且改动落在官方配置里、卸载后残留。插件默认键只从官方目录里确认空闲的组合里挑(`Mod+Alt+Shift+S`、`Mod+Shift+[` / `]`),其余 6 条干脆不绑定——这就是"不覆盖官方"的全部原因。`Mod+Shift+K` 同理:本插件不把它设为默认键、也不与官方冲突;`Mod+F` 与 `Mod+Shift+K` 这类组合都允许你在设置页自行改键成别的键位。
+因此占用官方键只能由**用户手动两步**完成(见上文),且改动落在官方配置里、卸载后残留。插件默认键只从官方目录里确认空闲的组合里挑(`Mod+Alt+Shift+S`、`Mod+Shift+[` / `]`、`Mod+M`),其余 7 条干脆不绑定——这就是"不覆盖官方"的全部原因。`Mod+Shift+K` 同理:本插件不把它设为默认键、也不与官方冲突;`Mod+F` 与 `Mod+Shift+K` 这类组合都允许你在设置页自行改键成别的键位。(`Mod+M` 虽不与官方冲突,但 **macOS 上 `Cmd+M` 是系统「最小化窗口」**,能否到达页面取决于系统;需要稳定可用请自行改键。)
 
 ### 卸载为什么会有残留
 

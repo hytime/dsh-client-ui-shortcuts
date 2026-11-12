@@ -85,7 +85,7 @@ describe('current DSH integration', () => {
     expect(b.shortcuts.edit).toHaveBeenLastCalledWith({ type: 'reset', id: 'dsh-shortcuts.open' }, 'r1')
     await b.feature.dispose()
   })
-  it('registers only the commands DSH does not already own (9) and no interaction takeovers by default', async () => {
+  it('registers only the commands DSH does not already own (11) and no interaction takeovers by default', async () => {
     const b = await bench()
     // New session, fork, left sidebar and right panel are official commands;
     // this plugin deliberately does not duplicate them.
@@ -99,6 +99,8 @@ describe('current DSH integration', () => {
       'dsh-shortcuts.scrollTop',
       'dsh-shortcuts.scrollBottom',
       'dsh-shortcuts.pasteClipboard',
+      'dsh-shortcuts.openModelMenu',
+      'dsh-shortcuts.openThinkingDepth',
     ])
     expect(b.entries.map(entry => entry.options.name)).toEqual(['shell.overlay', 'plugins.bundle.config'])
     await b.feature.dispose()
