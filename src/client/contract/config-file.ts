@@ -2,9 +2,9 @@
 
 /** Envelope discriminator written into every exported file. */
 export const CONFIG_FILE_FORMAT = 'dsh-client-ui-shortcuts/quick-panel'
-/** Version this build writes: the plugin switches plus *every* official command's binding. */
+/** Version this build writes: *every* official command's binding. */
 export const CONFIG_FILE_VERSION = 2
-/** Version 1 files (switches plus one optional summon binding) remain importable. */
+/** Version 1 files (one optional summon binding) remain importable. */
 export const CONFIG_FILE_MIN_VERSION = 1
 /** Refuse oversized documents before parsing them. */
 export const MAX_CONFIG_FILE_BYTES = 1 << 20
@@ -40,10 +40,8 @@ export interface ConfigFileShortcutEntry {
 /** Every official command keyed by its official command id. */
 export type ConfigFileShortcuts = Readonly<Record<string, ConfigFileShortcutEntry>>
 
-/** The plugin's own preferences plus the complete official keyboard snapshot. */
+/** The complete official keyboard snapshot. */
 export interface ConfigFileDocument {
-  readonly questionEnabled: boolean
-  readonly approvalEnabled: boolean
   /** Complete official keyboard snapshot, applied through the official service on import. */
   readonly shortcuts: ConfigFileShortcuts
   /** Device profile the snapshot was read from, for diagnostics only. */

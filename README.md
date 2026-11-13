@@ -1,158 +1,266 @@
-# DSH Client UI Shortcuts
+# @takomitkm/dsh-shortcuts
 
-[![npm version](https://img.shields.io/npm/v/%40hytime%2Fdsh-client-ui-shortcuts?logo=npm&label=npm)](https://www.npmjs.com/package/@hytime/dsh-client-ui-shortcuts) [![license](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/license/mit/)
+[![version](https://img.shields.io/badge/version-0.3.0-blue)](https://github.com/takomitkm/dsh-shortcuts) [![license](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/license/mit/)
 
-English | [中文](README.zh.md)
+> ⚠️ **卸载须知**:本插件的键位修改经 DSH 官方服务写入,**卸载后不会自动还原**——改过/录制过的键位会残留(重装插件时,对插件命令的录制会自动复活)。**卸载前请先在 DSH 设置 → 通用 → 键盘快捷键里把官方命令与 `dsh-shortcuts.*` 命令都「重置」恢复默认**。机制与操作见文末 [「覆盖官方默认键与卸载残留」](#override-default-keys)。
 
-A **quick launcher panel** for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) Web, plus **off-by-default** question and approval enhancements.
+当前版本 **0.3.0**(插件自身版本,与 DSH 版本独立)· 包名 `@takomitkm/dsh-shortcuts` · 基于 [hytime/dsh-client-ui-shortcuts](https://github.com/hytime/dsh-client-ui-shortcuts) 的 fork。
 
-DSH owns keybindings: the plugin registers one editable official command and keeps no key store and no second shortcut configuration. It does not modify DSH core, the agent loop, or the model protocol.
+兼容性:适配 **DSH 0.2.x**(本机实测 `0.2.1-rc.5`;`peerDependencies` 声明 `>=0.2.0-rc.1 <1.0.0`)。DSH 大版本升级导致 API 变更时,本插件升次版本号并同步放宽/收紧 peer 范围。
 
-## Why install it
+## 安装
 
-- One shortcut opens the plugin's quick panel.
-- Rebinding uses the official service, so the plugin panel and DSH settings edit the same configuration instead of overwriting each other.
-- Enable keyboard-first question and approval interaction only when you want it; the default is the official DSH UI.
-
-## Install in 60 seconds
-
-```bash
-dsh plugin --profile web add @hytime/dsh-client-ui-shortcuts@0.2.1
-dsh --profile web
+```sh
+# 本地源码目录(开发)
+dsh plugin --profile desktop add link:S:\apps\llm\agentwork\dsh-client-ui-shortcuts-fork
+# GitHub(发布后)
+dsh plugin --profile desktop add github:takomitkm/dsh-shortcuts@0.3.0
 ```
 
-Reload the Web composition after installing or upgrading; an already open page is not hot-updated. See the [installation guide](docs/installation.md) for the full flow.
+装完**完全退出桌面端(含托盘)再打开**。浏览器 Web profile 同理:`dsh plugin --profile web add …`。
 
-## Screenshots
+## 简介
 
-The quick panel opened with `⌘⌥⇧S` (the default). Configuration import/export and search sit at the top, **every official shortcut** is listed below with per-command rebinding, and the two enhancement switches default to off:
+DSH(DeepSeek Harness)Web/桌面端的**纯快捷键插件**:把一批高频动作注册为 **DSH 官方快捷键命令**——直接出现在 **DSH 设置 → 通用 → 键盘快捷键**(`Mod+/`)里,享受官方的录制改键、冲突检测、按设备持久化;另有快速面板。`mod` 在 macOS 上匹配 Cmd、其他平台匹配 Ctrl。
 
-![Quick panel](https://raw.githubusercontent.com/hytime/dsh-client-ui-shortcuts/main/docs/panel-overview.png)
+> ℹ️ **非官方补充说明**:上表绝大多数是 DSH 官方快捷键命令;但「打开模型菜单」「打开思考深度」两条官方并未提供命令或服务,本插件改用 **DOM 嗅探 + 模拟点击**实现,属**非官方实现、可能随 DSH 版本更新而失效或不稳定**,详见 [模型与推理](#model-reasoning)。
 
-Fully usable at 390×844:
+## 命令(按功能域分组,快速面板里同款分组渲染)
 
-![Quick panel on a narrow viewport](https://raw.githubusercontent.com/hytime/dsh-client-ui-shortcuts/main/docs/panel-narrow.png)
+> **Linux Web (浏览器端) 的默认键位限制**:DSH 的 Web 快捷键服务在 Linux 上仅允许三个组合作为默认键 — **`Mod+/`**、**`Mod+Shift+,`**、**`Mod+Shift+.`**；其它组合在注册期会被拒。其中 `Mod+/` 已被官方 `shortcuts.open` 占用，因此本插件在 Linux Web 上不声明默认键（显示"Linux Web 无默认"），用户可在设置页自行录制白名单内的组合。
 
-Bindings changed in the panel are the same configuration DSH's own settings show:
+### 通用(General)
 
-![Official settings stay in sync](https://raw.githubusercontent.com/hytime/dsh-client-ui-shortcuts/main/docs/official-settings-sync.png)
+| 命令 | 动作 | 默认键 |
+|---|---|---|
+| `dsh-shortcuts.open` | 呼出快速面板 | `Mod+Alt+Shift+S`(Linux Web 无默认；浏览器服务仅允许 `Mod+/`、`Mod+Shift+,`、`Mod+Shift+.` 三组合，其中 `Mod+/` 已被官方 `shortcuts.open` 占用) |
 
-## Features
+快速面板列出**全部官方命令**(含 DSH 自带的),搜索过滤、录制/重置/清除,与 DSH 官方设置双向同步;配置导入导出(完整快照,经官方服务逐条恢复,支持键位互换)。DSH 官方自带的「打开键盘设置」= `shortcuts.open`(`Mod+/`),注册位置见 [ui-shortcuts/src/client/index.ts:48](https://github.com/deepseek-ai/deepseek-harness/blob/fcc0ad462172522aaf5c93a7b2e01f6b9f0b0159/packages/client/ui-shortcuts/src/client/index.ts#L48)。
 
-### Quick launch
+### 输入(Input)
 
-The plugin registers one official command, **Open quick panel**, with these default keys:
+| 命令 | 动作 | 默认键 |
+|---|---|---|
+| `dsh-shortcuts.composerFocus` | 聚焦输入框 | 未绑定 |
+| `dsh-shortcuts.pasteClipboard` | 粘贴剪贴板到输入框(光标处插入,替换选区,自动聚焦) | 未绑定 |
 
-| Platform | Default |
-| --- | --- |
-| Web / macOS | `⌘⌥⇧S` |
-| Web / Windows | `Ctrl+Alt+Shift+S` |
-| Web / Linux | No default (the official allowed set is narrower there) |
+### 会话(Sessions)
 
-The panel shows the current official binding, record / change / restore-default / clear controls, the two enhancement switches, and an open button. The Plugins-page entry also opens it, so it stays reachable even when the command is unbound or conflicting.
+| 命令 | 动作 | 默认键 |
+|---|---|---|
+| `dsh-shortcuts.prevSession` | 上一个会话(侧栏顺序,循环) | `Mod+Shift+[`(Linux Web 无默认；浏览器服务仅允许 `Mod+/`、`Mod+Shift+,`、`Mod+Shift+.` 三组合) |
+| `dsh-shortcuts.nextSession` | 下一个会话(侧栏顺序,循环) | `Mod+Shift+]`(Linux Web 无默认；浏览器服务仅允许 `Mod+/`、`Mod+Shift+,`、`Mod+Shift+.` 三组合) |
 
-### Search and rebinding
+会话切换镜像侧栏的完整显示顺序(工作区按注册表顺序、组内按最近活动排序、未分组桶垫底),跳过空白与归档行,两端循环。
 
-The search field above the shortcut list filters it by command name, command id, or keycap. It only affects what is shown and never changes what is saved.
+新建会话、分叉会话官方已有命令(`session.new` = `Mod+N`、`session.fork` = `Mod+Alt+F`),本插件**不再重复提供**。
 
-### Rebinding in the panel
+### 视图(View)
 
-The panel calls the official `describeBinding()`, `edit()`, and `recording()` APIs:
+| 命令 | 动作 | 默认键 |
+|---|---|---|
+| `dsh-shortcuts.toggleTheme` | 切换浅色/深色主题 | 未绑定 |
+| `dsh-shortcuts.scrollTop` | 滚动到对话顶部 | 未绑定 |
+| `dsh-shortcuts.scrollBottom` | 滚动到对话底部 | 未绑定 |
 
-1. Enter recording and let official native interception take over on Desktop;
-2. Capture one candidate combination (IME compositions, repeats, and modifier-only presses are ignored);
-3. Let the official service normalize it and check reservations and conflicts;
-4. Write it with the official revision fence.
+侧栏与详情面板官方已有命令(`sidebar.left.toggle` = `Mod+B`、`sidebar.right.toggle` = `Mod+Alt+B`),本插件**不再重复提供**。
 
-Conflicts, unsupported keys, stale configuration, read failures, and write failures each show their own message. The same command can also be changed in **DSH Settings → General → Keyboard shortcuts**; both surfaces stay in sync.
+<a id="model-reasoning"></a>
 
-### Configuration import and export
+### 模型与推理(非官方 · DOM 点击,可能不稳定)
 
-The panel's top row exports and imports a portable JSON document for backup, migration, and team distribution.
+> ⚠️ **这两条不是 DSH 官方命令**。官方既没有对应的 `ctx.shortcuts` 命令 id,也没有公开服务可触发模型菜单 / 思考深度控件;本插件改用**在页面里嗅探 DOM 并模拟点击**(找到 `conversation.input.model` 的弹层按钮 → 点开 → 点对应 `role="menuitem"`)。因此它们**不出现在官方命令目录里享受官方冲突检测**,且**组件结构一变就可能失效**——这是与上方所有官方命令的本质区别。快速面板里它们归到「视图」组。
 
-The export is a **complete shortcut snapshot**: every command in the official catalog is written, including untouched defaults, not only the customized ones:
+| 命令 | 动作 | 默认键 |
+|---|---|---|
+| `dsh-shortcuts.openModelMenu` | 打开模型菜单(点开模型选择弹层) | `Mod+M`(**macOS 上 `Cmd+M` 被系统「最小化窗口」占用**,macOS 浏览器/桌面端通常到不了页面,建议改键) |
+| `dsh-shortcuts.openThinkingDepth` | 打开思考深度选择(点开弹层里的「思考深度」项) | 未绑定(官方 `browser.new` 已占 `Mod+T`,请自行在设置页录一个不冲突的键) |
 
-```json
-{
-  "format": "dsh-client-ui-shortcuts/quick-panel",
-  "version": 2,
-  "configuration": {
-    "questionEnabled": false,
-    "approvalEnabled": false,
-    "profile": "web:macos",
-    "shortcuts": {
-      "hytime.shortcuts.open": { "modified": false, "binding": { "code": "KeyS", "modifiers": ["alt","shift","meta"] }, "label": "Open quick panel", "keys": ["⌥","⇧","⌘","S"] },
-      "session.new": { "modified": true, "binding": { "code": "KeyJ", "modifiers": ["shift","meta"] } }
-    }
-  }
-}
+- 仅当页面上存在模型选择按钮时才生效;找不到就静默 no-op(不报错、不干扰)。
+- 若官方日后把这两个动作命令化,本插件会改为接入官方命令,届时此处的 DOM 方案即废弃。
+
+### 老板键(Boss Key)——两种
+
+| | 第一种:官方轨 `dsh-shortcuts.bossHide` | 第二种:OS 轨 dsh-bosskey(配套插件) |
+|---|---|---|
+| 形态 | 本插件注册的官方快捷键命令 | 独立 Host 插件 [takomitkm/dsh-bosskey](https://github.com/takomitkm/dsh-bosskey) |
+| 键位 | 官方键盘设置里录制,按设备持久化 | OS 级全局热键(默认 **F9**),`~/.dsh/bosskey/config.json` 即时改 |
+| 能力 | **只藏**:按一下把 DSH 窗口收进托盘(走官方 `ctx.shortcuts.closeWindow()` 桥,与托盘点击同一份账本) | **完整 toggle**:前台→隐藏、后台→唤回(壳官方 `dsh://open` 路径,输入正常) |
+| 范围 | 桌面端应用内;浏览器 Web GUI 静默 no-op | **任意应用前台**全局响应(仅 Windows 桌面端) |
+
+**怎么选**:装了 dsh-bosskey 用 F9(一键双向,全局);只想"窗口在前台时一键藏起来",录一个 `boss-hide` 即可。两者可并存。
+
+```sh
+dsh plugin --profile desktop add github:takomitkm/dsh-bosskey   # 可选:完整 toggle
 ```
 
-`modified` decides what an import does, so a default is never pinned as a new override:
+装完重启,设置页的「完整老板键」区块提供开关、状态页(`dsh://bosskey/status`)与 **PowerToys 式冲突检测**(`dsh://bosskey/conflict`:瞬时 `RegisterHotKey` 试探,1409=被系统/其他应用占用)。
 
-| `modified` in the file | Current state | Import action |
-| --- | --- | --- |
-| `true` | — | Write the override; `binding: null` clears that key |
-| `false` | overridden | Restore the official default |
-| `false` | untouched | Leave it alone |
+## 常见客户端键位对照
 
-An import is strictly validated first (format, version, exact field sets, command ids, physical codes and modifiers; unknown fields and future versions are refused wholesale, capped at 1 MiB), then planned against the whole target snapshot: keys the file moves or clears are released before the target values are written through the official `describeBinding()` and `edit()`, so swapping two bindings restores correctly. Both switches commit in one atomic write. The official `edit()` has no batch transaction, so a mid-import failure is rolled back on a best-effort basis and any command still unrestored is listed instead of reporting success. A refused or conflicting official edit never writes the plugin switches. Export normalizes the logical `primary` modifier to the device's real `meta`/`control`, so importing an export and exporting again is byte-identical. See the [integration notes (Chinese)](docs/official-shortcuts-integration.zh.md) for format details and limits.
+对照 ZCode 会话里贴的键位表、Qoder IDE、DSH 官方与其他插件,标注每个键位的归属——**哪些不用本插件做、哪些已由本插件覆盖**。
 
-### Optional interaction enhancements
+### AI IDE 常见键位(Qoder / ZCode 贴表)
 
-Both switches default to **off** and take over nothing until enabled:
+> **图例**：`Mod` = `Ctrl` (Windows/Linux) / `Cmd` (macOS)
 
-| Switch | Behavior when enabled |
-| --- | --- |
-| Enhanced question interaction | Arrow-key selection, `Enter` confirmation, `Escape` task cancellation |
-| Enhanced approval interaction | Keyboard selection of "Allow once" or "Reject"; it never grants approval automatically |
+| 按键 | 动作 | 归属 |
+|---|---|---|
+| `Mod+L` / `Mod+I` / `Mod+Shift+L` | 开关聊天面板 / inline chat | **DSH 官方 UI 自带**(侧栏常驻,无开关语义,官方未注册命令) |
+| `Mod+,` / `Mod+Shift+,` | 设置 / 个人设置 | **DSH 官方自带**(`settings.open`,见 [ui-settings-general/src/client/index.ts:214](https://github.com/deepseek-ai/deepseek-harness/blob/fcc0ad462172522aaf5c93a7b2e01f6b9f0b0159/packages/client/ui-settings-general/src/client/index.ts#L214)) |
+| `Mod+Shift+P` | 命令面板 | **DSH 官方自带**(快速命令菜单) |
+| Enter / Shift+Enter | 发送 / 换行 | **DSH 官方 fixed 输入**(`fixed.send` / `fixed.newline`,见 [ui-conversation/src/client/apply.ts:273](https://github.com/deepseek-ai/deepseek-harness/blob/fcc0ad462172522aaf5c93a7b2e01f6b9f0b0159/packages/client/ui-conversation/src/client/apply.ts#L273)、[:275](https://github.com/deepseek-ai/deepseek-harness/blob/fcc0ad462172522aaf5c93a7b2e01f6b9f0b0159/packages/client/ui-conversation/src/client/apply.ts#L275)) |
+| `#` / `/` / `@` | 加上下文 / 快捷命令 | **DSH 官方 UI 自带**(`fixed.slash` / `fixed.mention`,见 [ui-conversation/src/client/apply.ts:281](https://github.com/deepseek-ai/deepseek-harness/blob/fcc0ad462172522aaf5c93a7b2e01f6b9f0b0159/packages/client/ui-conversation/src/client/apply.ts#L281)) |
+| `Mod+Enter` / `Mod+Backspace` | 接受/拒绝全部变更 | **DSH 官方 diff UI 自带**(无插件介入点) |
+| `Mod+Shift+⏎` / `Mod+Shift+⌫` | 接受/拒绝单条变更 | 同上 |
+| `Mod+Shift+[` / `]` | 上一个/下一个任务 | **本插件** `prevSession`/`nextSession`(会话级;默认键已对齐) |
+| `Alt+J` / `Alt+K` | 下一个/上一个变更 | **DSH 官方 diff UI 自带** |
+| `Mod+F` | 任务内查找 | **官方暂缺**,推荐使用 [deja-vu](https://github.com/vshulcz/deja-vu);装有 [dsh-session-find](https://github.com/fomalhaut1998/dsh-session-find) 时由它接管 `Ctrl+F`(会话内页内查找,捕获阶段拦截),deja-vu 的 `Mod+F` 会被覆盖、不再触发 |
+| `Mod+K` | 搜索会话(标题 + 内容摘录) | **DSH 官方自带**(`session.search`,桌面 `Mod+K` / Web `Mod+Alt+K`;Web 端单 `Mod+K` 被判浏览器保留) |
+| `Mod+Shift+K` | 全局对话搜索(带内容) | 推荐使用 [deja-vu](https://github.com/vshulcz/deja-vu) (桌面/Win Web 空位可用; Web macOS/Linux 不可用) |
+| `Mod+M` | 打开模型菜单 | **本插件** `openModelMenu`(**非官方 · DOM 点击,可能不稳定**;官方无命令 id、无服务;macOS `Cmd+M` 被系统最小化占用,建议改键) |
+| `Mod+Shift+M` | 切换会话模式 | ❌ 超出插件能力(无公开服务;第三方用 DOM 点击实现,脆弱,本仓库不做) |
+| `Mod+T` | 切换思考深度 | **本插件** `openThinkingDepth`(**非官方 · DOM 点击,可能不稳定**,默认未绑定;`Mod+T` 已被官方 `browser.new` 占用,需自行改键) |
+| `Mod+[` / `Mod+]` | 后退 / 前进 | ❌ 超出插件能力:客户端无视图历史栈可寻址 |
+| `Mod+N` | 新建任务 | **DSH 官方自带**(`session.new`,桌面 `Mod+N` / Web `Mod+Alt+N`);本插件不再重复提供 |
+| `Mod+O` | 添加工作区 | **DSH 官方自带**(`workspace.add`,见 `dsh-client-ui-workspace/lib/client.js`;另有 `workspace.openLocal` = 桌面 `Mod+Alt+O`) |
+| `Mod+W` | 关闭当前上下文 | **DSH 官方自带**(`page.close`,见 [ui-sidebar-right/src/client/shortcuts.ts:65](https://github.com/deepseek-ai/deepseek-harness/blob/fcc0ad462172522aaf5c93a7b2e01f6b9f0b0159/packages/client/ui-sidebar-right/src/client/shortcuts.ts#L65);桌面端兜底 closeWindow) |
+| `Mod+B` | 切换左侧栏 | **DSH 官方自带**(`sidebar.left.toggle`,见 [ui-layout/src/client/index.ts:207](https://github.com/deepseek-ai/deepseek-harness/blob/fcc0ad462172522aaf5c93a7b2e01f6b9f0b0159/packages/client/ui-layout/src/client/index.ts#L207);本插件不再重复提供) |
+| `` Mod+` `` | 切换终端 | **DSH 官方自带**(`terminal.new`,见 [ui-sidebar-terminal/src/client/index.ts:55](https://github.com/deepseek-ai/deepseek-harness/blob/fcc0ad462172522aaf5c93a7b2e01f6b9f0b0159/packages/client/ui-sidebar-terminal/src/client/index.ts#L55)) |
+| `Mod+Alt+B`(桌面)/ `Mod+Shift+B`(Web) | 切换右侧面板 | **DSH 官方自带**(`sidebar.right.toggle`,见 `dsh-client-ui-sidebar-right/lib/client.js`) |
+| `Mod+Alt+Enter` | 进入/退出完整视图 | **DSH 官方自带**(`pane.fullscreen.toggle`;另有 `pane.split` = `Mod+\`) |
+| `Mod+±` / `Mod+0` | 放大/缩小/恢复缩放 | **壳/浏览器层**(桌面壳未注册 zoom 加速器;网页继承 Chromium,插件无法注册浏览器保留键) |
+| `Mod+Alt+Space` | Quick Ask 小框 | **壳级能力**(MochiNek0/dsh-desktop 等客户端实现);超出浏览器插件范围 |
+| `Mod+Alt+D` | 显隐主窗 toggle | **OS 轨**:dsh-bosskey F9 同义;完整 toggle 需 OS 级热键 |
 
-`Enter` always activates the focused action: after moving focus to "Reject", `Enter` rejects instead of reusing the previous selection.
+### 结论
 
-## Compatibility
+- **本插件 11 条命令** = Qoder/贴表里"做得了且值得做"的那部分全集 + 老板键;其中 9 条是 DSH 官方快捷键命令,另 2 条(`openModelMenu` / `openThinkingDepth`)是**非官方 DOM 点击**(见 [模型与推理](#model-reasoning))。官方已命令化的(新建/分叉/侧栏/详情)不再重复提供,其余键位要么 DSH 官方已内置,要么推荐使用 [deja-vu](https://github.com/vshulcz/deja-vu),要么是主动取舍或架构边界(见上节)。
 
-- Plugin `0.2.0` has DSH **`0.2.0-rc.1`** as its verified baseline. `peerDependencies` is `>=0.2.0-rc.1 <1.0.0`, so the baseline and newer releases below `1.0.0` are accepted, while older generations and `1.0.0`+ are refused.
-- DSH validates `@deepseek-ai/dsh-*` peers (prereleases participate in the range check). A mismatch reports the exact peer and the exact-version exemption path; granting that exemption on an unverified release is **not** recommended.
-- The new version does **not** support older DSH releases: no `settingsScope`, no legacy Connection settings API, no `settings.plugin.item` seat, no legacy interaction carriers, and no `0.1.x` profile settings are read. Users on older releases should stay on `0.1.23`.
+### 本插件未实现 / 超出浏览器插件能力的键位(候选官方命令化清单)
 
-See the [integration notes (Chinese)](docs/official-shortcuts-integration.zh.md).
+> 关联**已有**请求(均已有人提过,故本插件**未新发** discussion;若要跟进,可在 [Ideas](https://github.com/deepseek-ai/deepseek-harness/discussions/categories/ideas) 分类下回复):
+> - 完整窗口唤起/隐藏(半实现项):[#8749 希望支持全局唤起/隐藏快捷键,以及输入框聚焦快捷键](https://github.com/deepseek-ai/deepseek-harness/discussions/8749)
+> - 桌面端缩放 `Ctrl+±/0`(做不了项):[#8355 [Feature] Windows 桌面版支持 Ctrl+= / Ctrl+- 页面缩放](https://github.com/deepseek-ai/deepseek-harness/discussions/8355) · 另见 [#7769](https://github.com/deepseek-ai/deepseek-harness/discussions/7769)、[#8648](https://github.com/deepseek-ai/deepseek-harness/discussions/8648)、[#8646](https://github.com/deepseek-ai/deepseek-harness/discussions/8646)、[#8962](https://github.com/deepseek-ai/deepseek-harness/discussions/8962)
+> - **若上游接手本 fork(合并本 PR 或采纳本仓库实现),本 fork 将停止维护并删除**(届时无需再维护本仓库)。
 
-## Development and verification
+以下键位**本插件未实现**。其中大部分是主动取舍(价值低/使用频率不足以抵消维护面),并非全部做不了;确实做不了的也在表里标明机制。每条附现状与机制,可直接用于向 DSH 官方提 discussion/issue 请求命令化:
 
-```bash
-pnpm install
-pnpm run typecheck
-pnpm run bundle
-pnpm exec vitest run tests
-```
+| 按键 | 动作 | 状态 | 机制与说明 |
+|---|---|---|---|
+| `Ctrl+M` | 打开模型菜单 | **已用非官方方案做**(可能不稳定) | 官方未注册命令 id、无公开服务;本插件改为 `openModelMenu` **DOM 嗅探 + 模拟点击**实现(见 [模型与推理](#model-reasoning)),脆弱、随版本漂移,失败时静默 no-op。若官方命令化(`session.modelMenu`)则改接官方 |
+| `Ctrl+Shift+M` | 切换会话模式(plan/agent) | **取舍不做** | 模式 chip 无公开服务;第三方 dsh-quick-keys 用 DOM 点击实现,本仓库不采纳此路径。官方命令化(`session.toggleMode`)后可接入 |
+| `Ctrl+T` | 切换思考深度 | **已用非官方方案做**(可能不稳定,默认未绑定) | reasoning-effort 控件未命令化;本插件用 `openThinkingDepth` **DOM 点击**点开弹层里的思考深度项(见 [模型与推理](#model-reasoning))。`Ctrl+T` 本身与官方 `browser.new`(及浏览器保留组合)冲突,需自行改键。官方命令化(`session.cycleThinking`)后改接官方 |
+| `Ctrl+[` / `Ctrl+]` | 视图后退 / 前进 | **取舍不做** | 客户端没有可寻址的视图历史栈(导航是 React 状态机,无 back/forward API),官方先建栈才有的接 |
+| `Ctrl+Alt+Space` | Quick Ask 小框(全局) | **取舍不做** | 需要全局热键 + 独立悬浮窗,超出本插件定位;如需此形态,dsh-bosskey 的监听器架构(Win32 RegisterHotKey + 独立进程)是现成路径,但目前只有老板键 |
+| `Ctrl+±` / `Ctrl+0` | 放大 / 缩小 / 恢复缩放 | **做不了**([#8355](https://github.com/deepseek-ai/deepseek-harness/discussions/8355)) | 属壳/浏览器层:桌面壳未注册 zoom 加速器,页面层无法注册浏览器保留键。桌面端 Ctrl+±/0 本来就由 Chromium 处理 |
+| `Ctrl+Alt+D` | 显隐主窗完整 toggle | **半实现**([#8749](https://github.com/deepseek-ai/deepseek-harness/discussions/8749)) | 隐藏半边已做(boss-hide);唤回半边需要 OS 窗口能力,完整 toggle 归桌面壳或 OS 级插件 |
 
-Browser acceptance must run through a real DSH Web composition on `0.2.0-rc.1`; the `apps/web` Vite entry is not a validation target for this plugin.
+共性的机制边界三条(适用于所有"做不了"的行):
 
-## FAQ
+1. **命令化缺失**:动作存在于官方 UI,但没有注册为 `ctx.shortcuts` 命令、也没有公开服务——插件只能触达服务与命令,不能触达组件内部状态。本插件对「模型菜单 / 思考深度」两条改用 **DOM 嗅探 + 模拟点击**绕过了这条边界,代价是非官方、易随版本失效(见 [模型与推理](#model-reasoning))。
+2. **浏览器保留键**:页面层 `preventDefault` 之前就被浏览器消费的组合(`Ctrl+T/N/W` 等)永远绑不住,web 端做不了,desktop 端原生拦截可以。
+3. **OS 窗口/全局热键**:BrowserWindow 的显隐、全局热键、独立悬浮窗都在壳或独立进程手里;Host 插件是普通 Node 进程,client 插件在浏览器里,都够不着。
 
-### Does this change model behavior?
+## 自定义能力
 
-No. The plugin changes browser interaction only. It adds no tools, prompt sections, model-visible events, or model request context.
+> **键位图例**：`Mod` = `Ctrl` (Windows/Linux) / `Cmd` (macOS)。官方 defaults 里写的都是 `primary`，由框架按平台自动展开。
 
-### Why does the shortcut not work?
+判定标准:**出现在官方命令目录(catalog)里的命令 = 可改键**;**fixed 输入 / 壳与 OS 级 / 浏览器保留组合 = 不可改**。
 
-Check the default table above for your platform (Linux Web has no default binding), then inspect the command in **DSH Settings → General → Keyboard shortcuts** or in the plugin panel for a rebind, a cleared binding, or a conflict. The panel entry button always works.
+### 可自定义(官方命令,改键即生效)
 
-### Does rebinding in the plugin panel affect DSH settings?
+下表从 DSH 桌面端 `app.asar` 里 9 个 `@deepseek-ai/dsh-client-ui-*` 客户端包的 `ctx.shortcuts.register()` 字面量逐条抄录(不是第三方键位表);官方 defaults 里用 `primary`,由框架按平台展开。Web 端默认键多带 `alt`/`shift`,是为避开浏览器保留组合。快捷键设置页里的固定顺序见 `dsh-client-ui-shortcuts/lib/client.js` 的 `coreActionOrder`。
 
-They cannot overwrite each other: both surfaces read and write the same official configuration.
+| 命令 id | 动作 | desktop (Mod) | web (Mod) |
+|---|---|---|---|
+| `shortcuts.open` | 打开键盘设置 | `Mod+/` | `Mod+/` |
+| `session.new` | 新建会话 | `Mod+N` | `Mod+Alt+N` |
+| `session.search` | 搜索会话(标题 + 内容摘录) | `Mod+K` | `Mod+Alt+K` |
+| `session.rename` | 重命名会话 | `Mod+Alt+G` | `Mod+Alt+G` |
+| `session.fork` | 分叉会话 | `Mod+Alt+F` | `Mod+Shift+F` |
+| `session.archive` | 归档会话 | `Mod+Shift+A` | `Mod+Alt+A` |
+| `workspace.add` | 添加工作区 | `Mod+O` | `Mod+Alt+O` |
+| `workspace.openLocal` | 打开本地工作区 | `Mod+Alt+O` | `Mod+Shift+O` |
+| `workspace.files` | 工作区文件 | `Mod+P` | `Mod+Alt+P` |
+| `settings.open` | 打开设置 | `Mod+,` | `Mod+Alt+,` |
+| `sidebar.left.toggle` | 切换左栏 | `Mod+B` | `Mod+Alt+B` |
+| `sidebar.right.toggle` | 切换右栏 | `Mod+Alt+B` | `Mod+Shift+B` |
+| `browser.new` | 新浏览器页 | `Mod+T` | `Mod+Alt+T` |
+| `terminal.new` | 新终端 | `` Mod+` `` | `` Mod+` `` |
+| `pane.split` | 拆分面板 | `Mod+\` | `Mod+\` |
+| `pane.fullscreen.toggle` | 进入/退出完整视图 | `Mod+Alt+Enter` | `Mod+Alt+Enter` |
+| `page.refresh` | 刷新当前上下文 | `Mod+R` | `Mod+Alt+R` |
+| `page.close` | 关闭当前上下文 | `Mod+W` | `Mod+Alt+W` |
+| `fontSize.increase` / `fontSize.decrease` | 字号增减 | 官方 `coreActionOrder` 登记,注册点在壳层 | 同左 |
+| **本插件 11 条** `dsh-shortcuts.*` | 面板 / 聚焦输入框 / 粘贴剪贴板 / 上一个 / 下一个 / 切主题 / 滚到顶 / 滚到底 / 老板键·隐藏 / **打开模型菜单** / **打开思考深度**(后两条非官方 DOM 点击) | 见上方各节 | 见上方各节 |
 
-### Can I use it without DSH Web?
+`session.search` 官方中文文案是「搜索会话」、输入框占位「搜索会话名称」,结果行带 `content excerpt`(会话历史内容摘录),不只是标题;它在 **desktop 是 `Mod+K`、Web 是 `Mod+Alt+K`**(Web 端单 `Mod+K` 被判 `unsupported-browser`)。
 
-No. The browser artifact is a DSH loader factory and depends on DSH boot injection, slots, locale, settings, and the official shortcuts service.
+改键位置:DSH 官方设置页(`Mod+/`)或插件快速面板(默认 `Mod+Alt+Shift+S`),两处读写同一份官方配置;Web 存 `dsh.keybindings.v1`,Desktop 存 `userData/keybindings.json`;冲突会提示,重置一键恢复默认。
 
-## Links
+### 不可自定义(改不了,别费劲)
 
-- [Integration notes (Chinese)](docs/official-shortcuts-integration.zh.md)
-- [Installation guide](docs/installation.md)
-- [Changelog](CHANGELOG.md)
-- [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)
+| 键 | 归属 / 原因 |
+|---|---|
+| `fixed.send`(Enter)、`fixed.newline`(Shift+Enter) | 官方 fixed 输入,官方契约固定,插件与设置都改不了 |
+| `fixed.slash`(`/`)、`fixed.mention`(`@`)、`fixed.complementary` | 同上,输入法级触发符 |
+| `Mod+T` / `Mod+N` / `Mod+W` 等浏览器保留组合(Web) | 页面层被浏览器先消费;Desktop 端由壳原生拦截,才可绑 |
+| `Mod+±` / `Mod+0` 缩放 | 壳/浏览器层,未注册成命令(见"未实现"节) |
+| 全局热键(如 dsh-bosskey 的 F9) | OS 级监听器注册,不在 DSH 命令目录内 |
 
-## License
+## 上游与差异
 
-MIT
+基于 [hytime/dsh-client-ui-shortcuts](https://github.com/hytime/dsh-client-ui-shortcuts)(其本身已把快捷键管理交给 DSH 官方服务)。本仓库把 [blue-a11y/dsh-client-shortcuts](https://github.com/blue-a11y/dsh-client-shortcuts) 的动作集重新实现为官方命令——**DSH 后来自己命令化的那几条(新建会话、分叉会话、左右侧栏开关)不再重复提供**,插件只保留官方尚未覆盖的动作;新增功能域分组、完整老板键区块与键位对照表。上游的快速面板与官方键位管理全部保留。已向上游提 PR:[hytime/dsh-client-ui-shortcuts#2](https://github.com/hytime/dsh-client-ui-shortcuts/pull/2);**若上游接手本 fork(合并本 PR 或采纳本仓库实现),将删除本 fork,不再维护**。本 fork 另加了两条**非官方 DOM 点击**命令(打开模型菜单 / 打开思考深度),见 [模型与推理](#model-reasoning)。
+
+License: MIT(承上游)。
+
+## 覆盖官方默认键与卸载残留
+
+<a id="override-default-keys"></a>
+
+键位配置是**一份官方数据**,所有命令(官方的 + 本插件的)都写在同一处:Web 端 `dsh.keybindings.v1`(localStorage),桌面端 `userData/keybindings.json`。本插件不维护自己的键位存储——改键全部经 DSH 官方服务(`shortcuts.edit()`)落盘,录制、冲突检测、持久化都是官方逻辑。以下行为在官方 `@deepseek-ai/dsh-client-shortcuts` 客户端服务上实测(注册/持久化/派发共 23 项断言通过)。
+
+### 怎么改 / 怎么覆盖
+
+**改本插件命令的键**:DSH 设置 → 通用 → 键盘快捷键(默认 `Mod+/`),或本插件快速面板(默认 `Mod+Alt+Shift+S`),选中 `dsh-shortcuts.*` 命令 → 录制。两处读写同一份数据。
+
+**占用官方正在用的键**(例如让 `Mod+/` 呼出快速面板,而不是打开键盘设置)——必须**两步**,顺序不能反:
+
+1. 先把官方 `shortcuts.open` 的 `Mod+/`「清除」(或改成别的键);
+2. 再给 `dsh-shortcuts.open` 录制 `Mod+/`。
+
+一步做不到:录制时官方先做冲突预检,发现 `shortcuts.open` 仍占着该组合就直接拒绝(快速面板报冲突,不发起写入);绕过界面直接调 `edit()` 也会被持久层的冲突校验拒绝(`status: conflict`),且不写盘。清空官方键后,官方命令仍在(只是未绑定),设置页用鼠标或 `Mod+,` 照样能打开。
+
+**改回 / 反悔**:两条命令**都要「重置」**——`dsh-shortcuts.open` 重置回默认键,`shortcuts.open` 重置回 `Mod+/`。只重置插件这边,官方的 `Mod+/` **不会自动回来**(它自己那条"清空"覆盖记录还在),按 `Mod+/` 会没有任何反应。
+
+### 为什么默认键不覆盖官方键位
+
+本插件 11 条命令的**出厂默认键,一个都不碰官方键位**(两条非官方命令里 `openModelMenu` 绑 `Mod+M`、`openThinkingDepth` 未绑定)。不是做不到,而是那些组合**已被官方命令占用**,DSH 在三层都会拦:
+
+| 层次 | 行为 |
+|---|---|
+| 注册期 `register()` | 遍历全部 6 个 `runtime:platform` 档位比对默认键,相撞直接抛 `Conflicting shortcut defaults`,命令加载失败(与注册顺序无关) |
+| 录制期 `describeBinding()` | 预检发现该组合已被占用就报冲突,不发起写入 |
+| 持久层 `edit()` | 即使绕过界面,`displaced` 校验也返回 `status: conflict`,不写盘 |
+
+因此占用官方键只能由**用户手动两步**完成(见上文),且改动落在官方配置里、卸载后残留。插件默认键只从官方目录里确认空闲的组合里挑(`Mod+Alt+Shift+S`、`Mod+Shift+[` / `]`、`Mod+M`),其余 7 条干脆不绑定——这就是"不覆盖官方"的全部原因。`Mod+Shift+K` 同理:本插件不把它设为默认键、也不与官方冲突;`Mod+F` 与 `Mod+Shift+K` 这类组合都允许你在设置页自行改键成别的键位。(`Mod+M` 虽不与官方冲突,但 **macOS 上 `Cmd+M` 是系统「最小化窗口」**,能否到达页面取决于系统;需要稳定可用请自行改键。)
+
+### 卸载为什么会有残留
+
+卸载只移除插件本身,**不动那份官方键位配置**:
+
+| 你改过什么 | 卸载后 |
+|---|---|
+| 官方命令的键位(如清掉 `shortcuts.open` 的 `Mod+/`) | **永久残留**:官方命令还在,但保持你改的样子,不会自动恢复 |
+| 本插件命令的录制/清除 | 变成配置里的**孤儿条目**,设置页看不见(命令已不存在);**重装插件后旧录制自动复活** |
+
+这正是开头警告的原因:卸载前先把官方命令与 `dsh-shortcuts.*` 命令**都重置**,再卸载。
+
+### 卸载前恢复默认(推荐操作)
+
+1. 打开 DSH 设置 → 通用 → 键盘快捷键(或本插件快速面板,两处同一份数据);
+2. 逐条检查:官方命令与本插件(`dsh-shortcuts.*`)命令中,**有自定义键位的都点「重置」**;
+3. 再卸载插件。
+
+已经卸载才发现残留:官方命令的残留直接在设置页「重置」即可;本插件命令的孤儿条目需**重装插件 → 把 `dsh-shortcuts.*` 各条「重置」→ 再卸载**,否则重装时会复活。

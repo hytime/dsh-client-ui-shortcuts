@@ -91,7 +91,7 @@ After the profile is installed, start the Web surface through DSH:
 dsh --profile web
 ```
 
-After startup, press the default binding (macOS `⌘⌥⇧S`, Windows `Ctrl+Alt+Shift+S`; Linux Web has no default) to open the plugin quick panel, or click the "open quick panel" entry on the plugin settings page. The panel shows the summon binding, configuration import/export, a shortcut search field, a list of **every official shortcut** with per-command record / restore-default / clear, and two enhancement switches that default to off. DSH owns the bindings and persists them in `dsh.keybindings.v1`; the plugin's own settings store only `questionEnabled` and `approvalEnabled`. Export writes a complete snapshot of all shortcuts, including untouched defaults, which Import restores on another device or profile.
+After startup, press the default binding (macOS `⌘⌥⇧S`, Windows `Ctrl+Alt+Shift+S`; Linux Web has no default) to open the plugin quick panel, or click the "open quick panel" entry on the plugin settings page. The panel shows the summon binding, configuration import/export, a shortcut search field, and a list of **every official shortcut** with per-command record / restore-default / clear. DSH owns the bindings and persists them in `dsh.keybindings.v1`; the plugin keeps no keybinding store of its own. Export writes a complete snapshot of all shortcuts, including untouched defaults, which Import restores on another device or profile.
 
 ## DSH version support boundary
 

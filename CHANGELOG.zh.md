@@ -3,6 +3,11 @@
 ### 修复
 
 - 配置导入在互换或转移键位前，也会释放受影响的官方默认绑定。此前只释放已有覆盖，导致有效快照因临时占用而冲突。新增回归测试同时验证后续写入被拒绝时能够恢复默认继承状态。
+- **会话快捷键会触发、但什么都不做**：`prevSession` / `nextSession` 在插件激活那一刻就把 `ctx.get('uiWorkspace')` / `ctx.get('workspaces')` 抓下来，而这两个服务都不在本插件的 `inject` 声明里，cordis 不会等它们就绪——插件可能先激活、抓到 `undefined` 并一直持有，于是录好的键按下去命令确实跑了，却在"打开会话"那一步静默跳过。现在所有服务改为在 `run()` 里按需解析，与激活顺序无关。`toggleTheme`（主题）属同一类问题，一并修复。
+
+### 移除
+
+- **四条与官方重复的命令**：`newSession`（= `session.new`，`Mod+N`）、`forkSession`（= `session.fork`，`Mod+Alt+F`）、`toggleSidebar`（= `sidebar.left.toggle`，`Mod+B`）、`toggleDetails`（= `sidebar.right.toggle`，`Mod+Alt+B`）。插件只保留 DSH 尚未提供的 9 条命令。其余命令已录制的键位不受影响；被移除命令的录制条目会变成官方配置里的孤儿行。
 
 ## 0.2.1 - 构建产物路径无关
 

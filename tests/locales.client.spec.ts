@@ -15,12 +15,6 @@ describe('shortcut locale dictionaries', () => {
     expect(zh['quick.officialHint']).toContain('DSH')
     expect(en['quick.officialHint']).toContain('DSH Settings')
   })
-  it('localizes the two opt-in enhancements and their default-off intent', () => {
-    expect(zh['quick.question']).toBe('增强 Question 交互')
-    expect(en['quick.question']).toBe('Enhanced question interaction')
-    expect(zh['quick.approvalHint']).toContain('默认关闭')
-    expect(en['quick.approvalHint']).toContain('Off by default')
-  })
   it('localizes official rejection and recovery copy', () => {
     expect(zh['quick.conflict']).toContain('{commands}')
     expect(en['quick.conflict']).toContain('{commands}')

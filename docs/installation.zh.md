@@ -91,7 +91,7 @@ profile manifest 也应在 `dependencies` 和 `dsh.profile.bundles` 中列出该
 dsh --profile web
 ```
 
-启动后，在任意界面按默认键（macOS `⌘⌥⇧S`、Windows `Ctrl+Alt+Shift+S`；Linux Web 默认不绑定）呼出插件的快速面板，或点击设置页插件区的「打开快速面板」入口。面板包含：呼出键显示、配置导入导出、快捷键搜索框、**官方全部快捷键**列表（每条可录入/恢复默认/清除），以及两个默认关闭的增强开关。键位由 DSH 官方保存（`dsh.keybindings.v1`）；插件自己的配置只保存 `questionEnabled` 与 `approvalEnabled`。「导出」会写出全部快捷键的完整快照（含未修改的默认项），可在另一台设备或另一个 profile 上「导入」还原。
+启动后，在任意界面按默认键（macOS `⌘⌥⇧S`、Windows `Ctrl+Alt+Shift+S`；Linux Web 默认不绑定）呼出插件的快速面板，或点击设置页插件区的「打开快速面板」入口。面板包含：呼出键显示、配置导入导出、快捷键搜索框、**官方全部快捷键**列表（每条可录入/恢复默认/清除）。键位由 DSH 官方保存（`dsh.keybindings.v1`），插件不自建键位存储。「导出」会写出全部快捷键的完整快照（含未修改的默认项），可在另一台设备或另一个 profile 上「导入」还原。
 
 ## DSH 版本兼容边界
 

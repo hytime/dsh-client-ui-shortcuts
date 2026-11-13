@@ -1,15 +1,15 @@
 /**
- * Package-owned invariant companion for `@hytime/dsh-client-ui-shortcuts`.
- * @module @hytime/dsh-client-ui-shortcuts/invariant
+ * Package-owned invariant companion for `@takomitkm/dsh-shortcuts`.
+ * @module @takomitkm/dsh-shortcuts/invariant
  */
 
 import type { Context } from '@deepseek-ai/cordis'
 import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
 
-export const PACKAGE_NAME = '@hytime/dsh-client-ui-shortcuts'
+export const PACKAGE_NAME = '@takomitkm/dsh-shortcuts'
 
 /** Cordis companion plugin name. */
-export const name = 'dsh-client-ui-shortcuts-invariant'
+export const name = 'dsh-shortcuts-invariant'
 /** Service required before the companion can reserve package ownership. */
 export const inject = ['invariants']
 

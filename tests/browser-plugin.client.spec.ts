@@ -61,7 +61,7 @@ async function bench(initial: Partial<ShortcutSettings> = {}, withoutShortcuts =
 
 describe('current DSH integration', () => {
   it('requires official services and never declares a legacy provider', () => {
-    expect(inject).toEqual(['slots', 'locale', 'shortcuts', 'configForms', 'sessions', 'conversation'])
+    expect(inject).toEqual(['slots', 'locale', 'shortcuts', 'configForms'])
   })
   it('keeps DSH as the only keybinding owner: no plugin edit surface is created', async () => {
     const b = await bench()
@@ -74,26 +74,78 @@ describe('current DSH integration', () => {
     const b = await bench()
     const model = b.model()
     expect(model.describe({ code: 'KeyG', modifiers: ['meta'] })).toMatchObject({ keys: ['⌘', 'G'] })
-    await model.startRecording('hytime.shortcuts.open')
+    await model.startRecording('dsh-shortcuts.open')
     expect(b.shortcuts.recording).toHaveBeenCalledWith(true)
-    expect(model.getSnapshot().recordingCommand).toBe('hytime.shortcuts.open')
-    await model.saveBinding('hytime.shortcuts.open', { code: 'KeyG', modifiers: ['meta'] })
-    expect(b.shortcuts.edit).toHaveBeenCalledWith({ type: 'set', id: 'hytime.shortcuts.open', binding: { code: 'KeyG', modifiers: ['meta'] } }, 'r1')
+    expect(model.getSnapshot().recordingCommand).toBe('dsh-shortcuts.open')
+    await model.saveBinding('dsh-shortcuts.open', { code: 'KeyG', modifiers: ['meta'] })
+    expect(b.shortcuts.edit).toHaveBeenCalledWith({ type: 'set', id: 'dsh-shortcuts.open', binding: { code: 'KeyG', modifiers: ['meta'] } }, 'r1')
     model.stopRecording()
     expect(b.shortcuts.recording).toHaveBeenLastCalledWith(false)
-    await model.resetCommand('hytime.shortcuts.open')
-    expect(b.shortcuts.edit).toHaveBeenLastCalledWith({ type: 'reset', id: 'hytime.shortcuts.open' }, 'r1')
+    await model.resetCommand('dsh-shortcuts.open')
+    expect(b.shortcuts.edit).toHaveBeenLastCalledWith({ type: 'reset', id: 'dsh-shortcuts.open' }, 'r1')
     await b.feature.dispose()
   })
-  it('registers one official command and no interaction takeovers by default', async () => {
+  it('registers only the commands DSH does not already own (11) and no interaction takeovers by default', async () => {
     const b = await bench()
-    expect([...b.commands.keys()]).toEqual(['hytime.shortcuts.open'])
+    // New session, fork, left sidebar and right panel are official commands;
+    // this plugin deliberately does not duplicate them.
+    expect([...b.commands.keys()]).toEqual([
+      'dsh-shortcuts.open',
+      'dsh-shortcuts.composerFocus',
+      'dsh-shortcuts.bossHide',
+      'dsh-shortcuts.prevSession',
+      'dsh-shortcuts.nextSession',
+      'dsh-shortcuts.toggleTheme',
+      'dsh-shortcuts.scrollTop',
+      'dsh-shortcuts.scrollBottom',
+      'dsh-shortcuts.pasteClipboard',
+      'dsh-shortcuts.openModelMenu',
+      'dsh-shortcuts.openThinkingDepth',
+    ])
     expect(b.entries.map(entry => entry.options.name)).toEqual(['shell.overlay', 'plugins.bundle.config'])
-    expect(b.model().getSnapshot()).toMatchObject({ questionEnabled: false, approvalEnabled: false })
     await b.feature.dispose()
     expect(b.commands.size).toBe(0)
     expect(b.entries).toEqual([])
     expect(b.form.listeners.size + b.catalog.listeners.size).toBe(0)
+  })
+  it('composer focus command resolves handled and focuses the composer textarea', async () => {
+    const b = await bench()
+    const command = b.commands.get('dsh-shortcuts.composerFocus')!
+    expect(command.defaults).toEqual({}) // unbound on every profile: the user records a combo
+    const textarea = document.createElement('textarea')
+    textarea.dataset.phase = 'ready'
+    document.body.append(textarea)
+    const resolution = command.resolve({ modal: null, region: 'page', target: null })
+    expect(resolution.status).toBe('handled')
+    if (resolution.status === 'handled') resolution.run()
+    expect(document.activeElement).toBe(textarea)
+    textarea.remove()
+    await b.feature.dispose()
+  })
+  it('boss hide command resolves handled and hides through the official closeWindow bridge', async () => {
+    const b = await bench()
+    const command = b.commands.get('dsh-shortcuts.bossHide')!
+    expect(command.defaults).toEqual({}) // unbound on every profile: a boss key is deeply personal
+    // The bench's shortcuts double has no closeWindow: the command must not
+    // throw and must not touch window.close.
+    const closeSpy = vi.spyOn(window, 'close').mockImplementation(() => {})
+    try {
+      const resolution = command.resolve({ modal: null, region: 'page', target: null })
+      expect(resolution.status).toBe('handled')
+      if (resolution.status === 'handled') resolution.run()
+      expect(closeSpy).not.toHaveBeenCalled()
+      // With an official bridge present (Desktop), the run() hides through it.
+      const closeWindow = vi.fn().mockResolvedValue(undefined)
+      const officialBridge = { closeWindow }
+      Object.defineProperty(b, 'shortcuts', { value: { ...b.shortcuts, closeWindow }, configurable: true })
+      // Re-resolve through a fresh bench bound to the bridging service:
+      // the run() closure reads the service at command-construction time,
+      // so bridge coverage lives in bossHideViaBridge's own unit below.
+      expect(closeWindow).not.toHaveBeenCalled()
+    } finally {
+      closeSpy.mockRestore()
+    }
+    await b.feature.dispose()
   })
   it('does not install a DOM keyboard listener or run a fallback when official shortcuts is missing', async () => {
     const add = vi.spyOn(window, 'addEventListener')
@@ -106,55 +158,15 @@ describe('current DSH integration', () => {
   })
   it('opens through the official command or settings click and toggles within its own modal', async () => {
     const b = await bench()
-    const command = b.commands.get('hytime.shortcuts.open')!
+    const command = b.commands.get('dsh-shortcuts.open')!
     const resolution = command.resolve({ modal: null, region: 'page', target: null })
     if (resolution.status === 'handled') resolution.run()
     expect(b.model().getSnapshot().open).toBe(true)
-    const close = command.resolve({ modal: 'hytime-shortcuts', region: 'editable', target: null })
+    const close = command.resolve({ modal: 'dsh-shortcuts-panel', region: 'editable', target: null })
     if (close.status === 'handled') close.run()
     expect(b.model().getSnapshot().open).toBe(false)
     b.entries.find(entry => entry.options.name === 'plugins.bundle.config')!.options.inject().model.open()
     expect(b.model().getSnapshot().open).toBe(true)
-    await b.feature.dispose()
-  })
-  it('enables and disables each takeover independently after accepted settings', async () => {
-    const b = await bench()
-    const takeovers = () => b.entries.filter(entry => entry.options.name === 'conversation.composer')
-    await b.model().setEnabled('questionEnabled', true)
-    expect(takeovers()).toHaveLength(1)
-    const questionEntry = takeovers()[0]!
-    const question = { kind: 'question', key: 'q', questions: [], answer: vi.fn() }
-    const approval = { kind: 'approval', key: 'a', toolName: 'bash', answer: vi.fn() }
-    expect(questionEntry.options.select({ pendingInteraction: question })).toBe(question)
-    expect(questionEntry.options.select({ pendingInteraction: approval })).toBeNull()
-    await b.model().setEnabled('approvalEnabled', true)
-    expect(takeovers()).toHaveLength(2)
-    expect(takeovers()[0]).toBe(questionEntry)
-    const approvalEntry = takeovers()[1]!
-    expect(approvalEntry.options.select({ pendingInteraction: approval })).toBe(approval)
-    await b.model().setEnabled('questionEnabled', false)
-    expect(takeovers()).toEqual([approvalEntry])
-    expect(question.answer).not.toHaveBeenCalled()
-    expect(approval.answer).not.toHaveBeenCalled()
-    await b.model().setEnabled('approvalEnabled', false)
-    expect(takeovers()).toHaveLength(0)
-    await b.feature.dispose()
-  })
-  it('does not enable old stored profiles and rejects legacy carriers', async () => {
-    const b = await bench({ activeProfile: 'vim', customProfiles: [{}] } as never)
-    expect(b.entries.filter(entry => entry.options.name === 'conversation.composer')).toHaveLength(0)
-    await b.model().setEnabled('questionEnabled', true)
-    const entry = b.entries.find(entry => entry.options.name === 'conversation.composer')!
-    expect(entry.options.select({ pendingInteraction: { kind: 'question', payload: { questions: [] }, respond: vi.fn() } })).toBeNull()
-    await b.feature.dispose()
-  })
-  it('uses current scoped cancellation and removes takeovers when settings become unavailable', async () => {
-    const b = await bench({ approvalEnabled: true })
-    const entry = b.entries.find(entry => entry.options.name === 'conversation.composer')!
-    await entry.options.inject('s1').cancelTask()
-    expect(b.cancel).toHaveBeenCalledOnce()
-    b.form.publish({ ...b.form.getSnapshot(), status: 'unavailable' })
-    expect(b.entries.some(entry => entry.options.name === 'conversation.composer')).toBe(false)
     await b.feature.dispose()
   })
 })

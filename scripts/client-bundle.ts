@@ -25,8 +25,13 @@ const SKIP_WORKSPACE_BUILD: UserConfig = { entry: '' }
 
 /**
  * The CSS Module transform options the bundle uses for one file. Exported so a test can assert
- * the hash inputs directly: `projectRoot` anchors the class-name hash at the package root, so the
- * same source produces the same class names from any checkout directory.
+ * the hash inputs directly.
+ *
+ * lightningcss derives the `[hash]` placeholder from `filename` alone — `projectRoot` does not
+ * feed the hash (measured: the same source at three checkout roots produced three different
+ * class names with `projectRoot` set). Passing the absolute path therefore made the same source
+ * emit different class names in CI and in a local clone. A package-relative `filename` is the
+ * only input that stays identical everywhere, so the hash is anchored by making it relative.
  * @param file - absolute path of the CSS module being transformed.
  * @returns the options passed to `lightningcss.transform`.
  */
@@ -36,9 +41,10 @@ export function cssModuleTransformOptions(file: string): {
   cssModules: { pattern: string }
   minify: boolean
 } {
+  const projectRoot = resolve(import.meta.dirname, '..')
   return {
-    filename: file,
-    projectRoot: resolve(import.meta.dirname, '..'),
+    filename: relative(projectRoot, file).split(sep).join('/'),
+    projectRoot,
     cssModules: { pattern: '[hash]_[local]' },
     minify: true,
   }

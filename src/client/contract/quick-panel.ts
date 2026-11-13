@@ -1,5 +1,4 @@
 import type { ShortcutBinding } from '@deepseek-ai/dsh-client-shortcuts/client'
-import type { ShortcutSettings } from '../../settings.js'
 
 /** One candidate the official service normalized, with its official rejection detail. */
 export interface ShortcutCandidate {
@@ -33,8 +32,6 @@ export interface QuickPanelMessage {
 
 export interface QuickPanelSnapshot {
   readonly open: boolean
-  readonly questionEnabled: boolean
-  readonly approvalEnabled: boolean
   readonly writable: boolean
   /** Whether the official shortcut configuration is readable and writable. */
   readonly officialWritable: boolean
@@ -57,7 +54,6 @@ export interface QuickPanelModel {
   open(): void
   close(): void
   toggle(): void
-  setEnabled(field: keyof ShortcutSettings, enabled: boolean): Promise<void>
   /**
    * Arm official native interception for one command's binding; failure is reported,
    * never silently ignored. Recording another command while armed switches the target.

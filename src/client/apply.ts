@@ -1,5 +1,4 @@
 import type { Context } from '@deepseek-ai/cordis'
-import type { ISessions } from '@deepseek-ai/dsh-api-session-controller/client'
 import type {} from '@deepseek-ai/dsh-client-shortcuts/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
@@ -7,20 +6,24 @@ import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
 import type {} from '@deepseek-ai/dsh-client-ui-plugin-manager/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
-import { selectShortcut } from './contract/slots.js'
-import type { SessionId } from './contract/slots.js'
-import { ShortcutComposer } from './components/ShortcutComposer.js'
 import { QuickPanel, QuickPanelSettings } from './components/QuickPanel.js'
 import { createQuickPanelModel } from './settings/quick-panel.js'
 import { createOpenPanelCommand } from './keyboard/open-panel.js'
-import { standardProfile } from './profiles/builtins.js'
+import { createComposerFocusCommand, focusComposer } from './keyboard/composer-focus.js'
+import { createBossHideCommand, bossHideViaBridge } from './keyboard/boss-hide.js'
+import { createPrevSessionCommand, createNextSessionCommand } from './keyboard/session-actions.js'
+import type { SessionsNavFace, WorkspacesNavFace, UiWorkspaceNavFace } from './keyboard/session-actions.js'
+import { createToggleThemeCommand, createScrollTopCommand, createScrollBottomCommand } from './keyboard/ui-actions.js'
+import type { ThemeFace } from './keyboard/ui-actions.js'
+import { createPasteClipboardCommand } from './keyboard/paste-clipboard.js'
+import { createOpenModelMenuCommand, createOpenThinkingDepthCommand } from './keyboard/model-menu.js'
 import { NS, en, ja, ko, zh } from './locales.js'
 import type { ShortcutSettings } from '../settings.js'
 import { SHORTCUTS_SETTINGS_NAMESPACE } from '../settings-namespace.js'
 import { PACKAGE_NAME } from '../invariant.js'
 
 /** Current DSH services are required; this version has no legacy routing fallback. */
-export const inject = ['slots', 'locale', 'shortcuts', 'configForms', 'sessions', 'conversation'] as const
+export const inject = ['slots', 'locale', 'shortcuts', 'configForms'] as const
 
 export function apply(ctx: Context): void {
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'shortcuts: dictionaries')
@@ -36,46 +39,55 @@ export function apply(ctx: Context): void {
   const model = createQuickPanelModel(form, ctx.shortcuts)
   ctx.effect(() => () => model.dispose(), 'shortcuts: panel model')
   const props = () => ({ model, t: (key: string) => t(key as never) })
-  const sessions = ctx.get('sessions') as ISessions
 
   // The command exists only while its rendering surface exists.
   ctx.effect(() => ctx.slots.inject('shell.overlay', () => {
-    const offSlot = ctx.slots.register({ name: 'shell.overlay', id: 'hytime-shortcuts', locale: NS, inject: props }, QuickPanel)
+    const offSlot = ctx.slots.register({ name: 'shell.overlay', id: 'dsh-shortcuts-panel', locale: NS, inject: props }, QuickPanel)
     try {
       const offCommand = ctx.shortcuts.register(createOpenPanelCommand(() => t('quick.open'), model.toggle))
-      return () => { offCommand(); offSlot(); model.close() }
+      // Composer focus fills the official catalog's gap; unbound by default,
+      // recorded once in DSH keyboard settings, per-device persisted there.
+      const offFocus = ctx.shortcuts.register(createComposerFocusCommand(() => t('quick.focusComposer'), focusComposer))
+      // Boss-key hide half: unbound by default; hide goes through the
+      // official closeWindow bridge (try the official service first, then
+      // this plugin's own registry surface if it owns the name). The wake
+      // half belongs to the OS-level companion surfaced in BosskeySection.
+      const official = ctx.get('shortcuts') as { closeWindow?: () => Promise<unknown> } | undefined
+      const offBoss = ctx.shortcuts.register(createBossHideCommand(() => t('quick.bossHide'), () => { bossHideViaBridge([official as never]) }))
+      // The blue-a11y action set, translated into official commands: every
+      // action now lives in the DSH keyboard settings with per-device
+      // persistence. Unbound by default where the old set shipped unbound.
+      //
+      // Each service is resolved at invoke time, not here: `uiWorkspace`,
+      // `workspaces` and `theme` are not declared in this plugin's `inject`, so
+      // cordis does not gate activation on them and they may be provided after
+      // this plugin activates. Capturing them at activation yielded `undefined`
+      // forever, which made the session commands fire and silently do nothing.
+      // Only the commands DSH does not already own live here. New session
+      // (`Ctrl+N`), session fork (`Ctrl+Alt+F`), the left sidebar
+      // (`Ctrl+B`) and the right panel (`Ctrl+Alt+B`) are official commands;
+      // duplicating them only cluttered the keyboard settings list.
+      const workspaces = () => ctx.get('workspaces') as WorkspacesNavFace | undefined
+      const sessions = () => ctx.get('sessions') as SessionsNavFace | undefined
+      const uiWorkspace = () => ctx.get('uiWorkspace') as UiWorkspaceNavFace | undefined
+      const theme = () => ctx.get('theme') as ThemeFace | undefined
+      const disposers = [
+        ctx.shortcuts.register(createPrevSessionCommand(() => t('quick.prevSession'), sessions, workspaces, uiWorkspace)),
+        ctx.shortcuts.register(createNextSessionCommand(() => t('quick.nextSession'), sessions, workspaces, uiWorkspace)),
+        ctx.shortcuts.register(createToggleThemeCommand(() => t('quick.toggleTheme'), theme)),
+        ctx.shortcuts.register(createScrollTopCommand(() => t('quick.scrollTop'))),
+        ctx.shortcuts.register(createScrollBottomCommand(() => t('quick.scrollBottom'))),
+        ctx.shortcuts.register(createPasteClipboardCommand(() => t('quick.pasteClipboard'))),
+        // Non-official interaction commands: DSH ships no model / thinking-depth
+        // command, so these drive the composer's seat popup through the DOM
+        // (documented as non-official and possibly unstable in the README).
+        ctx.shortcuts.register(createOpenModelMenuCommand(() => t('quick.openModelMenu'))),
+        ctx.shortcuts.register(createOpenThinkingDepthCommand(() => t('quick.openThinkingDepth'))),
+      ]
+      return () => { for (const d of disposers.reverse()) d(); offBoss(); offFocus(); offCommand(); offSlot(); model.close() }
     } catch (error) { offSlot(); throw error }
   }), 'shortcuts: official summon command')
   ctx.effect(() => ctx.slots.inject('plugins.bundle.config', () => ctx.slots.register({
     name: 'plugins.bundle.config', key: PACKAGE_NAME, locale: NS, inject: props,
   }, QuickPanelSettings)), 'shortcuts: settings entry')
-
-  // Off means no contribution at all. Re-register only the changed kind so the
-  // other interaction keeps its draft when a preference or catalog row changes.
-  ctx.effect(() => {
-    const mounts = new Map<'question' | 'approval', () => void>()
-    const sync = (): void => {
-      const state = model.getSnapshot()
-      for (const kind of ['question', 'approval'] as const) {
-        const enabled = kind === 'question' ? state.questionEnabled : state.approvalEnabled
-        if (!enabled) { mounts.get(kind)?.(); mounts.delete(kind); continue }
-        if (mounts.has(kind)) continue
-        mounts.set(kind, ctx.slots.inject('conversation.composer', () => ctx.slots.register({
-          name: 'conversation.composer', priority: -20, locale: NS,
-          select: owner => selectShortcut(owner, kind),
-          inject: (id: string) => ({
-            interactionProfile: standardProfile, t: (key: string) => t(key as never),
-            cancelTask: async () => {
-              const session = sessions.scope(id as SessionId)
-              if (session === undefined) throw new Error(`Unknown session: ${id}`)
-              await session.conversation.cancel()
-            },
-          }),
-        }, ShortcutComposer)))
-      }
-    }
-    sync()
-    const off = model.subscribe(sync)
-    return () => { off(); for (const dispose of mounts.values()) dispose(); mounts.clear() }
-  }, 'shortcuts: opt-in interactions')
 }

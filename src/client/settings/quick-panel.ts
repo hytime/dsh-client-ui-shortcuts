@@ -56,8 +56,6 @@ export function createQuickPanelModel(
         issue: row.issue, conflicts: [...row.conflicts] }))
     return {
       open, saving, recordingCommand, message, commands,
-      questionEnabled: ready && config.value?.questionEnabled === true,
-      approvalEnabled: ready && config.value?.approvalEnabled === true,
       writable: ready && config.writable,
       // Binding edits are gated by the official configuration, not by this plugin's switches.
       officialWritable: official.status === 'ready',
@@ -148,19 +146,6 @@ export function createQuickPanelModel(
       if (!open) { message = null; releaseRecording() }
       publish()
     },
-    async setEnabled(field, enabled) {
-      if (disposed || saving || !snapshot.writable) return
-      saving = true
-      message = null
-      publish()
-      try {
-        if (!await form.set(field, enabled)) message = { code: 'write-failed' }
-      } catch {
-        message = { code: 'write-failed' }
-      } finally {
-        if (!disposed) { saving = false; publish() }
-      }
-    },
     async startRecording(commandId) {
       if (disposed || !snapshot.officialWritable) return
       if (recordingCommand === commandId) return
@@ -220,7 +205,6 @@ export function createQuickPanelModel(
       await applyEdit({ type: 'set', id: commandId as ShortcutCommandId, binding: null }, commandId)
     },
     exportConfig() {
-      const config = form.getSnapshot()
       const profile: ShortcutProfile = `${shortcuts.runtime}:${shortcuts.platform}`
       // Export the complete keyboard configuration: every command the official catalog exposes,
       // not just the customized ones. `modified` preserves which commands were overridden so an
@@ -242,8 +226,6 @@ export function createQuickPanelModel(
         }
       }
       const raw = encodeConfigFile({
-        questionEnabled: config.value?.questionEnabled === true,
-        approvalEnabled: config.value?.approvalEnabled === true,
         shortcuts: shortcutsSnapshot,
         profile,
       })
@@ -359,20 +341,7 @@ export function createQuickPanelModel(
             return
           }
         }
-        // The shortcuts now stand; write both switches in one accepted mutation.
-        const current = form.getSnapshot().value
-        const ops: Array<{ op: 'set'; path: string[]; value: boolean }> = []
-        if (current?.questionEnabled !== document.questionEnabled) {
-          ops.push({ op: 'set', path: ['questionEnabled'], value: document.questionEnabled })
-        }
-        if (current?.approvalEnabled !== document.approvalEnabled) {
-          ops.push({ op: 'set', path: ['approvalEnabled'], value: document.approvalEnabled })
-        }
-        if (ops.length > 0 && !await form.mutate(ops)) {
-          // The keyboard configuration did apply, so say so instead of claiming a clean import.
-          message = { code: 'import-partial', detail: ['questionEnabled', 'approvalEnabled'] }
-          return
-        }
+        // The shortcuts now stand; nothing else in the document needs writing.
         if (!disposed) message = { code: 'imported' }
       } catch {
         const unrestored = await restore(touched)

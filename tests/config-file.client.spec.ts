@@ -7,25 +7,32 @@ import { decodeConfigFile, encodeConfigFile } from '../src/client/settings/confi
 const valid = {
   format: CONFIG_FILE_FORMAT,
   version: CONFIG_FILE_VERSION,
-  configuration: { questionEnabled: true, approvalEnabled: false, shortcuts: {} },
+  configuration: { shortcuts: {} },
 }
 
 const json = (value: unknown): string => JSON.stringify(value)
 
 describe('configuration file codec', () => {
-  it('round-trips switches with an empty shortcut snapshot', () => {
-    const encoded = encodeConfigFile({ questionEnabled: true, approvalEnabled: false, shortcuts: {}, profile: 'web:macos' })
+  it('round-trips an empty shortcut snapshot with a device profile', () => {
+    const encoded = encodeConfigFile({ shortcuts: {}, profile: 'web:macos' })
     expect(encoded.endsWith('\n')).toBe(true)
     expect(JSON.parse(encoded).version).toBe(CONFIG_FILE_VERSION)
     expect(decodeConfigFile(encoded)).toEqual({
       ok: true,
-      document: { questionEnabled: true, approvalEnabled: false, shortcuts: {}, profile: 'web:macos' },
+      document: { shortcuts: {}, profile: 'web:macos' },
     })
+  })
+
+  it('writes only the shortcut snapshot, never the retired plugin switches', () => {
+    const document = JSON.parse(encodeConfigFile({ shortcuts: {}, profile: 'web:macos' }))
+    expect(Object.keys(document.configuration).sort()).toEqual(['profile', 'shortcuts'])
+    expect(document.configuration).not.toHaveProperty('questionEnabled')
+    expect(document.configuration).not.toHaveProperty('approvalEnabled')
   })
 
   it('round-trips every official command, including unmodified defaults and explicit clears', () => {
     const encoded = encodeConfigFile({
-      questionEnabled: false, approvalEnabled: true, profile: 'web:macos',
+      profile: 'web:macos',
       shortcuts: {
         // Unmodified default: exported so the file is a complete snapshot.
         'session.new': { modified: false, binding: { code: 'KeyN', modifiers: ['meta'] }, label: 'New session', keys: ['⌘', 'N'] },
@@ -55,18 +62,29 @@ describe('configuration file codec', () => {
     const legacy = JSON.stringify({ format: CONFIG_FILE_FORMAT, version: 1,
       configuration: { questionEnabled: true, approvalEnabled: true, shortcut: { code: 'KeyG', modifiers: ['meta'] } } })
     expect(decodeConfigFile(legacy)).toEqual({ ok: true, document: {
-      questionEnabled: true, approvalEnabled: true,
-      shortcuts: { 'hytime.shortcuts.open': { modified: true, binding: { code: 'KeyG', modifiers: ['meta'] } } },
+      shortcuts: { 'dsh-shortcuts.open': { modified: true, binding: { code: 'KeyG', modifiers: ['meta'] } } },
     } })
     const omitted = JSON.stringify({ format: CONFIG_FILE_FORMAT, version: 1,
       configuration: { questionEnabled: false, approvalEnabled: false } })
-    expect(decodeConfigFile(omitted)).toEqual({ ok: true, document: {
-      questionEnabled: false, approvalEnabled: false, shortcuts: {},
-    } })
+    expect(decodeConfigFile(omitted)).toEqual({ ok: true, document: { shortcuts: {} } })
+  })
+
+  it('accepts and ignores the retired switch keys in v1 and v2 documents', () => {
+    const v2 = decodeConfigFile(json({ format: CONFIG_FILE_FORMAT, version: 2,
+      configuration: { questionEnabled: true, approvalEnabled: false, shortcuts: {} } }))
+    expect(v2).toEqual({ ok: true, document: { shortcuts: {} } })
+    if (v2.ok) {
+      expect(v2.document).not.toHaveProperty('questionEnabled')
+      expect(v2.document).not.toHaveProperty('approvalEnabled')
+    }
+    // A present legacy switch must still be a boolean when a legacy file carries it.
+    expect(decodeConfigFile(json({ format: CONFIG_FILE_FORMAT, version: 2,
+      configuration: { questionEnabled: 'yes', shortcuts: {} } })))
+      .toEqual({ ok: false, reason: 'invalid' })
   })
 
   it('refuses a foreign command id, too many commands, and a malformed profile', () => {
-    const base = { format: CONFIG_FILE_FORMAT, version: 2, configuration: { questionEnabled: true, approvalEnabled: true } }
+    const base = { format: CONFIG_FILE_FORMAT, version: 2, configuration: {} }
     const entry = (binding: unknown) => ({ modified: true, binding })
     expect(decodeConfigFile(JSON.stringify({ ...base, configuration: { ...base.configuration,
       shortcuts: { NoDot: entry({ code: 'KeyJ', modifiers: ['meta'] }) } } })))
@@ -80,22 +98,20 @@ describe('configuration file codec', () => {
   })
 
   it('round-trips an explicit binding and an explicit clear independently', () => {
-    const withBinding = decodeConfigFile(encodeConfigFile({ questionEnabled: false, approvalEnabled: true,
+    const withBinding = decodeConfigFile(encodeConfigFile({
       shortcuts: { 'session.new': { modified: true, binding: { code: 'KeyN', modifiers: ['meta'] } } } }))
     expect(withBinding).toEqual({ ok: true, document: {
-      questionEnabled: false, approvalEnabled: true,
       shortcuts: { 'session.new': { modified: true, binding: { code: 'KeyN', modifiers: ['meta'] } } },
     } })
-    const cleared = decodeConfigFile(encodeConfigFile({ questionEnabled: false, approvalEnabled: true,
+    const cleared = decodeConfigFile(encodeConfigFile({
       shortcuts: { 'session.new': { modified: true, binding: null } } }))
     expect(cleared).toEqual({ ok: true, document: {
-      questionEnabled: false, approvalEnabled: true,
       shortcuts: { 'session.new': { modified: true, binding: null } },
     } })
   })
 
   it('normalizes modifier order and keeps a two-key chord', () => {
-    const encoded = encodeConfigFile({ questionEnabled: false, approvalEnabled: false,
+    const encoded = encodeConfigFile({
       shortcuts: { 'session.new': { modified: true,
         binding: { code: 'KeyA', secondCode: 'KeyB', modifiers: ['meta', 'control', 'alt'] } } } })
     const decoded = decodeConfigFile(encoded)
@@ -113,7 +129,6 @@ describe('configuration file codec', () => {
     ['non-integer version', json({ ...valid, version: 1.5 })],
     ['missing configuration', json({ format: CONFIG_FILE_FORMAT, version: 1 })],
     ['non-boolean switch', json({ ...valid, configuration: { ...valid.configuration, questionEnabled: 'yes' } })],
-    ['missing switch', json({ ...valid, configuration: { questionEnabled: true } })],
     ['unknown root field', json({ ...valid, extra: 1 })],
     ['unknown configuration field', json({ ...valid, configuration: { ...valid.configuration, extra: 1 } })],
     ['unknown override field', json({ ...valid, configuration: { ...valid.configuration, shortcuts: { 'a.b': { modified: true, binding: { code: 'KeyS', modifiers: [], extra: 1 } } } } })],

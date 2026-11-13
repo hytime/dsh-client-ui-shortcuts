@@ -8,7 +8,6 @@ const manifest = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8'))
 
 const STYLE_FILES = [
   'src/client/styles/QuickPanel.module.css',
-  'src/client/styles/InteractionSurface.module.css',
 ] as const
 
 /** DSH alias tokens this package must never reference; a missing property resolves to empty. */
@@ -21,7 +20,7 @@ const DEPRECATED_ALIAS_TOKENS = [
 describe('shortcuts package invariant', () => {
   it('uses the manifest name for the invariant registration', () => {
     expect(PACKAGE_NAME).toBe(manifest.name)
-    expect(name).toBe('dsh-client-ui-shortcuts-invariant')
+    expect(name).toBe('dsh-shortcuts-invariant')
   })
   it('documents the UI-only runtime observation boundary', () => {
     const source = readFileSync(resolve(root, 'src/invariant.ts'), 'utf8')

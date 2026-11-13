@@ -1,7 +1,7 @@
 {
-  "name": "@hytime/dsh-client-ui-shortcuts",
-  "version": "0.2.1",
-  "description": "Quick panel using official DSH shortcuts, with opt-in question and approval enhancements",
+  "name": "@takomitkm/dsh-shortcuts",
+  "version": "0.3.0",
+  "description": "Official DSH shortcut commands (session / view / input / boss key) plus the quick panel",
   "keywords": [
     "dsh-plugin",
     "deepseek-harness",
@@ -10,11 +10,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hytime/dsh-client-ui-shortcuts.git"
+    "url": "git+https://github.com/takomitkm/dsh-shortcuts.git"
   },
-  "homepage": "https://github.com/hytime/dsh-client-ui-shortcuts#readme",
+  "homepage": "https://github.com/takomitkm/dsh-shortcuts#readme",
   "bugs": {
-    "url": "https://github.com/hytime/dsh-client-ui-shortcuts/issues"
+    "url": "https://github.com/takomitkm/dsh-shortcuts/issues"
   },
   "type": "module",
   "main": "lib/index.js",
@@ -56,9 +56,9 @@
   },
   "scripts": {
     "clean:lib": "node scripts/clean-lib.mjs",
-    "build:types": "pnpm run clean:lib && tsc",
-    "bundle": "pnpm run build:types && tsdown",
-    "prepare": "pnpm run bundle",
+    "build:types": "node scripts/clean-lib.mjs && tsc",
+    "bundle": "node scripts/build.mjs",
+    "prepare": "node scripts/build.mjs",
     "watch": "tsdown --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"

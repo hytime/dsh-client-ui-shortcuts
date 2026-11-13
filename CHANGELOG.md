@@ -2,6 +2,32 @@
 
 ### Fixed
 
+- **The session shortcuts fired but did nothing.** `prevSession` and `nextSession` captured `ctx.get('uiWorkspace')` and `ctx.get('workspaces')` at activation. Neither service is declared in this plugin's `inject`, so cordis does not gate activation on them: the plugin could activate first and hold `undefined` forever, so a recorded binding ran the command and it silently skipped the "open the session" step. Every service is now resolved inside `run()`, which makes the result independent of activation order. `toggleTheme` carried the same class of bug and is fixed the same way.
+
+### Removed
+
+- **Four commands that duplicated official DSH commands**: `newSession` (= `session.new`, `Mod+N`), `forkSession` (= `session.fork`, `Mod+Alt+F`), `toggleSidebar` (= `sidebar.left.toggle`, `Mod+B`) and `toggleDetails` (= `sidebar.right.toggle`, `Mod+Alt+B`). The plugin now carries only the 9 commands DSH does not already own. Recorded bindings for the remaining ids are unaffected; a record for a removed id becomes an orphan row in the official configuration.
+
+## 0.3.0 - Boss key, clipboard paste, full action set, functional groups
+
+### Breaking
+
+- **Package renamed** `@hytime/dsh-client-ui-shortcuts` → `@takomitkm/dsh-shortcuts`; command ids now live under `dsh-shortcuts.*` (`open`, `composerFocus`, `bossHide`, `newSession`, `prevSession`, `nextSession`, `forkSession`, `toggleSidebar`, `toggleDetails`, `toggleTheme`, `scrollTop`, `scrollBottom`, `pasteClipboard`). Re-record any bindings that referenced the old ids.
+
+### Added
+
+- **13 official shortcut commands**: panel, composer focus, boss-key hide, session lifecycle (new / previous / next / fork), view actions (sidebar, details, theme, scroll top/bottom) and clipboard paste — all registered through the official shortcuts service, so they appear in DSH keyboard settings with official recording, conflict checks and per-device persistence.
+- **Two boss keys**: the official-track `bossHide` (hide-to-tray via the `ctx.shortcuts.closeWindow()` bridge) and the settings section for the OS-track `dsh-bosskey` companion (global F9 toggle, status page, PowerToys-style conflict probe).
+- **Task-navigation defaults**: `prevSession` / `nextSession` default to `Ctrl+Shift+[` / `Ctrl+Shift+]` (Linux Web unbound) matching the task-navigation chords common in AI IDEs.
+- **Functional grouping** in the quick panel (General / Input / Sessions / View / Boss Key) and a full keybinding comparison table in the README.
+- MIT `LICENSE` file added (upstream declares MIT in `package.json` but never shipped the file).
+
+### Removed
+
+- The opt-in **Question / Approval interaction cards** (and the two settings switches that enabled them) are gone; the plugin is now purely keyboard shortcuts, no UI takeover. Old exported configs that still carry `questionEnabled` / `approvalEnabled` remain importable — the values are tolerated and ignored.
+
+### Fixed
+
 - Configuration import now releases affected inherited default bindings before applying a swap or key transfer. Previously only existing overrides were released, causing valid snapshots to fail with a temporary conflict. Regression coverage also verifies restoration of inherited defaults when a later write is refused.
 
 ## 0.2.1 - Checkout-independent build artifacts
